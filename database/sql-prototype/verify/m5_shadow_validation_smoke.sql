@@ -55,7 +55,7 @@ INSERT INTO json_import_batches (
 )
 SELECT
   'm5_smoke_batch_001',
-  'C:\sample\local_project',
+  './sample/local_project',
   'IMPORT',
   id,
   1,

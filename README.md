@@ -58,10 +58,10 @@ Optional local development:
 
 ## Docker Deployment
 
-From this English package directory:
+From the repository root:
 
 ```powershell
-cd "<your clone path>\English"
+cd "<your clone path>"
 Copy-Item .env.example .env
 docker compose up --build
 ```
@@ -69,7 +69,7 @@ docker compose up --build
 Or from `cmd.exe`:
 
 ```bat
-cd /d "<your clone path>\English"
+cd /d "<your clone path>"
 copy .env.example .env
 docker compose up --build
 ```
@@ -93,6 +93,32 @@ DEEPSEEK_API_KEY=
 ```
 
 The release template disables LangSmith tracing by default. If external tracing is enabled during development, do not publish private prompts, raw model responses, or API keys.
+
+## Docker Hub Image Names
+
+The Docker image names do not include the language directory name. The published Docker Hub repository uses separate backend/frontend tags:
+
+```text
+zihangzhong/multiple-agent-for-stories-v1:backend-latest
+zihangzhong/multiple-agent-for-stories-v1:frontend-latest
+zihangzhong/multiple-agent-for-stories-v1:backend-1.0.0
+zihangzhong/multiple-agent-for-stories-v1:frontend-1.0.0
+```
+
+For local builds, `docker compose` uses:
+
+```text
+multiple-agent-for-stories-backend:latest
+multiple-agent-for-stories-frontend:latest
+```
+
+To build with Docker Hub image names:
+
+```powershell
+$env:MAS_BACKEND_IMAGE = "zihangzhong/multiple-agent-for-stories-v1:backend-latest"
+$env:MAS_FRONTEND_IMAGE = "zihangzhong/multiple-agent-for-stories-v1:frontend-latest"
+docker compose build
+```
 
 ## Storage Modes
 
@@ -147,7 +173,7 @@ Important rule: the system separates draft/candidate state from confirmed story 
 Backend:
 
 ```powershell
-cd "<your clone path>\English"
+cd "<your clone path>"
 python -m pip install -r app\backend\requirements.txt
 python -m uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
 ```
@@ -155,7 +181,7 @@ python -m uvicorn app.backend.main:app --host 127.0.0.1 --port 8000
 Frontend:
 
 ```powershell
-cd "<your clone path>\English\app\frontend"
+cd "<your clone path>\app\frontend"
 npm ci
 $env:VITE_API_BASE_URL = "http://127.0.0.1:8000"
 npm run dev -- --host 127.0.0.1 --port 5173
@@ -170,4 +196,3 @@ Open <http://127.0.0.1:5173>.
 - Port conflict: stop the process using ports `3000` or `8000`, or edit `docker-compose.yml`.
 - Ordinary-mode iframe pages are missing: regenerate the package with design assets if those visual draft pages are needed.
 - Reset local Docker data: remove the Docker volumes only if you intentionally want to delete local story projects.
-
