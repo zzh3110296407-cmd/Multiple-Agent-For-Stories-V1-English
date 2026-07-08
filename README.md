@@ -1,8 +1,8 @@
 # Multiple Agent For Stories V1
 
-Chinese README: TODO - replace this line with the public Chinese repository URL after both repositories are published.
+Chinese README: https://github.com/zzh3110296407-cmd/Multiple-Agent-For-Stories-V1
 
-Multiple Agent For Stories, also named **织境**, is a multi-agent story creation workbench for long-form narrative design, interactive script development, and agent-assisted story production. It is built around one core idea: the system should not only continue text, but also maintain a structured story world, verify narrative state, and let different agent services cooperate around explicit story objects.
+Multiple Agent For Stories, is a multi-agent story creation workbench for long-form narrative design, interactive script development, and agent-assisted story production. It is built around one core idea: the system should not only continue text, but also maintain a structured story world, verify narrative state, and let different agent services cooperate around explicit story objects.
 
 The open-source package contains the current runnable product surface:
 
