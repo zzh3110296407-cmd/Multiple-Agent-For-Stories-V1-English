@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generator_handoff.v1.schema.json",
+  "title": "Story Analyzer Generator Handoff v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "handoff_version",
+    "handoff_status",
+    "work_identity",
+    "quality_gate",
+    "source_map",
+    "book_framework",
+    "arc_hierarchy",
+    "chapter_blueprints",
+    "foreshadowing_registry",
+    "generator_materials",
+    "selection_metadata",
+    "validator_summary",
+    "source_reference_index_ref"
+  ],
+  "properties": {
+    "handoff_version": {
+      "const": "generator_handoff.v1"
+    },
+    "handoff_status": {
+      "const": "passed"
+    },
+    "compiled_at": {
+      "type": "string"
+    },
+    "work_identity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "quality_gate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "run_status",
+        "source_leak_status",
+        "abstraction_quality_status",
+        "missing_required_outputs",
+        "llm_health_status",
+        "llm_unrecovered_failed_target_count",
+        "failed_chapter_count",
+        "source_total_chapters",
+        "analysis_unit_count",
+        "arc_count",
+        "expected_arc_count"
+      ],
+      "properties": {
+        "run_status": {
+          "const": "completed"
+        },
+        "source_leak_status": {
+          "const": "passed"
+        },
+        "abstraction_quality_status": {
+          "const": "passed"
+        },
+        "missing_required_outputs": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "llm_health_status": {
+          "enum": ["passed", "healthy", "recovered", "recovered_with_retries"]
+        },
+        "llm_unrecovered_failed_target_count": {
+          "type": "integer",
+          "maximum": 0
+        },
+        "failed_chapter_count": {
+          "type": "integer",
+          "maximum": 0
+        },
+        "source_total_chapters": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysis_unit_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "arc_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expected_arc_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "source_map": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source_total_chapters", "analysis_unit_count", "source_chapters"],
+      "properties": {
+        "source_total_chapters": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysis_unit_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_chapters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["source_chapter_index", "analysis_unit_range", "parts"],
+            "properties": {
+              "source_chapter_index": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "source_title": {
+                "type": "string"
+              },
+              "analysis_unit_range": {
+                "type": "string"
+              },
+              "parts": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        "arc_source_ranges": {
+          "type": "array"
+        }
+      }
+    },
+    "book_framework": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["content", "source_refs"],
+      "properties": {
+        "content": {
+          "type": "object"
+        },
+        "source_refs": {
+          "$ref": "#/$defs/sourceRefs"
+        }
+      }
+    },
+    "arc_hierarchy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["major_arcs", "sub_arcs"],
+      "properties": {
+        "major_arcs": {
+          "type": "array"
+        },
+        "sub_arcs": {
+          "type": "array"
+        }
+      }
+    },
+    "chapter_blueprints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["source_refs"],
+        "properties": {
+          "chapter_blueprint_id": {
+            "type": "string"
+          },
+          "analysis_unit_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_chapter_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_refs": {
+            "$ref": "#/$defs/sourceRefs"
+          }
+        }
+      }
+    },
+    "foreshadowing_registry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["items"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["id", "status"],
+            "anyOf": [
+              { "required": ["canonical_content"] },
+              { "required": ["summary"] },
+              { "required": ["text"] }
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "canonical_content": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "status": {
+                "enum": ["planted", "partially_resolved", "resolved"]
+              },
+              "source_refs": {
+                "$ref": "#/$defs/sourceRefs"
+              }
+            }
+          }
+        }
+      }
+    },
+    "generator_materials": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "material_id",
+          "module_type",
+          "abstraction_level",
+          "source_dependence",
+          "granularity",
+          "content",
+          "selection_tags",
+          "source_refs"
+        ],
+        "properties": {
+          "material_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "module_type": {
+            "enum": [
+              "pacing_structure",
+              "arc_structure",
+              "chapter_progression",
+              "character_growth",
+              "relationship_dynamics",
+              "worldbuilding",
+              "core_conflict",
+              "foreshadowing_system",
+              "emotion_curve",
+              "information_release",
+              "scene_function",
+              "narrative_mechanism",
+              "adaptable_setting",
+              "source_fidelity"
+            ]
+          },
+          "abstraction_level": {
+            "enum": ["abstract", "semi_abstract", "source_specific"]
+          },
+          "source_dependence": {
+            "enum": ["source_free", "adaptable", "source_bound"]
+          },
+          "granularity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {},
+          "selection_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_refs": {
+            "$ref": "#/$defs/sourceRefs"
+          },
+          "evidence_strength": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "selection_metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "validator_summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "validation_status": {
+          "enum": ["passed", "passed_with_warnings"]
+        },
+        "blocking_issue_count": {
+          "type": "integer",
+          "maximum": 0
+        }
+      }
+    },
+    "repair_history": {
+      "type": ["object", "array"]
+    },
+    "source_reference_index_ref": {
+      "const": "source_reference_index.json"
+    }
+  },
+  "$defs": {
+    "sourceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^REF_(CH|ARC)_\\d{3}$"
+      }
+    }
+  }
+}

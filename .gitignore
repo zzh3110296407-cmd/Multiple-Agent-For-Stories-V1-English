@@ -1,0 +1,32 @@
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+node_modules/
+dist/
+build/
+.vite/
+output/
+
+app/data/local_project/
+app/data/projects/
+app/backend/data/
+app/Story Analyzer/backend/data/
+app/Story Analyzer/backend/outputs/
+*.log
+*.tmp

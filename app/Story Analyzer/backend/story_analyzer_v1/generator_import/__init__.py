@@ -1,0 +1,2 @@
+"""Generator import contract fixtures."""
+

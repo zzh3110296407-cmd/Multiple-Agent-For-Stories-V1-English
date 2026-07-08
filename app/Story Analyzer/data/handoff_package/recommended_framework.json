@@ -1,0 +1,1588 @@
+{
+  "_meta": {
+    "generated_at": "2026-06-17T11:44:28.265019",
+    "source": "framework_vocabulary.json",
+    "works_analyzed": 3,
+    "min_usage_threshold": 1,
+    "description": "由 framework_synthesizer.py 从多部小说分析中提炼的推荐 framework。reliability=verified 的词条已在多部作品中验证，可作为生成器强默认值；tentative 词条建议作为候选池；defined 词条为预定义但尚未在分析中出现。"
+  },
+  "component_vocabulary": {
+    "macro_components": [
+      {
+        "component_id": "vocab_mfb_mfb_001",
+        "label": "开端",
+        "order": 1,
+        "instruction": "建立故事世界、核心角色、初始基调与首要问题。让读者理解「这个故事的世界是什么样的」。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_002",
+        "label": "触发事件",
+        "order": 2,
+        "instruction": "打破初始平衡的关键事件，让故事从静止进入运动。主角的目标或冲突从此刻真正启动。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_003",
+        "label": "发展",
+        "order": 3,
+        "instruction": "主角追逐目标、冲突持续扩大、新人物或复杂性被引入的阶段。故事世界因行动而变化。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_004",
+        "label": "升级",
+        "order": 4,
+        "instruction": "代价、危险、误解或压力显著增大。主角面临的困境比之前更严峻，退路收窄。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_005",
+        "label": "反转",
+        "order": 5,
+        "instruction": "局势的意义发生根本性变化——不只是结果改变，而是读者对整个局面的理解被重构。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_006",
+        "label": "危机",
+        "order": 6,
+        "instruction": "主角必须做出关键选择的时刻。这个选择将决定后续走向，且往往无法两全。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_007",
+        "label": "高潮",
+        "order": 7,
+        "instruction": "当前叙事线索或全局冲突达到最高强度的节点。之后叙事开始收势，张力不可能再升高。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_008",
+        "label": "回落",
+        "order": 8,
+        "instruction": "高潮后的结果逐步展开。后果、损失与变化浮现，世界开始重新找到平衡。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_009",
+        "label": "解决",
+        "order": 9,
+        "instruction": "主要冲突被解决、转化或放弃。不一定是happy ending，但核心张力得到了某种形式的释放。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfb_mfb_010",
+        "label": "余波",
+        "order": 10,
+        "instruction": "展示新世界状态、情感落点与后续可能性。人物和世界在经历后是什么样的。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "basic"
+      },
+      {
+        "component_id": "vocab_mfg_mfg_001",
+        "label": "分支",
+        "order": 11,
+        "instruction": "故事从单线分裂成两条或多条相对独立的叙事线。各线索可能在不同时间、地点或人物视角展开。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "graph"
+      },
+      {
+        "component_id": "vocab_mfg_mfg_002",
+        "label": "合流",
+        "order": 12,
+        "instruction": "此前分开的多条叙事线在此重新交汇，共同推向下一个叙事节点。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "graph"
+      },
+      {
+        "component_id": "vocab_mfg_mfg_003",
+        "label": "并行线",
+        "order": 13,
+        "instruction": "同时进行的多条故事线（明线/暗线、主角团/反派线等）。各线互相呼应但暂不交汇。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "graph"
+      },
+      {
+        "component_id": "vocab_mfg_mfg_004",
+        "label": "瓶颈节点",
+        "order": 14,
+        "instruction": "无论走哪条叙事分支都必须经过的共同事件或状态。是多线汇聚的强制路径点。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "graph"
+      },
+      {
+        "component_id": "vocab_mfg_mfg_005",
+        "label": "结局变体",
+        "order": 15,
+        "instruction": "不同叙事路线对应不同结局的分叉点。读者/玩家的选择或人物的选择决定走向哪个结局。",
+        "source": "vocabulary_library",
+        "scope": "macro",
+        "reliability": "defined",
+        "usage_count": 0,
+        "works_used_in": [],
+        "node_type": "graph"
+      }
+    ],
+    "chapter_modules": [
+      {
+        "module_id": "chapter_function",
+        "label": "篇章功能模块",
+        "scope": "chapter",
+        "persistence": "chapter_local",
+        "owner": "chapter_framework",
+        "write_policy": "no_memory_write",
+        "order": 1,
+        "allowed_components": [
+          {
+            "component_id": "vocab_cf_cf_002",
+            "label": "触发推进",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "某个事件、人物出现或信息揭示打破了当前平衡，推动情节从静止进入运动状态。通常是本章核心驱动力。",
+            "order": 0,
+            "reliability": "verified",
+            "usage_count": 7,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_004",
+            "label": "余波与新状态",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "高潮后的结果呈现。展示人物、关系或世界在事件冲击后的新平衡点，同时为下一章埋下种子。",
+            "order": 1,
+            "reliability": "verified",
+            "usage_count": 7,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_003",
+            "label": "高潮执行",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "本章情绪或冲突的峰值节点，通常是不可逆事件的实现或道德判断的关键时刻。之后叙事开始收势。",
+            "order": 2,
+            "reliability": "verified",
+            "usage_count": 5,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_001",
+            "label": "世界铺垫",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "通过场景环境、人物关系和初始基调的呈现，建立故事运行所需的世界参数。让读者在进入冲突前先理解这个世界的规则和氛围。",
+            "order": 3,
+            "reliability": "verified",
+            "usage_count": 4,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_005",
+            "label": "冲突升级",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "在已有冲突基础上加剧张力，通常标志着冲突性质的转变：从外部反抗到内部屈服，或从局部对抗到全面崩溃。",
+            "order": 4,
+            "reliability": "verified",
+            "usage_count": 3,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_006",
+            "label": "角色建立",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "通过行动、对话或他人反应，确立某个人物在读者心中的性格基调、能力边界或道德底色。",
+            "order": 5,
+            "reliability": "verified",
+            "usage_count": 2,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_008",
+            "label": "危机选择",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "本章的核心是人物必须在两种都有代价的选项之间做出判断。选择本身揭示人物的价值观。",
+            "order": 6,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cf_cf_007",
+            "label": "关系推进",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "两个或多个人物之间的关系发生质变：从陌生到信任、从信任到裂痕、或从对立到同盟。",
+            "order": 7,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_009",
+            "label": "失败与代价",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物的行动或尝试以失败告终，且失败带来不可逆的损失。功能是让风险变得真实、可信。",
+            "order": 8,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_010",
+            "label": "暂时胜利",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物取得阶段性成果，但叙事暗示这只是暂时的喘息。通常用于在高压叙事中给读者短暂释放。",
+            "order": 9,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_011",
+            "label": "信息揭示",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "本章的主要功能是向读者或人物揭示某个关键信息，改变对当前局势的认知。",
+            "order": 10,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_012",
+            "label": "误导读者",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "有意将读者的注意力或预期引向错误方向，为后续反转或信息揭示埋设认知陷阱。",
+            "order": 11,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_013",
+            "label": "情绪缓冲",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "在高强度叙事节点之间插入的低张力章节，让读者喘息、重新积累情绪投入，同时推进人物日常。",
+            "order": 12,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_014",
+            "label": "分支开启",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "本章标志着叙事从单线分裂为多线，新的叙事线索在此正式启动。",
+            "order": 13,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_015",
+            "label": "分支合流",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "本章将此前分开运行的多条叙事线索重新汇聚，推向共同的下一节点。",
+            "order": 14,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cf_cf_016",
+            "label": "高潮准备",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "为即将到来的高潮聚拢所有要素：悬念收紧、人物就位、读者预期被推到临界点。",
+            "order": 15,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          }
+        ],
+        "recommended_defaults": [
+          "触发推进",
+          "余波与新状态",
+          "高潮执行",
+          "世界铺垫",
+          "冲突升级",
+          "角色建立",
+          "危机选择"
+        ]
+      },
+      {
+        "module_id": "reader_emotion",
+        "label": "读者情绪模块",
+        "scope": "chapter",
+        "persistence": "ephemeral",
+        "owner": "chapter_framework",
+        "write_policy": "no_memory_write",
+        "order": 2,
+        "allowed_components": [
+          {
+            "component_id": "vocab_re_re_002",
+            "label": "不安",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "读者对人物处境、道德困境或潜在威胁产生的弥漫性焦虑。区别于「紧张」——不安是长线渗透的忧虑，紧张是即时临场的张力。",
+            "order": 0,
+            "reliability": "verified",
+            "usage_count": 5,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_005",
+            "label": "平静绝望",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "表面平静但内含深度虚无感的混合情绪。常见于人物道德麻痹、命运无解或社会冷漠被常态化的节点。读者知道这种平静是虚假的。",
+            "order": 1,
+            "reliability": "verified",
+            "usage_count": 5,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_001",
+            "label": "安全感",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "叙事初期建立的平静秩序感。表面正常的生活场景给读者提供短暂的稳定预期，通常作为后续打破的反差基础。",
+            "order": 2,
+            "reliability": "verified",
+            "usage_count": 4,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "positive",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_003",
+            "label": "紧张",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "冲突即将爆发或危险迫近时的即时临场张力。读者屏息等待某个具体事件的发生或结果。",
+            "order": 3,
+            "reliability": "verified",
+            "usage_count": 4,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "high"
+          },
+          {
+            "component_id": "vocab_re_re_008",
+            "label": "好奇",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "信息悬置或人物动机不明引发的主动探求欲。推动读者带着问题继续阅读，是悬疑叙事的核心驱动力。",
+            "order": 4,
+            "reliability": "verified",
+            "usage_count": 4,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "positive",
+            "arousal": "medium"
+          },
+          {
+            "component_id": "vocab_re_re_010",
+            "label": "悲伤",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "对人物遭受不可逆损失的共情性哀恸。不同于愤怒，悲伤是向内的，是接受某种无法改变的丧失之后的沉静痛感。",
+            "order": 5,
+            "reliability": "verified",
+            "usage_count": 4,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "medium"
+          },
+          {
+            "component_id": "vocab_re_re_004",
+            "label": "希望",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "在压抑或悲剧叙事中短暂出现的正向可能性。通常作为反差效果存在，让读者瞥见本可以不同的命运，继而更深感悲。",
+            "order": 6,
+            "reliability": "verified",
+            "usage_count": 2,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ],
+            "valence": "positive",
+            "arousal": "medium"
+          },
+          {
+            "component_id": "vocab_re_re_007",
+            "label": "麻木",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "持续压抑后情感反应的钝化。读者随人物一同进入冷漠状态，既是对苦难习惯化的描述，也是对这种习惯化本身的批判。",
+            "order": 7,
+            "reliability": "verified",
+            "usage_count": 2,
+            "works_used_in": [
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_006",
+            "label": "愤怒",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "对叙事中的不公正、压迫或背叛产生的激烈道德反应。可以是对施害者的愤慨，也可以是对旁观者冷漠的愤怒。",
+            "order": 8,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "high"
+          },
+          {
+            "component_id": "vocab_re_re_009",
+            "label": "震惊",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "超出读者预期的强烈事件或信息带来的即时冲击。通常伴随叙事节奏的急速收束，制造难以忘记的感知印记。",
+            "order": 9,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "high"
+          },
+          {
+            "component_id": "vocab_re_re_011",
+            "label": "同情",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "对弱势人物处境的代入性同情。读者愿意为人物承担痛苦，但又无力改变，通常伴随无力感和对施害力量的隐性谴责。",
+            "order": 10,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "medium"
+          },
+          {
+            "component_id": "vocab_re_re_013",
+            "label": "压抑",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "长期处于无出口的负向情绪状态。不同于紧张（即时），压抑是持续性的情绪封闭感，喘不过气。",
+            "order": 11,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ],
+            "valence": "negative",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_012",
+            "label": "快乐",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物或情境带来的正向愉悦感。在悲剧叙事中常作为短暂反差；在喜剧或成长叙事中是核心情绪。",
+            "order": 12,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": [],
+            "valence": "positive",
+            "arousal": "medium"
+          },
+          {
+            "component_id": "vocab_re_re_014",
+            "label": "失望",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "预期落空后的情绪落差。可以是对人物、对结果、或对叙事本身承诺的幻灭。",
+            "order": 13,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": [],
+            "valence": "negative",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_015",
+            "label": "释然",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "长期悬置的紧张或痛苦得到解除后的情绪松动。可以是正向结局后的轻盈，也可以是悲剧落定后的接受。",
+            "order": 14,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": [],
+            "valence": "neutral",
+            "arousal": "low"
+          },
+          {
+            "component_id": "vocab_re_re_016",
+            "label": "崇高感",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "ephemeral",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "面对超越个体的宏大力量（牺牲、奇观、极限处境）时产生的混合敬畏。读者感到渺小却也被提升。",
+            "order": 15,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": [],
+            "valence": "positive",
+            "arousal": "high"
+          }
+        ],
+        "recommended_defaults": [
+          "不安",
+          "平静绝望",
+          "安全感",
+          "紧张",
+          "好奇",
+          "悲伤",
+          "希望",
+          "麻木",
+          "愤怒",
+          "震惊",
+          "同情",
+          "压抑"
+        ]
+      },
+      {
+        "module_id": "character_desire",
+        "label": "角色欲望模块",
+        "scope": "chapter",
+        "persistence": "cross_chapter",
+        "owner": "chapter_framework",
+        "write_policy": "memory_write",
+        "order": 3,
+        "allowed_components": [
+          {
+            "component_id": "vocab_cd_cd_001",
+            "label": "保住体面",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物以维护自身社会形象、道德自洽或尊严完整为核心动机。常与实际处境或行动产生矛盾，揭示人物的自我认知与外部现实的断裂。",
+            "order": 0,
+            "reliability": "verified",
+            "usage_count": 5,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cd_cd_002",
+            "label": "想逃离",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物试图摆脱当前处境（物理、关系或心理）的欲望。体现主动能动性，但往往在叙事中被环境或他人力量所阻断，强化悲剧感。",
+            "order": 1,
+            "reliability": "verified",
+            "usage_count": 2,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_cd_cd_003",
+            "label": "想证明自己",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物以获得外部认可或内部自我验证为核心驱动力。常见于被轻视、被否定或出身低微的人物。",
+            "order": 2,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_004",
+            "label": "想保护某人",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物将另一个人的安全或幸福置于自身利益之上的欲望。是牺牲弧线和英雄叙事的常见驱动力。",
+            "order": 3,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_005",
+            "label": "想复仇",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物因遭受伤害而以报复为核心目标的欲望。复仇欲望往往与其他欲望冲突，构成人物弧线的核心张力。",
+            "order": 4,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_006",
+            "label": "想知道真相",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物以揭开某个谜团或隐藏信息为核心驱动。推动悬疑、调查类叙事，也常见于被欺骗的人物。",
+            "order": 5,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_007",
+            "label": "想被认可",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物渴望获得某个特定对象（父母、同伴、社会）认可的欲望。与「想证明自己」的区别在于外部指向性更强。",
+            "order": 6,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_008",
+            "label": "想回到过去",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物以恢复某种已失去的状态（关系、身份、时光）为核心欲望。通常伴随否认现实的心理防御机制。",
+            "order": 7,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_009",
+            "label": "想掌控局势",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物以建立或维持对周围环境、他人或事件走向的控制权为驱动。失控会带来极大的心理威胁。",
+            "order": 8,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_010",
+            "label": "想放弃",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物在长期消耗后产生的放弃欲望——放弃目标、关系或生存意志。通常标志着人物弧线的低谷点。",
+            "order": 9,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_cd_cd_011",
+            "label": "想反抗",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物以挑战权威、规则或压迫性力量为核心欲望。与「想逃离」的区别在于这是主动对抗而非逃脱。",
+            "order": 10,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          }
+        ],
+        "recommended_defaults": [
+          "保住体面",
+          "想逃离"
+        ]
+      },
+      {
+        "module_id": "character_arc",
+        "label": "人物弧光模块",
+        "scope": "chapter",
+        "persistence": "cross_chapter",
+        "owner": "chapter_framework",
+        "write_policy": "memory_write",
+        "order": 4,
+        "allowed_components": [
+          {
+            "component_id": "vocab_ca_ca_001",
+            "label": "从服从到反抗",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从接受权威/规则约束，逐步觉醒并主动反对这种约束的弧线。核心转折是第一次主动质疑。",
+            "order": 0,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ca_ca_002",
+            "label": "从逃避到承担",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从回避责任或痛苦，转变为直面并主动承担的弧线。通常以某个不可再逃的事件为转折点。",
+            "order": 1,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ca_ca_003",
+            "label": "从孤独到信任",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从封闭自我、不信任他人，到建立真实连接并愿意依赖他人的弧线。",
+            "order": 2,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ca_ca_004",
+            "label": "从天真到成熟",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从对世界的理想化认知，经历幻灭，最终形成更复杂、更真实世界观的弧线。",
+            "order": 3,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ca_ca_005",
+            "label": "从复仇到放下",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从执念于报复，到某个时刻选择放弃或和解的弧线。放弃本身是弧线的高潮。",
+            "order": 4,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ca_ca_006",
+            "label": "从自负到谦卑",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从过度自信或傲慢，经历某种失败或顿悟，转变为更谦逊自知的弧线。",
+            "order": 5,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ca_ca_007",
+            "label": "从堕落到救赎",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "人物从道德低点或自我毁灭的状态，通过某种行动重新找回价值感和尊严的弧线。",
+            "order": 6,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          }
+        ],
+        "recommended_defaults": []
+      },
+      {
+        "module_id": "conflict",
+        "label": "冲突模块",
+        "scope": "chapter",
+        "persistence": "chapter_local",
+        "owner": "chapter_framework",
+        "write_policy": "no_memory_write",
+        "order": 5,
+        "allowed_components": [
+          {
+            "component_id": "vocab_co_co_001",
+            "label": "人与命运/规则冲突",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物的行动与某种不可撼动的宏观力量（命运、因果、历史必然）之间的对抗。结果往往呈现悲剧性错位——行动越激烈，命运越无情。 包含人物与不可撼动的宏观规则（命运、因果、历史必然、宇宙法则）的对抗。",
+            "order": 0,
+            "reliability": "verified",
+            "usage_count": 6,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_co_co_002",
+            "label": "人与自我冲突",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物内在的道德、欲望或认知的分裂。通常以自我合理化、压抑或认知失调的形式呈现，是人物内心深度的关键标志。",
+            "order": 1,
+            "reliability": "verified",
+            "usage_count": 5,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_co_co_003",
+            "label": "人与制度冲突",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物与社会规范、权力结构或制度性力量的对立。个体的主体性被制度性逻辑否定，结果通常是个体被碾压或被迫内化压迫。",
+            "order": 2,
+            "reliability": "verified",
+            "usage_count": 3,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_co_co_004",
+            "label": "人与人冲突",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "两个或多个人物之间因目标、价值观或利益对立而产生的直接对抗。最基础也最直观的冲突类型。",
+            "order": 3,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_co_co_005",
+            "label": "人与自然/环境冲突",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物与物理环境、自然力量或生存条件之间的对抗。环境本身成为具有对抗性的叙事力量。",
+            "order": 4,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_co_co_006",
+            "label": "人与未知冲突",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "人物面对无法理解、无法预测的力量或信息时产生的冲突。恐惧、混乱和无力感是其核心情绪质感。",
+            "order": 5,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_co_co_007",
+            "label": "多冲突交叉",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "本章同时存在两种或以上不同性质的冲突，且彼此相互影响、加剧或转化。叙事复杂度最高的冲突形态。",
+            "order": 6,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          }
+        ],
+        "recommended_defaults": [
+          "人与命运/规则冲突",
+          "人与自我冲突",
+          "人与制度冲突",
+          "人与人冲突"
+        ]
+      },
+      {
+        "module_id": "information_release",
+        "label": "信息释放模块",
+        "scope": "chapter",
+        "persistence": "cross_chapter",
+        "owner": "chapter_framework",
+        "write_policy": "memory_write",
+        "order": 6,
+        "allowed_components": [
+          {
+            "component_id": "vocab_ir_ir_001",
+            "label": "部分真相",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "叙事故意遮蔽或延迟信息，使读者与人物处于不对称知情状态。读者知道某事发生了，但不知道全貌；或人物知道某事，但读者被隔离在外。",
+            "order": 0,
+            "reliability": "verified",
+            "usage_count": 6,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_ir_ir_002",
+            "label": "重新解读过去事件",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "新信息的出现使读者对此前已知事件产生截然不同的理解。不改变过去，但改变过去的意义。常用于制造「原来如此」的顿悟效果。",
+            "order": 1,
+            "reliability": "verified",
+            "usage_count": 2,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_ir_ir_003",
+            "label": "伏笔回收",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "前文种下的信息节点在此处得到解释、实现或反转。具体的伏笔编号（F001、F002等）在instance_note字段记录。这是叙事债务的偿还。",
+            "order": 2,
+            "reliability": "verified",
+            "usage_count": 2,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_ir_ir_004",
+            "label": "制造误解",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "通过选择性呈现信息，让读者或人物对某事形成错误认知。为后续真相揭示储备反转能量。",
+            "order": 3,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ir_ir_005",
+            "label": "读者知角色不知",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "叙事向读者提前透露某个信息，但人物仍处于无知状态。制造预期性焦虑——读者等待人物发现真相。",
+            "order": 4,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ir_ir_006",
+            "label": "角色知读者不知",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "某个人物掌握读者尚未获得的关键信息。制造信息悬念，推动读者主动推理和预测。",
+            "order": 5,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_ir_ir_007",
+            "label": "暗线浮出",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "cross_chapter",
+            "owner": "chapter_framework",
+            "write_policy": "memory_write",
+            "normalized_hint": "此前在表层叙事下隐秘运行的支线、阴谋或关系在本章显现，改变读者对整体格局的认知。",
+            "order": 6,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          }
+        ],
+        "recommended_defaults": [
+          "部分真相",
+          "重新解读过去事件",
+          "伏笔回收"
+        ]
+      },
+      {
+        "module_id": "style_pacing",
+        "label": "风格节奏模块",
+        "scope": "chapter",
+        "persistence": "chapter_local",
+        "owner": "chapter_framework",
+        "write_policy": "no_memory_write",
+        "order": 7,
+        "allowed_components": [
+          {
+            "component_id": "vocab_sp_sp_002",
+            "label": "慢热/缓慢悬疑",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "以低信息密度的叙事节奏配合信息悬置，制造弥漫性悬念。不依赖戏剧性事件，而是让读者在平静表面下感到某种必然的危险正在逼近。 「缓慢悬疑」与「慢热悬疑」合并：低信息密度配合信息悬置，弥漫性悬念在平静表面下积压。",
+            "order": 0,
+            "reliability": "verified",
+            "usage_count": 5,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_sp_sp_001",
+            "label": "心理压迫",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "通过人物内心独白、意识流或持续的情绪堆叠制造内部紧张感。读者进入人物意识，无法通过外部行动缓解压力，压迫感持续累积。 「心理压力」与「心理压迫」合并：强调持续堆叠的内部紧张无法通过外部行动释放。",
+            "order": 1,
+            "reliability": "verified",
+            "usage_count": 4,
+            "works_used_in": [
+              "文章",
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_sp_sp_003",
+            "label": "高信息密度",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "在有限篇幅内压缩大量事件或信息，叙事时间远短于故事时间。制造一种被事件推着走的压迫感，读者来不及喘息。 「高密度」统一标签为「高信息密度」：有限篇幅内压缩大量事件，读者来不及喘息。",
+            "order": 2,
+            "reliability": "verified",
+            "usage_count": 3,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_sp_sp_004",
+            "label": "对话驱动",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "以人物对话为主要叙事推进手段，信息通过说话而非描写释出。节奏较快，但信息量依赖说话人的可靠性——读者需判断对话中的真实性。",
+            "order": 3,
+            "reliability": "tentative",
+            "usage_count": 1,
+            "works_used_in": [
+              "文章"
+            ]
+          },
+          {
+            "component_id": "vocab_sp_sp_005",
+            "label": "快节奏行动",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "以密集的动作、决策和后果驱动叙事，叙事时间接近故事时间。读者随人物一同在高速中前进。",
+            "order": 4,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_sp_sp_006",
+            "label": "温柔日常",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "以低冲突的日常互动、生活细节或情感积累为主的叙事节奏。情绪价值高，张力低，常用于人物关系的深化。",
+            "order": 5,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_sp_sp_007",
+            "label": "群像切换",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "在多个人物或视角之间快速切换，拼接出整体图景。每个片段短小，整体形成立体的叙事网络。",
+            "order": 6,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_sp_sp_008",
+            "label": "景观展示",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "以环境、场景或视觉细节的细腻呈现为主，叙事节奏极慢。氛围、象征与情感通过空间语言传达。",
+            "order": 7,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          },
+          {
+            "component_id": "vocab_sp_sp_009",
+            "label": "低信息密度",
+            "source": "vocabulary_library",
+            "scope": "chapter",
+            "persistence": "chapter_local",
+            "owner": "chapter_framework",
+            "write_policy": "no_memory_write",
+            "normalized_hint": "每单位篇幅传递的新信息量少，叙事节奏舒缓。让读者沉浸在情绪或氛围中，而非追赶情节。",
+            "order": 8,
+            "reliability": "defined",
+            "usage_count": 0,
+            "works_used_in": []
+          }
+        ],
+        "recommended_defaults": [
+          "慢热/缓慢悬疑",
+          "心理压迫",
+          "高信息密度",
+          "对话驱动"
+        ]
+      }
+    ],
+    "module_components": []
+  },
+  "reliability_summary": {
+    "verified": {
+      "chapter_function": [
+        "触发推进",
+        "余波与新状态",
+        "高潮执行",
+        "世界铺垫",
+        "冲突升级",
+        "角色建立"
+      ],
+      "reader_emotion": [
+        "不安",
+        "平静绝望",
+        "安全感",
+        "紧张",
+        "好奇",
+        "悲伤",
+        "希望",
+        "麻木"
+      ],
+      "character_desire": [
+        "保住体面",
+        "想逃离"
+      ],
+      "conflict": [
+        "人与命运/规则冲突",
+        "人与自我冲突",
+        "人与制度冲突"
+      ],
+      "information_release": [
+        "部分真相",
+        "重新解读过去事件",
+        "伏笔回收"
+      ],
+      "style_pacing": [
+        "慢热/缓慢悬疑",
+        "心理压迫",
+        "高信息密度"
+      ]
+    },
+    "tentative": {
+      "chapter_function": [
+        "危机选择"
+      ],
+      "reader_emotion": [
+        "愤怒",
+        "震惊",
+        "同情",
+        "压抑"
+      ],
+      "conflict": [
+        "人与人冲突"
+      ],
+      "style_pacing": [
+        "对话驱动"
+      ]
+    },
+    "defined": {
+      "chapter_function": [
+        "关系推进",
+        "失败与代价",
+        "暂时胜利",
+        "信息揭示",
+        "误导读者",
+        "情绪缓冲",
+        "分支开启",
+        "分支合流",
+        "高潮准备"
+      ],
+      "reader_emotion": [
+        "快乐",
+        "失望",
+        "释然",
+        "崇高感"
+      ],
+      "character_desire": [
+        "想证明自己",
+        "想保护某人",
+        "想复仇",
+        "想知道真相",
+        "想被认可",
+        "想回到过去",
+        "想掌控局势",
+        "想放弃",
+        "想反抗"
+      ],
+      "character_arc": [
+        "从服从到反抗",
+        "从逃避到承担",
+        "从孤独到信任",
+        "从天真到成熟",
+        "从复仇到放下",
+        "从自负到谦卑",
+        "从堕落到救赎"
+      ],
+      "conflict": [
+        "人与自然/环境冲突",
+        "人与未知冲突",
+        "多冲突交叉"
+      ],
+      "information_release": [
+        "制造误解",
+        "读者知角色不知",
+        "角色知读者不知",
+        "暗线浮出"
+      ],
+      "style_pacing": [
+        "快节奏行动",
+        "温柔日常",
+        "群像切换",
+        "景观展示",
+        "低信息密度"
+      ],
+      "macro": [
+        "开端",
+        "触发事件",
+        "发展",
+        "升级",
+        "反转",
+        "危机",
+        "高潮",
+        "回落",
+        "解决",
+        "余波",
+        "分支",
+        "合流",
+        "并行线",
+        "瓶颈节点",
+        "结局变体"
+      ]
+    }
+  }
+}

@@ -1,0 +1,105 @@
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: #ece7dc;
+}
+
+body {
+  overflow: hidden;
+}
+
+.app-shell {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: #ece7dc;
+}
+
+.app-shell.has-directory {
+  grid-template-columns: 176px minmax(0, 1fr);
+}
+
+.directory-rail {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  padding: 18px 12px;
+  border-right: 1px solid rgba(120, 95, 80, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.82), rgba(233, 221, 191, 0.64)),
+    #ece7dc;
+  box-shadow: 12px 0 32px rgba(92, 70, 55, 0.08);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(142, 105, 91, 0.34) transparent;
+}
+
+.directory-title {
+  margin: 4px 8px 14px;
+  color: #3c352f;
+  font: 800 17px/1.2 "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+.directory-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.directory-item {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 0 10px;
+  background: transparent;
+  color: #6d6259;
+  text-align: left;
+  font: 720 13px/1.2 "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.directory-item:hover {
+  color: #3a332d;
+  background: rgba(255, 252, 244, 0.62);
+  border-color: rgba(180, 138, 120, 0.18);
+}
+
+.directory-item.active {
+  color: #2f2a25;
+  background: rgba(233, 221, 191, 0.86);
+  border-color: rgba(180, 138, 120, 0.32);
+  box-shadow: inset 4px 0 0 rgba(164, 119, 101, 0.72);
+}
+
+.confirmed-ui-frame {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  border: 0;
+  background: #ece7dc;
+}
+
+@media (max-width: 900px) {
+  .app-shell.has-directory {
+    grid-template-columns: 1fr;
+  }
+
+  .directory-rail {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    bottom: 10px;
+    width: 156px;
+    height: auto;
+    border: 1px solid rgba(120, 95, 80, 0.16);
+    border-radius: 12px;
+    box-shadow: 0 18px 38px rgba(92, 70, 55, 0.16);
+  }
+}
