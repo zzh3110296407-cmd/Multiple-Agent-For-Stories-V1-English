@@ -37,12 +37,6 @@ The product is designed for writers, script creators, interactive narrative desi
 - `database/contracts` - storage/API contract documentation.
 - `database/storage_foundation` - database foundation notes and migration support files.
 
-## Excluded By Design
-
-Historical phase folders, Harness caches, debug screenshots, generated runtime data, virtual environments, `node_modules`, build output, and private environment files are excluded.
-
-The large `app/frontend/public/confirmed-ui` visual draft asset set is excluded by default to keep the repository practical for GitHub and Docker build contexts. If exact ordinary-mode iframe previews are required, regenerate the package from the source workspace with `--include-design-assets`.
-
 ## Requirements
 
 Recommended:
