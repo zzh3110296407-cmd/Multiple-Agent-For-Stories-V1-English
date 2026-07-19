@@ -16,6 +16,11 @@ from app.backend.prompts.chapter_prompts import (
     build_revise_prompt,
 )
 from app.backend.services.model_gateway_service import ModelGatewayService
+from app.backend.services.model_gateway_service import ModelJsonParseError
+
+
+CHAPTER_PLAN_MAX_OUTPUT_TOKENS = 6000
+CHAPTER_PLAN_TEMPERATURE = 0.45
 
 
 def model_to_dict(model: BaseModel) -> dict[str, Any]:
@@ -120,8 +125,21 @@ class ChapterAgent:
                     else None
                 ),
             },
+            options={
+                "temperature": CHAPTER_PLAN_TEMPERATURE,
+                "max_output_tokens": CHAPTER_PLAN_MAX_OUTPUT_TOKENS,
+            },
+            project_id=(project_story_premise.project_id if project_story_premise else world_canvas.project_id),
+            agent_role="chapter",
+            service_name="ChapterAgent.generate_chapter_plan",
+            operation_name="generate_chapter_plan",
         )
-        return result.data
+        return self._require_plan_contract(
+            result.data,
+            chapter_count=chapter_count,
+            call_id=result.call_id,
+            latency_ms=result.latency_ms,
+        )
 
     def revise_chapter_plan(
         self,
@@ -194,5 +212,44 @@ class ChapterAgent:
                     else None
                 ),
             },
+            options={
+                "temperature": CHAPTER_PLAN_TEMPERATURE,
+                "max_output_tokens": CHAPTER_PLAN_MAX_OUTPUT_TOKENS,
+            },
+            project_id=(project_story_premise.project_id if project_story_premise else current_draft.project_id),
+            agent_role="chapter",
+            service_name="ChapterAgent.revise_chapter_plan",
+            operation_name="revise_chapter_plan",
         )
-        return result.data
+        return self._require_plan_contract(
+            result.data,
+            chapter_count=current_draft.chapter_count,
+            call_id=result.call_id,
+            latency_ms=result.latency_ms,
+        )
+
+    @staticmethod
+    def _require_plan_contract(
+        data: dict[str, Any],
+        *,
+        chapter_count: int,
+        call_id: str = "",
+        latency_ms: int = 0,
+    ) -> dict[str, Any]:
+        plan_data = data.get("draft") or data.get("chapter_plan") or data
+        routes = plan_data.get("chapter_routes") if isinstance(plan_data, dict) else None
+        brief = plan_data.get("current_chapter_brief") if isinstance(plan_data, dict) else None
+        if (
+            not isinstance(plan_data, dict)
+            or not isinstance(routes, list)
+            or len(routes) != chapter_count
+            or not all(isinstance(route, dict) for route in routes)
+            or not isinstance(brief, dict)
+            or not brief.get("chapter_index")
+        ):
+            raise ModelJsonParseError(
+                "Model returned valid JSON but the chapter plan contract is incomplete.",
+                call_id=call_id or None,
+                latency_ms=latency_ms,
+            )
+        return data

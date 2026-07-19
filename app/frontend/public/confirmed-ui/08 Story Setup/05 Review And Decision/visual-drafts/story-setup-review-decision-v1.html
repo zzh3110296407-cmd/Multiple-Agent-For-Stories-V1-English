@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>故事设定审查与决策 UI V1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --paper-strong: #fffaf2;
+      --ink: #2f332f;
+      --muted: #7a6e63;
+      --line: rgba(86, 74, 61, 0.16);
+      --sage: #6f7e76;
+      --sage-deep: #53665f;
+      --accent: #a97868;
+      --accent-deep: #8f5d50;
+      --amber: #c6a369;
+      --radius: 8px;
+      --shadow: 0 22px 70px rgba(72, 55, 42, 0.16);
+      --soft-shadow: 0 16px 46px rgba(73, 54, 40, 0.12);
+      font-family: "Inter", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      background: #e7e0d2;
+    }
+
+    body { overflow: hidden; }
+
+    button,
+    textarea,
+    select,
+    input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 34px 60px;
+      isolation: isolate;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92) 0%, rgba(236, 231, 220, 0.72) 46%, rgba(236, 231, 220, 0.36) 100%),
+        url("./assets/story-setup-desk-background-v1.png") center / cover no-repeat;
+      filter: saturate(0.92);
+    }
+
+    .page::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 22% 22%, rgba(255, 252, 244, 0.68), transparent 34%),
+        radial-gradient(circle at 68% 40%, rgba(180, 138, 120, 0.13), transparent 38%),
+        linear-gradient(180deg, rgba(255, 252, 244, 0.08), rgba(99, 84, 68, 0.1));
+      pointer-events: none;
+    }
+
+    .workspace {
+      width: min(1320px, calc(100vw - 120px));
+      height: calc(100vh - 68px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .status-pill {
+      min-height: 44px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      color: #4c443d;
+      box-shadow: 0 10px 32px rgba(62, 47, 36, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .ghost-button {
+      min-width: 128px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .ghost-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 620;
+    }
+
+    .status-pill {
+      min-width: 184px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #5e554d;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.12);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 432px);
+      align-items: end;
+      gap: 28px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(48px, 5vw, 74px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      font-weight: 950;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: #6b6158;
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .phase-strip {
+      min-height: 56px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.28);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 46px rgba(73, 54, 40, 0.08);
+    }
+
+    .phase-step {
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: rgba(81, 72, 64, 0.58);
+      font-size: 13px;
+      font-weight: 820;
+      transition: color 180ms ease, background 180ms ease;
+    }
+
+    .phase-step:hover {
+      color: #4a443d;
+      background: rgba(255, 252, 244, 0.38);
+    }
+
+    .phase-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 12px 26px rgba(83, 102, 95, 0.18);
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 318px;
+      gap: 28px;
+    }
+
+    .decision-panel,
+    .side-card {
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.74), rgba(236, 225, 205, 0.6)),
+        rgba(255, 252, 244, 0.42);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .decision-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 28px 30px 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #936c60;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    h2,
+    h3,
+    h4,
+    p { margin-top: 0; }
+
+    .panel-head h2 {
+      margin-bottom: 0;
+      color: #332f2a;
+      font-size: 30px;
+      line-height: 1.12;
+      font-weight: 930;
+      letter-spacing: 0;
+    }
+
+    .panel-head p {
+      max-width: 720px;
+      margin: 10px 0 0;
+      color: #6f6358;
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 560;
+    }
+
+    .readiness-chip {
+      flex: 0 0 auto;
+      display: grid;
+      gap: 6px;
+      min-width: 150px;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.46);
+      text-align: right;
+    }
+
+    .readiness-chip strong {
+      color: var(--sage-deep);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 940;
+    }
+
+    .readiness-chip span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .decision-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 18px;
+      padding: 0 30px 18px;
+    }
+
+    .checklist,
+    .decision-workspace {
+      min-height: 0;
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .checklist {
+      padding: 16px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 11px;
+      padding: 12px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.36);
+      border: 1px solid rgba(86, 74, 61, 0.09);
+    }
+
+    .check-dot {
+      width: 10px;
+      height: 10px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .check-item.warn .check-dot {
+      background: var(--amber);
+      box-shadow: 0 0 0 4px rgba(198, 163, 105, 0.12);
+    }
+
+    .check-item strong {
+      display: block;
+      color: #3c3731;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .check-item span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .decision-workspace {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 20px;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .decision-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .decision-title-row h3 {
+      margin: 0;
+      color: #332f2a;
+      font-size: 26px;
+      line-height: 1.16;
+      font-weight: 930;
+    }
+
+    .decision-title-row p {
+      margin: 8px 0 0;
+      color: #655b52;
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 560;
+    }
+
+    .decision-badge {
+      flex: 0 0 auto;
+      padding: 9px 12px;
+      border-radius: 7px;
+      border: 1px solid rgba(111, 126, 118, 0.22);
+      background: rgba(111, 126, 118, 0.1);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .decision-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .decision-option {
+      min-height: 98px;
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      color: #51483f;
+      text-align: left;
+      padding: 13px;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .decision-option:hover {
+      transform: translateY(-1px);
+      border-color: rgba(169, 120, 104, 0.26);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .decision-option.active {
+      border-color: rgba(111, 126, 118, 0.36);
+      background: rgba(255, 252, 244, 0.76);
+      box-shadow: 0 18px 36px rgba(74, 54, 40, 0.12);
+    }
+
+    .decision-option strong {
+      color: #3c3731;
+      font-size: 16px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .decision-option span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 610;
+    }
+
+    .decision-option b {
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .note-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .note-card,
+    .result-card {
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      padding: 12px;
+    }
+
+    .note-card label,
+    .result-card h4 {
+      display: block;
+      margin: 0 0 10px;
+      color: #433b34;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 64px;
+      resize: none;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.62);
+      color: #453e37;
+      padding: 12px;
+      outline: 0;
+      line-height: 1.55;
+      font-size: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 126, 118, 0.52);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .result-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 600;
+    }
+
+    .decision-footer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 30px 24px;
+      border-top: 1px solid rgba(86, 74, 61, 0.08);
+    }
+
+    .footer-copy {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.62;
+      font-weight: 560;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .soft-button,
+    .primary-action {
+      min-height: 46px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 850;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    .soft-button {
+      min-width: 104px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      background: rgba(255, 252, 244, 0.42);
+      color: #574e46;
+    }
+
+    .soft-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+    }
+
+    .primary-action {
+      min-width: 160px;
+      padding: 0 20px;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #fffaf2;
+      box-shadow: 0 18px 38px rgba(142, 103, 91, 0.24);
+    }
+
+    .primary-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 44px rgba(142, 103, 91, 0.3);
+    }
+
+    .primary-action:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      filter: saturate(0.78);
+      box-shadow: none;
+    }
+
+    .primary-action:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .primary-action.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 18px 38px rgba(83, 102, 95, 0.22);
+    }
+
+    .side {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 18px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .side-card h3 {
+      margin: 0;
+      color: #332f2a;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 930;
+    }
+
+    .side-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 560;
+    }
+
+    .summary-list,
+    .safety-list {
+      display: grid;
+      gap: 10px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.35);
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 740;
+    }
+
+    .summary-item b {
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .safety-list li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      color: #5f554d;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .decision-id {
+      min-height: 56px;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.35);
+      border: 1px solid rgba(86, 74, 61, 0.1);
+    }
+
+    .decision-id span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .decision-id b {
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 230px;
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      background: rgba(48, 45, 41, 0.88);
+      color: #fffaf2;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: 0 18px 42px rgba(40, 30, 24, 0.2);
+      transform: translate(-50%, 16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body { overflow: auto; }
+      .page { padding: 24px 21px; }
+      .workspace {
+        width: calc(100vw - 42px);
+        height: auto;
+        min-height: calc(100vh - 48px);
+      }
+      .hero,
+      .layout,
+      .decision-body {
+        grid-template-columns: 1fr;
+      }
+      .side { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 840px) {
+      .topbar,
+      .note-area,
+      .decision-footer {
+        grid-template-columns: 1fr;
+      }
+      .phase-strip,
+      .decision-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .side { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="workspace" aria-label="故事设定审查与决策">
+      <header class="topbar">
+        <button class="ghost-button" type="button" id="backButton">返回审阅</button>
+        <div class="breadcrumb">主页 / 当前项目 / 故事设定 / 审查与决策</div>
+        <div class="status-pill"><span class="status-dot"></span><span id="pageState">等待决定</span></div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h1>故事设定</h1>
+          <p>草案、缺失信息和安全边界已经准备好。这里记录你对设定草案的决定；确认后仍只进入交接准备，不会直接写入最终故事事实。</p>
+        </div>
+        <nav class="phase-strip" aria-label="故事设定阶段">
+          <button class="phase-step" type="button" data-phase="entry">设定入口</button>
+          <button class="phase-step" type="button" data-phase="generating">生成草案</button>
+          <button class="phase-step" type="button" data-phase="review">审阅补充</button>
+          <button class="phase-step active" type="button" data-phase="handoff">决策交接</button>
+        </nav>
+      </section>
+
+      <section class="layout">
+        <section class="decision-panel">
+          <header class="panel-head">
+            <div>
+              <p class="eyebrow">审查与决策</p>
+              <h2>记录草案决定</h2>
+              <p>请选择一个决定类型。确认交接会进入下一步交接准备；修订、延后和拒绝只记录当前草案状态。</p>
+            </div>
+            <div class="readiness-chip" aria-label="审查状态">
+              <strong id="readinessTitle">通过</strong>
+              <span id="readinessCopy">草案可决策</span>
+            </div>
+          </header>
+
+          <div class="decision-body">
+            <aside class="checklist" aria-label="决策前检查">
+              <div class="check-item">
+                <span class="check-dot"></span>
+                <div><strong>草案模块完整</strong><span>世界、角色、Framework 与章节路线均已生成。</span></div>
+              </div>
+              <div class="check-item">
+                <span class="check-dot"></span>
+                <div><strong>缺失信息已补齐</strong><span>3 个问题已保存回答，可回到审阅。</span></div>
+              </div>
+              <div class="check-item">
+                <span class="check-dot"></span>
+                <div><strong>安全报告通过</strong><span>没有写入最终故事事实。</span></div>
+              </div>
+              <div class="check-item warn">
+                <span class="check-dot"></span>
+                <div><strong>仍需下游确认</strong><span>目标工作台仍要逐项确认正式内容。</span></div>
+              </div>
+            </aside>
+
+            <section class="decision-workspace">
+              <header class="decision-title-row">
+                <div>
+                  <h3 id="decisionTitle">选择决定类型</h3>
+                  <p id="decisionCopy">当前还没有记录决定。选择后可以填写备注，再点击记录决定。</p>
+                </div>
+                <span class="decision-badge" id="decisionBadge">未选择</span>
+              </header>
+
+              <div class="decision-grid" role="radiogroup" aria-label="决定类型">
+                <button class="decision-option" type="button" role="radio" aria-checked="false" data-decision="confirm_for_handoff">
+                  <b>推荐</b>
+                  <strong>确认为交接草案</strong>
+                  <span>草案方向可进入下一步交接准备，下游工作台仍需确认正式内容。</span>
+                </button>
+                <button class="decision-option" type="button" role="radio" aria-checked="false" data-decision="request_revision">
+                  <b>需要修改</b>
+                  <strong>请求修订</strong>
+                  <span>记录需要调整的方向，后续重新生成或返回前序补充。</span>
+                </button>
+                <button class="decision-option" type="button" role="radio" aria-checked="false" data-decision="defer">
+                  <b>暂缓</b>
+                  <strong>延后决定</strong>
+                  <span>保留草案，不创建交接，稍后继续审查。</span>
+                </button>
+                <button class="decision-option" type="button" role="radio" aria-checked="false" data-decision="reject">
+                  <b>放弃</b>
+                  <strong>拒绝草案</strong>
+                  <span>记录拒绝，不进入交接准备。</span>
+                </button>
+              </div>
+
+              <section class="note-area">
+                <div class="note-card">
+                  <label for="decisionNote" id="noteLabel">安全备注</label>
+                  <textarea id="decisionNote" aria-label="决定备注">确认当前故事设定草案作为交接候选；下游世界画布、角色、Framework 与章节计划仍需分别确认。</textarea>
+                </div>
+                <aside class="result-card">
+                  <h4>决定效果</h4>
+                  <p id="resultCopy">选择一个决定后，这里会显示记录结果和下一步。</p>
+                </aside>
+              </section>
+            </section>
+          </div>
+
+          <footer class="decision-footer">
+            <div class="footer-copy" id="footerCopy">该页只调用“创建故事设定决定”。创建交接、初始化当前项目工作台留给下一页。</div>
+            <div class="action-row">
+              <button class="soft-button" type="button" id="resetButton">重选</button>
+              <button class="primary-action" type="button" id="recordButton" disabled>记录决定</button>
+              <button class="primary-action ready" type="button" id="nextButton" disabled>进入交接准备</button>
+            </div>
+          </footer>
+        </section>
+
+        <aside class="side" aria-label="审查辅助信息">
+          <section class="side-card">
+            <h3>草案摘要</h3>
+            <p>最终决定前的状态快照。</p>
+            <div class="summary-list">
+              <div class="summary-item"><span>草案状态</span><b id="draftSummaryState">可审查</b></div>
+              <div class="summary-item"><span>缺失问题</span><b>已补齐</b></div>
+              <div class="summary-item"><span>目标方向</span><b>世界画布</b></div>
+              <div class="summary-item"><span>写入范围</span><b>仅草案</b></div>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>安全边界</h3>
+            <p>决定记录不能越过这些边界。</p>
+            <ul class="safety-list">
+              <li><span class="dot"></span><span>不确认最终世界画布</span></li>
+              <li><span class="dot"></span><span>不确认最终角色</span></li>
+              <li><span class="dot"></span><span>不激活最终 Framework</span></li>
+              <li><span class="dot"></span><span>不确认章节计划</span></li>
+              <li><span class="dot"></span><span>不写入最终故事事实</span></li>
+            </ul>
+          </section>
+
+          <section class="side-card">
+            <h3>决定记录</h3>
+            <p>记录后生成决定 ID，供下一步交接使用。</p>
+            <div class="decision-id">
+              <span>当前决定</span>
+              <b id="decisionId">尚未记录</b>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const decisionMeta = {
+        confirm_for_handoff: {
+          title: "确认为交接草案",
+          badge: "确认交接",
+          copy: "记录后可以进入交接准备。下游工作台仍需要逐项确认正式内容。",
+          result: "将记录确认决定，下一步创建故事设定交接。",
+          note: "确认当前故事设定草案作为交接候选；下游世界画布、角色、Framework 与章节计划仍需分别确认。",
+          next: true,
+          readinessTitle: "通过",
+          readinessCopy: "准备交接",
+          summaryState: "已确认交接",
+          recordLabel: "确认交接决定已生成",
+          pageState: "确认已记录"
+        },
+        request_revision: {
+          title: "请求修订",
+          badge: "修订请求",
+          copy: "记录需要修改的方向，后续可以带着修订说明重新生成草案。",
+          result: "将记录修订请求，不创建交接。",
+          note: "请调整草案中过于模糊的范围，并强化主角进入事件的理由。",
+          next: false,
+          readinessTitle: "需修订",
+          readinessCopy: "不进入交接",
+          summaryState: "修订请求",
+          recordLabel: "修订请求已生成",
+          pageState: "修订已记录"
+        },
+        defer: {
+          title: "延后决定",
+          badge: "暂缓",
+          copy: "保留当前草案，稍后继续审查，不创建交接。",
+          result: "将记录延后状态，草案保持候选。",
+          note: "暂时延后决定，等待用户补充更多故事方向。",
+          next: false,
+          readinessTitle: "暂缓",
+          readinessCopy: "等待后续审阅",
+          summaryState: "延后决定",
+          recordLabel: "延后记录已生成",
+          pageState: "延后已记录"
+        },
+        reject: {
+          title: "拒绝草案",
+          badge: "拒绝",
+          copy: "记录拒绝决定，该草案不会进入交接准备。",
+          result: "将记录拒绝状态，不创建交接。",
+          note: "拒绝当前草案方向，后续需要重新整理故事设定。",
+          next: false,
+          readinessTitle: "已拒绝",
+          readinessCopy: "不进入交接",
+          summaryState: "已拒绝",
+          recordLabel: "拒绝记录已生成",
+          pageState: "拒绝已记录"
+        }
+      };
+
+      let selectedDecision = "";
+      let recorded = false;
+      const toast = document.getElementById("toast");
+      const recordButton = document.getElementById("recordButton");
+      const nextButton = document.getElementById("nextButton");
+      const note = document.getElementById("decisionNote");
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+
+      function setDecision(key) {
+        selectedDecision = key;
+        recorded = false;
+        const meta = decisionMeta[key];
+        document.querySelectorAll(".decision-option").forEach((item) => {
+          const active = item.dataset.decision === key;
+          item.classList.toggle("active", active);
+          item.setAttribute("aria-checked", String(active));
+        });
+        document.getElementById("decisionTitle").textContent = meta.title;
+        document.getElementById("decisionCopy").textContent = meta.copy;
+        document.getElementById("decisionBadge").textContent = meta.badge;
+        document.getElementById("resultCopy").textContent = meta.result;
+        document.getElementById("noteLabel").textContent = key === "request_revision" ? "修订说明" : "安全备注";
+        document.getElementById("readinessTitle").textContent = "待记录";
+        document.getElementById("readinessCopy").textContent = meta.badge;
+        document.getElementById("draftSummaryState").textContent = meta.title;
+        note.value = meta.note;
+        recordButton.disabled = false;
+        nextButton.disabled = true;
+        document.getElementById("decisionId").textContent = "尚未记录";
+        document.getElementById("pageState").textContent = "等待记录";
+        recordButton.textContent = "记录决定";
+        showToast(`已选择：${meta.title}`);
+      }
+
+      document.querySelectorAll(".decision-option").forEach((button) => {
+        button.addEventListener("click", () => setDecision(button.dataset.decision));
+      });
+
+      recordButton.addEventListener("click", () => {
+        if (!selectedDecision) {
+          showToast("请先选择决定类型");
+          return;
+        }
+        const meta = decisionMeta[selectedDecision];
+        recorded = true;
+        document.getElementById("decisionId").textContent = meta.recordLabel;
+        document.getElementById("pageState").textContent = meta.pageState;
+        document.getElementById("readinessTitle").textContent = meta.readinessTitle;
+        document.getElementById("readinessCopy").textContent = meta.readinessCopy;
+        document.getElementById("draftSummaryState").textContent = meta.summaryState;
+        recordButton.textContent = "已记录";
+        recordButton.disabled = true;
+        if (meta.next) {
+          nextButton.disabled = false;
+          document.getElementById("footerCopy").textContent = "确认决定已记录。下一步可以创建交接，但仍不会直接确认最终故事事实。";
+        } else {
+          nextButton.disabled = true;
+          document.getElementById("footerCopy").textContent = "该决定已记录。当前草案不会进入交接准备。";
+        }
+        showToast("已记录决定");
+      });
+
+      nextButton.addEventListener("click", () => {
+        if (!recorded || selectedDecision !== "confirm_for_handoff") {
+          return;
+        }
+        showToast("进入交接准备");
+      });
+
+      document.getElementById("resetButton").addEventListener("click", () => {
+        selectedDecision = "";
+        recorded = false;
+        document.querySelectorAll(".decision-option").forEach((item) => {
+          item.classList.remove("active");
+          item.setAttribute("aria-checked", "false");
+        });
+        document.getElementById("decisionTitle").textContent = "选择决定类型";
+        document.getElementById("decisionCopy").textContent = "当前还没有记录决定。选择后可以填写备注，再点击记录决定。";
+        document.getElementById("decisionBadge").textContent = "未选择";
+        document.getElementById("resultCopy").textContent = "选择一个决定后，这里会显示记录结果和下一步。";
+        note.value = "";
+        recordButton.disabled = true;
+        nextButton.disabled = true;
+        document.getElementById("decisionId").textContent = "尚未记录";
+        document.getElementById("pageState").textContent = "等待决定";
+        document.getElementById("readinessTitle").textContent = "通过";
+        document.getElementById("readinessCopy").textContent = "草案可决策";
+        document.getElementById("draftSummaryState").textContent = "可审查";
+        document.getElementById("footerCopy").textContent = "该页只调用“创建故事设定决定”。创建交接、初始化当前项目工作台留给下一页。";
+        showToast("已重置决定");
+      });
+
+      document.querySelectorAll("[data-phase]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const messages = {
+            entry: "返回设定入口",
+            generating: "返回草案生成",
+            review: "返回审阅补充",
+            handoff: "当前处于决策与交接"
+          };
+          showToast(messages[button.dataset.phase]);
+        });
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        showToast("返回草案审阅");
+      });
+    })();
+  </script>
+</body>
+</html>

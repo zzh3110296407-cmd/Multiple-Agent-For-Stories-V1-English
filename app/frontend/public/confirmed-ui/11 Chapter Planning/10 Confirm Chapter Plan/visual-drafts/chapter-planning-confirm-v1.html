@@ -1,0 +1,1223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 确认章节计划 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --ink: #28312b;
+      --muted: #756b60;
+      --quiet: #9b8d7f;
+      --line: rgba(116, 92, 66, 0.2);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92), rgba(236, 231, 220, 0.62) 47%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.36), rgba(176, 138, 107, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1400px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr) 172px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .check-card,
+    .chapter-pill {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .check-card:hover,
+    .chapter-pill:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .status-dot.ready {
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 123, 104, 0.16);
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 14px;
+      line-height: 1.62;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 640px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 354px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 20px 28px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .summary-grid {
+      min-width: 470px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-height: 58px;
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 8px;
+      color: #3c4039;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .confirm-body {
+      min-height: 0;
+      padding: 14px 28px 12px;
+      display: grid;
+      grid-template-columns: 332px minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .check-panel,
+    .confirm-panel {
+      min-height: 0;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 84% 12%, rgba(200, 168, 104, 0.1), transparent 34%),
+        rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      overflow: hidden;
+    }
+
+    .check-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .panel-subhead {
+      padding: 12px 14px 9px;
+      border-bottom: 1px solid rgba(116, 92, 66, 0.14);
+    }
+
+    .panel-subhead h3 {
+      margin: 0;
+      color: #343932;
+      font-size: 18px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .panel-subhead p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .check-list {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .check-card {
+      width: 100%;
+      min-height: 72px;
+      padding: 10px 12px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      border-color: rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 8px 18px rgba(75, 55, 34, 0.06);
+    }
+
+    .check-card.done {
+      border-color: rgba(111, 123, 104, 0.24);
+      background: rgba(241, 246, 240, 0.64);
+    }
+
+    .check-mark {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(116, 92, 66, 0.12);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-top: 2px;
+    }
+
+    .check-card.done .check-mark {
+      background: rgba(111, 123, 104, 0.18);
+      color: var(--sage-deep);
+    }
+
+    .check-card strong {
+      display: block;
+      color: #363a34;
+      font-size: 13px;
+      line-height: 1.34;
+      font-weight: 900;
+    }
+
+    .check-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 540;
+    }
+
+    .confirm-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .confirm-scroll {
+      min-height: 0;
+      height: 100%;
+      overflow: auto;
+      padding: 9px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .review-grid {
+      flex: 1;
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto auto auto minmax(148px, 1fr);
+      gap: 7px;
+    }
+
+    .info-block,
+    .note-box,
+    .result-box {
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.54);
+    }
+
+    .info-block.wide,
+    .note-box,
+    .result-box {
+      grid-column: 1 / -1;
+    }
+
+    .note-box {
+      min-height: 148px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-block span,
+    .note-box span,
+    .result-box span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 840;
+    }
+
+    .info-block strong,
+    .note-box strong,
+    .result-box strong {
+      display: block;
+      margin-top: 4px;
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.42;
+      font-weight: 900;
+    }
+
+    .info-block p,
+    .note-box p,
+    .result-box p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .chapter-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 6px;
+    }
+
+    .chapter-preview-block .chapter-strip {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+    }
+
+    .chapter-preview-block strong {
+      margin-top: 7px;
+    }
+
+    .chapter-pill {
+      min-height: 28px;
+      padding: 0 10px;
+      border-color: rgba(116, 92, 66, 0.12);
+      box-shadow: none;
+      background: rgba(255, 252, 244, 0.56);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .chapter-preview-block .chapter-pill {
+      flex: 0 0 auto;
+      min-width: 92px;
+    }
+
+    .chapter-pill.current {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+    }
+
+    .chapter-pill:focus-visible {
+      outline: 3px solid rgba(111, 126, 131, 0.24);
+      outline-offset: 2px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      resize: none;
+      margin-top: 6px;
+      padding: 9px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.2);
+      background: rgba(255, 252, 244, 0.62);
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.5;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    .note-box textarea {
+      flex: 1;
+      min-height: 94px;
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 126, 131, 0.42);
+      box-shadow: 0 0 0 4px rgba(111, 126, 131, 0.12);
+    }
+
+    .note-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .result-box {
+      display: none;
+      border-color: rgba(111, 123, 104, 0.24);
+      background: rgba(241, 246, 240, 0.58);
+    }
+
+    .result-box.show {
+      display: block;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 28px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 16px 36px rgba(86, 98, 79, 0.22);
+    }
+
+    .primary-button:disabled {
+      color: rgba(255, 252, 244, 0.78);
+      border-color: rgba(255, 252, 244, 0.38);
+      background: rgba(180, 138, 120, 0.32);
+      box-shadow: none;
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .state-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.14);
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .state-pill.ready {
+      background: rgba(111, 123, 104, 0.14);
+      color: var(--sage-deep);
+    }
+
+    .health-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .health-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .health-item.ready {
+      border-color: rgba(111, 123, 104, 0.22);
+      background: rgba(241, 246, 240, 0.56);
+    }
+
+    .health-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .health-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(116, 92, 66, 0.12);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .health-item.ready .mini-dot {
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+    }
+
+    .handoff-card {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .handoff-card strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .handoff-card p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .confirm-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 112px;
+      }
+
+      .summary-grid {
+        min-width: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .confirm-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .summary-grid,
+      .review-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回再次审阅</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 确认章节计划</div>
+      <div class="model-pill"><span class="status-dot" id="top-dot"></span><span id="top-state">待确认</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>确认章节路线、当前章 brief、场景数和问题处理都已就绪。确认后，后续场景写作会以这份章节计划为基础。</p>
+      </div>
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">章节路线</button>
+        <button class="stage-button" type="button">场景数与修复</button>
+        <button class="stage-button" type="button">问题处理</button>
+        <button class="stage-button" type="button">修订计划</button>
+        <button class="stage-button active" type="button">确认计划</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <header class="panel-head">
+          <div>
+            <p class="eyebrow">确认章节计划</p>
+            <h2>最终确认</h2>
+            <p class="hint">确认后章节计划会成为后续场景写作的下游基础。</p>
+          </div>
+          <div class="summary-grid" aria-label="确认摘要">
+            <div class="summary-item">
+              <span>章节总数</span>
+              <strong>12 章</strong>
+            </div>
+            <div class="summary-item">
+              <span>当前章</span>
+              <strong>第 3 章</strong>
+            </div>
+            <div class="summary-item">
+              <span>问题状态</span>
+              <strong id="summary-issues">待确认</strong>
+            </div>
+            <div class="summary-item">
+              <span>确认状态</span>
+              <strong id="summary-state">未确认</strong>
+            </div>
+          </div>
+        </header>
+
+        <div class="confirm-body">
+          <section class="check-panel" aria-label="确认清单">
+            <div class="panel-subhead">
+              <h3>确认清单</h3>
+              <p>逐项确认，避免误把未完成草案交给场景写作。</p>
+            </div>
+            <div class="check-list" id="check-list"></div>
+          </section>
+
+          <section class="confirm-panel" aria-label="确认详情">
+            <div class="panel-subhead">
+              <h3>确认内容</h3>
+              <p>这份章节计划将作为后续场景生成的事实边界。</p>
+            </div>
+            <div class="confirm-scroll">
+              <div class="review-grid">
+                <div class="info-block wide chapter-preview-block">
+                  <span>章节预览</span>
+                  <div class="chapter-strip" id="chapter-strip" aria-label="章节片段"></div>
+                  <strong id="chapter-preview-path">港口晚宴 → 失踪巡夜人 → 钟楼证词 → 潮汐禁区 → 商会账本 → 旧贵族回信</strong>
+                </div>
+                <div class="info-block">
+                  <span>章节路线</span>
+                  <strong>12 章路线已审阅</strong>
+                </div>
+                <div class="info-block">
+                  <span>当前章 brief</span>
+                  <strong id="current-brief-value">第 3 章 · 钟楼证词</strong>
+                </div>
+                <div class="info-block">
+                  <span>场景数</span>
+                  <strong id="current-scene-count-value">5 场景</strong>
+                </div>
+                <div class="info-block">
+                  <span>验证状态</span>
+                  <strong>无阻塞项</strong>
+                </div>
+
+                <div class="note-box">
+                  <span>确认说明</span>
+                  <strong>可选，写给后续工作流</strong>
+                  <textarea id="confirm-note" placeholder="例如：确认第 3 章以钟楼证词为当前章，场景写作阶段保留调查压力，不提前公开协议真相。"></textarea>
+                  <div class="note-meta">
+                    <span id="note-count">0 字</span>
+                    <span>确认说明会随本次确认一起保存。</span>
+                  </div>
+                </div>
+
+                <div class="result-box" id="result-box">
+                  <span>确认结果</span>
+                  <strong>章节计划已确认</strong>
+                  <p>后续场景写作可以读取当前章 brief、章节路线和场景数。</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="action-note">完成确认清单后，可以确认章节计划。</p>
+          <div class="button-group">
+            <button class="soft-button" id="review-button" type="button">返回审阅</button>
+            <button class="soft-button" id="select-all-button" type="button">全部确认</button>
+            <button class="primary-button" id="confirm-button" type="button" disabled>确认章节计划</button>
+            <button class="primary-button" id="next-button" type="button" disabled>进入场景写作</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="确认状态">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">确认状态</p>
+            <h2 id="side-title">等待确认</h2>
+          </div>
+          <span class="state-pill" id="state-pill">未确认</span>
+        </div>
+
+        <div class="health-list">
+          <div class="health-item" id="health-route">
+            <strong><span class="mini-dot">1</span>章节路线</strong>
+            <p id="health-route-copy">等待用户确认路线已审阅。</p>
+          </div>
+          <div class="health-item" id="health-brief">
+            <strong><span class="mini-dot">2</span>当前章 brief</strong>
+            <p id="health-brief-copy">等待用户确认当前章 brief 可用于场景写作。</p>
+          </div>
+          <div class="health-item" id="health-count">
+            <strong><span class="mini-dot">3</span>场景数</strong>
+            <p id="health-count-copy">等待用户确认场景数已经保存。</p>
+          </div>
+          <div class="health-item" id="health-issues">
+            <strong><span class="mini-dot">4</span>问题处理</strong>
+            <p id="health-issues-copy">等待用户确认阻塞、警告和确认项已处理。</p>
+          </div>
+        </div>
+
+        <div class="handoff-card">
+          <strong>后续动作</strong>
+          <p>确认后进入场景写作。场景写作将读取当前章 brief、已确认章节路线和当前章场景数。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const checklist = [
+      {
+        id: "route",
+        title: "章节路线已审阅",
+        copy: "12 章路线方向正确，没有需要继续修订的路线问题。",
+        healthId: "health-route",
+        healthCopyId: "health-route-copy",
+        doneCopy: "章节路线已确认。"
+      },
+      {
+        id: "brief",
+        title: "当前章 brief 可用",
+        copy: "第 3 章目标、冲突、参与角色和场景摘要可以进入场景写作。",
+        healthId: "health-brief",
+        healthCopyId: "health-brief-copy",
+        doneCopy: "当前章 brief 已确认。"
+      },
+      {
+        id: "count",
+        title: "场景数已保存",
+        copy: "当前章场景数已保存为 5，后续会生成对应场景节点。",
+        healthId: "health-count",
+        healthCopyId: "health-count-copy",
+        doneCopy: "场景数已确认。"
+      },
+      {
+        id: "issues",
+        title: "问题已处理",
+        copy: "阻塞、警告和用户确认项都已完成处理。",
+        healthId: "health-issues",
+        healthCopyId: "health-issues-copy",
+        doneCopy: "问题处理已确认。"
+      }
+    ];
+
+    const checkList = document.getElementById("check-list");
+    const confirmNote = document.getElementById("confirm-note");
+    const noteCount = document.getElementById("note-count");
+    const confirmButton = document.getElementById("confirm-button");
+    const nextButton = document.getElementById("next-button");
+    const selectAllButton = document.getElementById("select-all-button");
+    const resultBox = document.getElementById("result-box");
+    const actionNote = document.getElementById("action-note");
+    const summaryIssues = document.getElementById("summary-issues");
+    const summaryState = document.getElementById("summary-state");
+    const topState = document.getElementById("top-state");
+    const topDot = document.getElementById("top-dot");
+    const sideTitle = document.getElementById("side-title");
+    const statePill = document.getElementById("state-pill");
+    const chapterStrip = document.getElementById("chapter-strip");
+    const currentBriefValue = document.getElementById("current-brief-value");
+    const currentSceneCountValue = document.getElementById("current-scene-count-value");
+    const chapterPreviewPath = document.getElementById("chapter-preview-path");
+
+    let confirmed = false;
+    let activePreviewChapter = 3;
+
+    const previewChapters = [
+      {
+        index: 1,
+        title: "港口晚宴",
+        scenes: 4,
+        status: "已确认",
+        focus: "港口权力结构、火漆印章线索和晚宴冲突已经进入路线。"
+      },
+      {
+        index: 2,
+        title: "失踪巡夜人",
+        scenes: 5,
+        status: "已确认",
+        focus: "巡夜制度失效，证词链被人提前处理。"
+      },
+      {
+        index: 3,
+        title: "钟楼证词",
+        scenes: 5,
+        status: "当前章",
+        focus: "火漆印章与钟楼证词交叉，主角团获得推进方向。"
+      },
+      {
+        index: 4,
+        title: "潮汐禁区",
+        scenes: 5,
+        status: "草案",
+        focus: "调查进入港口边界，禁区规则成为新的阻力。"
+      },
+      {
+        index: 5,
+        title: "商会账本",
+        scenes: 4,
+        status: "草案",
+        focus: "商会从被调查对象变成主动诱导者。"
+      },
+      {
+        index: 6,
+        title: "旧贵族回信",
+        scenes: 5,
+        status: "草案",
+        focus: "旧贵族正式回应，阵营博弈开始公开化。"
+      }
+    ];
+
+    function selectedPreviewChapter() {
+      return previewChapters.find((chapter) => chapter.index === activePreviewChapter) || previewChapters[2];
+    }
+
+    function renderChapterPreview() {
+      const chapter = selectedPreviewChapter();
+      currentBriefValue.textContent = `第 ${chapter.index} 章 · ${chapter.title}`;
+      currentSceneCountValue.textContent = `${chapter.scenes} 场景`;
+      chapterPreviewPath.textContent = `${chapter.status} · ${chapter.focus}`;
+      chapterStrip.innerHTML = "";
+      previewChapters.forEach((item) => {
+        const button = document.createElement("button");
+        button.className = `chapter-pill${item.index === activePreviewChapter ? " current" : ""}`;
+        button.type = "button";
+        button.dataset.index = String(item.index);
+        button.setAttribute("aria-pressed", item.index === activePreviewChapter ? "true" : "false");
+        button.textContent = `${item.index} ${item.title}`;
+        chapterStrip.appendChild(button);
+      });
+    }
+
+    function renderChecklist() {
+      checkList.innerHTML = "";
+      checklist.forEach((item) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `check-card${item.done ? " done" : ""}`;
+        card.dataset.id = item.id;
+        card.innerHTML = `
+          <span class="check-mark">${item.done ? "✓" : ""}</span>
+          <span>
+            <strong>${item.title}</strong>
+            <span>${item.copy}</span>
+          </span>
+        `;
+        checkList.appendChild(card);
+      });
+    }
+
+    function updateHealth() {
+      checklist.forEach((item) => {
+        const health = document.getElementById(item.healthId);
+        const copy = document.getElementById(item.healthCopyId);
+        health.classList.toggle("ready", Boolean(item.done));
+        copy.textContent = item.done ? item.doneCopy : `等待用户确认${item.title.replace("已", "")}。`;
+      });
+    }
+
+    function allChecked() {
+      return checklist.every((item) => item.done);
+    }
+
+    function updateState() {
+      const ready = allChecked();
+      const noteLength = confirmNote.value.trim().length;
+      noteCount.textContent = `${noteLength} 字`;
+      confirmButton.disabled = !ready || confirmed;
+      confirmButton.classList.toggle("ready", ready && !confirmed);
+      nextButton.disabled = !confirmed;
+      nextButton.classList.toggle("ready", confirmed);
+      summaryIssues.textContent = ready ? "已处理" : "待确认";
+      summaryState.textContent = confirmed ? "已确认" : ready ? "可确认" : "未确认";
+      topState.textContent = confirmed ? "已确认" : ready ? "可确认" : "待确认";
+      sideTitle.textContent = confirmed ? "可以进入场景写作" : ready ? "可以确认" : "等待确认";
+      statePill.textContent = confirmed ? "已确认" : ready ? "可确认" : "未确认";
+      topDot.classList.toggle("ready", confirmed || ready);
+      statePill.classList.toggle("ready", confirmed || ready);
+      resultBox.classList.toggle("show", confirmed);
+      actionNote.textContent = confirmed
+        ? "章节计划已确认，可以进入场景写作。"
+        : ready
+          ? "确认清单已完成，可以确认章节计划。"
+          : "完成确认清单后，可以确认章节计划。";
+      updateHealth();
+      renderChecklist();
+    }
+
+    checkList.addEventListener("click", (event) => {
+      const card = event.target.closest(".check-card");
+      if (!card || confirmed) return;
+      const item = checklist.find((entry) => entry.id === card.dataset.id);
+      if (!item) return;
+      item.done = !item.done;
+      updateState();
+    });
+
+    chapterStrip.addEventListener("click", (event) => {
+      const button = event.target.closest(".chapter-pill");
+      if (!button) return;
+      activePreviewChapter = Number(button.dataset.index);
+      renderChapterPreview();
+    });
+
+    confirmNote.addEventListener("input", updateState);
+
+    selectAllButton.addEventListener("click", () => {
+      if (confirmed) return;
+      checklist.forEach((item) => {
+        item.done = true;
+      });
+      updateState();
+    });
+
+    confirmButton.addEventListener("click", () => {
+      if (!allChecked()) return;
+      confirmButton.textContent = "确认中";
+      window.setTimeout(() => {
+        confirmed = true;
+        confirmButton.textContent = "已确认";
+        updateState();
+      }, 520);
+    });
+
+    nextButton.addEventListener("click", () => {
+      if (!confirmed) return;
+      actionNote.textContent = "这里将进入场景写作页面。";
+    });
+
+    renderChapterPreview();
+    updateState();
+  </script>
+</body>
+</html>

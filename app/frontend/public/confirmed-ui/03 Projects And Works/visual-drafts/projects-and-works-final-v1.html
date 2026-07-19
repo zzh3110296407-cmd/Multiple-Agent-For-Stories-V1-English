@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>故事档案馆 - Projects And Works V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: #f7f1e6;
+      --paper-2: #efe4cf;
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --ink: #302c28;
+      --muted: #7c7068;
+      --line: rgba(130, 102, 82, 0.16);
+      --white: rgba(255, 252, 244, 0.72);
+      --shadow: 0 22px 52px rgba(82, 63, 50, 0.15);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 14%, rgba(255, 250, 239, 0.72), transparent 30%),
+        radial-gradient(circle at 88% 76%, rgba(180, 138, 120, 0.17), transparent 33%),
+        linear-gradient(135deg, #ece7dc 0%, #efe8da 48%, #e7ddca 100%);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      opacity: 0.16;
+      pointer-events: none;
+      background-image:
+        linear-gradient(90deg, rgba(70, 52, 40, 0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(70, 52, 40, 0.035) 1px, transparent 1px);
+      background-size: 36px 36px, 44px 44px;
+    }
+
+    .shelf-shadow {
+      position: absolute;
+      right: -60px;
+      top: 110px;
+      width: 520px;
+      height: 760px;
+      opacity: 0.19;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent 0 18%, rgba(147, 110, 84, 0.22) 18% 19%, transparent 19% 36%, rgba(147, 110, 84, 0.16) 36% 37%, transparent 37% 54%, rgba(147, 110, 84, 0.18) 54% 55%, transparent 55%),
+        linear-gradient(180deg, transparent 0 16%, rgba(147, 110, 84, 0.16) 16% 17%, transparent 17% 34%, rgba(147, 110, 84, 0.14) 34% 35%, transparent 35% 52%, rgba(147, 110, 84, 0.16) 52% 53%, transparent 53%);
+      filter: blur(0.2px);
+      transform: rotate(-2deg);
+    }
+
+    .page {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      padding: 50px 74px 46px;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 46px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .back,
+    .theme {
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.52);
+      background: rgba(247, 241, 230, 0.54);
+      color: #4d443e;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+    }
+
+    .back {
+      min-width: 112px;
+      cursor: pointer;
+    }
+
+    .theme {
+      min-width: 176px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+    }
+
+    .crumb {
+      color: #83776e;
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .headline {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-left: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #2f2d29;
+      font-size: 54px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      font-weight: 880;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: #756a62;
+      font-size: 16px;
+      font-weight: 520;
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 13px;
+      background: rgba(255, 252, 245, 0.42);
+      border: 1px solid rgba(134, 111, 90, 0.14);
+    }
+
+    .view-tab {
+      min-width: 104px;
+      height: 38px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: #766a61;
+      font-weight: 780;
+      cursor: pointer;
+    }
+
+    .view-tab.active {
+      color: #332e29;
+      background: rgba(233, 221, 191, 0.88);
+      box-shadow: 0 8px 18px rgba(120, 89, 72, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 2;
+      margin-top: 30px;
+      height: calc(100vh - 228px);
+      min-height: 610px;
+      display: grid;
+      grid-template-columns: 220px minmax(590px, 1fr) 344px;
+      gap: 24px;
+    }
+
+    .filter-panel,
+    .detail-panel {
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 242, 0.76), rgba(239, 228, 207, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .filter-panel {
+      padding: 26px 20px;
+    }
+
+    .panel-title {
+      color: #514942;
+      font-size: 13px;
+      font-weight: 850;
+      margin-bottom: 18px;
+    }
+
+    .search {
+      height: 46px;
+      width: 100%;
+      border: 1px solid rgba(134, 111, 90, 0.2);
+      outline: none;
+      border-radius: 11px;
+      background: rgba(255, 252, 245, 0.68);
+      color: #332e29;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 650;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .search:focus {
+      border-color: rgba(180, 138, 120, 0.58);
+      box-shadow: 0 0 0 4px rgba(180, 138, 120, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    }
+
+    .filter-group {
+      margin-top: 24px;
+    }
+
+    .filter-label {
+      color: #7c7068;
+      font-size: 12px;
+      font-weight: 780;
+      margin-bottom: 10px;
+    }
+
+    .filter-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .filter-button {
+      height: 38px;
+      width: 100%;
+      border: 1px solid rgba(134, 111, 90, 0.13);
+      border-radius: 9px;
+      background: rgba(255, 252, 245, 0.42);
+      color: #6f645c;
+      font-weight: 760;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+    }
+
+    .filter-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(180, 138, 120, 0.32);
+    }
+
+    .filter-button.active {
+      background: rgba(216, 196, 183, 0.56);
+      border-color: rgba(180, 138, 120, 0.48);
+      color: #3f3833;
+    }
+
+    .filter-button span:last-child {
+      color: #9a8b80;
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .main-area {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .result-title {
+      color: #4f463f;
+      font-size: 14px;
+      font-weight: 840;
+    }
+
+    .result-sub {
+      margin-top: 4px;
+      color: #8a7e74;
+      font-size: 12px;
+      font-weight: 580;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sort-button,
+    .view-button {
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(134, 111, 90, 0.16);
+      background: rgba(255, 252, 245, 0.48);
+      color: #675c54;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .sort-button {
+      min-width: 126px;
+      padding: 0 14px;
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(134, 111, 90, 0.14);
+      background: rgba(255, 252, 245, 0.34);
+    }
+
+    .view-button {
+      width: 38px;
+      border: 0;
+      background: transparent;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+    }
+
+    .view-button.active {
+      background: rgba(233, 221, 191, 0.82);
+      color: #3a332f;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    .cards {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      gap: 16px;
+      align-content: start;
+      min-height: 0;
+    }
+
+    .cards.list {
+      grid-template-columns: 1fr;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      min-height: 260px;
+      border: 1px solid rgba(134, 111, 90, 0.14);
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #7b6f66;
+      background: rgba(255, 252, 245, 0.38);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    .empty-state h2 {
+      margin: 0;
+      color: #3f3933;
+      font-size: 22px;
+      font-weight: 880;
+      letter-spacing: 0;
+    }
+
+    .empty-state p {
+      margin: 10px 0 0;
+      font-size: 13px;
+      line-height: 1.6;
+      font-weight: 560;
+    }
+
+    .project-card {
+      position: relative;
+      min-height: 214px;
+      border: 1px solid rgba(134, 111, 90, 0.16);
+      border-radius: 13px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 245, 0.74), rgba(234, 222, 202, 0.56));
+      box-shadow: 0 10px 24px rgba(82, 63, 50, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.54);
+      text-align: left;
+      padding: 18px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    .project-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 18px;
+      bottom: 18px;
+      width: 5px;
+      border-radius: 0 5px 5px 0;
+      background: rgba(180, 138, 120, 0.58);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .project-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(180, 138, 120, 0.4);
+      box-shadow: 0 16px 32px rgba(82, 63, 50, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    }
+
+    .project-card.selected {
+      border-color: rgba(180, 138, 120, 0.68);
+      box-shadow: 0 20px 38px rgba(82, 63, 50, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+
+    .project-card.selected::before {
+      opacity: 1;
+    }
+
+    .project-card.hide {
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      display: none;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .project-title {
+      margin: 0;
+      color: #302c28;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 880;
+      letter-spacing: 0;
+    }
+
+    .status {
+      flex: 0 0 auto;
+      height: 25px;
+      padding: 0 9px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      color: #594d46;
+      font-size: 11px;
+      font-weight: 820;
+      background: rgba(233, 221, 191, 0.72);
+      border: 1px solid rgba(180, 138, 120, 0.18);
+    }
+
+    .summary {
+      margin: 14px 0 0;
+      color: #766b62;
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 540;
+      min-height: 42px;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .meta {
+      height: 27px;
+      padding: 0 9px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 252, 245, 0.5);
+      border: 1px solid rgba(134, 111, 90, 0.09);
+      color: #7b6f66;
+      font-size: 11px;
+      font-weight: 730;
+    }
+
+    .progress {
+      margin-top: 18px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(134, 111, 90, 0.1);
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #b48a78, #8f675c);
+    }
+
+    .list .project-card {
+      min-height: 122px;
+      display: grid;
+      grid-template-columns: 1fr 190px;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .list .summary {
+      min-height: 0;
+    }
+
+    .detail-panel {
+      padding: 26px 24px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .detail-kicker {
+      color: #7b6f66;
+      font-size: 12px;
+      font-weight: 820;
+      margin-bottom: 14px;
+    }
+
+    .detail-title {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.15;
+      color: #302c28;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .detail-summary {
+      margin: 14px 0 0;
+      color: #746961;
+      font-size: 13px;
+      line-height: 1.75;
+      font-weight: 540;
+    }
+
+    .detail-block {
+      margin-top: 22px;
+      border-radius: 14px;
+      border: 1px solid rgba(134, 111, 90, 0.13);
+      background: rgba(255, 252, 245, 0.42);
+      padding: 16px;
+    }
+
+    .detail-block h3 {
+      margin: 0 0 12px;
+      color: #514942;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .stage-line {
+      display: grid;
+      gap: 8px;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 10px;
+      align-items: center;
+      color: #8d8178;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .stage-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 252, 245, 0.74);
+      border: 1px solid rgba(134, 111, 90, 0.12);
+      color: #9b8d82;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .stage.done {
+      color: #4d443e;
+    }
+
+    .stage.done .stage-dot {
+      color: #fff8ee;
+      background: #8f675c;
+      border-color: #8f675c;
+    }
+
+    .note-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .note {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      color: #746961;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    .note strong {
+      color: #4b433d;
+      font-weight: 850;
+    }
+
+    .detail-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .primary {
+      height: 56px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #9b7165, #7d5a51);
+      color: #fffaf3;
+      font-size: 16px;
+      font-weight: 860;
+      box-shadow: 0 18px 36px rgba(100, 68, 58, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      cursor: pointer;
+    }
+
+    .secondary {
+      height: 43px;
+      border-radius: 10px;
+      border: 1px solid rgba(134, 111, 90, 0.15);
+      background: rgba(255, 252, 245, 0.48);
+      color: #675c54;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .toast {
+      min-height: 18px;
+      color: #80665d;
+      font-size: 12px;
+      font-weight: 740;
+      text-align: center;
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        padding: 28px 20px;
+      }
+
+      .headline {
+        display: block;
+        padding-left: 0;
+      }
+
+      .view-tabs {
+        margin-top: 18px;
+        width: max-content;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="shelf-shadow" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="top-left">
+        <button class="back" type="button">返回主页</button>
+        <div class="crumb">主页 / 项目列表</div>
+      </div>
+    </header>
+
+    <section class="headline">
+      <div>
+        <h1>故事档案馆</h1>
+        <div class="subtitle">选择一个故事档案，继续从上次停下的位置向前推进。</div>
+      </div>
+      <div class="view-tabs" aria-label="项目视角">
+        <button class="view-tab active" data-view="continue" type="button">继续创作</button>
+        <button class="view-tab" data-view="history" type="button">历史创作</button>
+        <button class="view-tab" data-view="works" type="button">作品集</button>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="项目选择">
+      <aside class="filter-panel">
+        <div class="panel-title">筛选</div>
+        <input class="search" id="search" placeholder="搜索故事档案" />
+
+        <div class="filter-group">
+          <div class="filter-label">状态</div>
+          <div class="filter-list" id="status-filters">
+            <button class="filter-button active" data-status="ongoing" type="button"><span>进行中</span><span>4</span></button>
+            <button class="filter-button" data-status="completed" type="button"><span>已完成</span><span>2</span></button>
+            <button class="filter-button" data-status="paused" type="button"><span>暂停</span><span>1</span></button>
+            <button class="filter-button" data-status="archived" type="button"><span>归档</span><span>1</span></button>
+            <button class="filter-button" data-status="all" type="button"><span>全部</span><span>8</span></button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-label">题材</div>
+          <div class="filter-list" id="genre-filters">
+            <button class="filter-button active" data-genre="all" type="button"><span>全部题材</span><span>8</span></button>
+            <button class="filter-button" data-genre="mystery" type="button"><span>城市悬疑</span><span>2</span></button>
+            <button class="filter-button" data-genre="fantasy" type="button"><span>奇幻史诗</span><span>3</span></button>
+            <button class="filter-button" data-genre="sci-fi" type="button"><span>星际旅程</span><span>2</span></button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="main-area">
+        <div class="toolbar">
+          <div>
+            <div class="result-title" id="result-title">最近继续</div>
+            <div class="result-sub" id="result-sub">4 个进行中的故事档案</div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="sort-button" id="sort-button" type="button">最近更新</button>
+            <div class="view-toggle" aria-label="显示方式">
+              <button class="view-button active" data-layout="grid" type="button" aria-label="网格">▦</button>
+              <button class="view-button" data-layout="list" type="button" aria-label="列表">☰</button>
+            </div>
+          </div>
+        </div>
+        <div class="cards" id="cards"></div>
+      </section>
+
+      <aside class="detail-panel" id="detail-panel">
+        <div class="detail-kicker">当前选中</div>
+        <h2 class="detail-title" id="detail-title">港城钟楼证词</h2>
+        <p class="detail-summary" id="detail-summary">一座港城每晚都会失去一段集体记忆，钟声决定谁还能记得真相。</p>
+
+        <div class="detail-block">
+          <h3>当前进度</h3>
+          <div class="stage-line" id="stage-line"></div>
+        </div>
+
+        <div class="detail-block">
+          <h3>最近记录</h3>
+          <div class="note-list" id="note-list"></div>
+        </div>
+
+        <div class="detail-actions">
+          <button class="primary" id="continue-button" type="button">继续创作</button>
+          <button class="secondary" id="detail-button" type="button">查看详情</button>
+          <div class="toast" id="toast"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const projects = [
+      {
+        id: "clocktower",
+        title: "港城钟楼证词",
+        status: "ongoing",
+        statusLabel: "进行中",
+        genre: "mystery",
+        updated: "今天 18:42",
+        stage: "世界画布",
+        next: "继续世界画布",
+        progress: 28,
+        summary: "一座港城每晚都会失去一段集体记忆，钟声决定谁还能记得真相。",
+        meta: ["城市悬疑", "世界画布", "5 章计划"],
+        stages: [true, true, false, false, false],
+        notes: [["最近", "更新世界规则与港城禁区。"], ["草稿", "世界画布有 2 个待确认问题。"], ["下一步", "继续确认世界事实底座。"]]
+      },
+      {
+        id: "ash-court",
+        title: "灰雾王庭",
+        status: "ongoing",
+        statusLabel: "进行中",
+        genre: "fantasy",
+        updated: "昨天 22:16",
+        stage: "角色主轴",
+        next: "继续角色主轴",
+        progress: 42,
+        summary: "没落王庭用灰雾封存龙的遗骨，继承人必须决定王国是否值得被唤醒。",
+        meta: ["奇幻史诗", "角色主轴", "A 级角色 4"],
+        stages: [true, true, true, false, false],
+        notes: [["最近", "新增 B 级守墓人候选。"], ["草稿", "主角团关系等待确认。"], ["下一步", "确认角色主轴后进入 Framework。"]]
+      },
+      {
+        id: "star-post",
+        title: "星河驿站",
+        status: "ongoing",
+        statusLabel: "进行中",
+        genre: "sci-fi",
+        updated: "6月30日",
+        stage: "章节计划",
+        next: "继续章节计划",
+        progress: 64,
+        summary: "跨星系驿站只在濒死文明之间开门，邮差必须投递一封不该存在的信。",
+        meta: ["星际旅程", "章节计划", "12 章"],
+        stages: [true, true, true, true, false],
+        notes: [["最近", "设置第 2 章 scene_count。"], ["草稿", "章节路线已生成待确认。"], ["下一步", "确认当前章节计划。"]]
+      },
+      {
+        id: "rain-machine",
+        title: "雨巷机械师",
+        status: "ongoing",
+        statusLabel: "进行中",
+        genre: "mystery",
+        updated: "6月28日",
+        stage: "场景写作",
+        next: "继续当前幕",
+        progress: 72,
+        summary: "机械师能修复人的记忆裂缝，却在雨夜发现自己也只是某个装置的零件。",
+        meta: ["城市悬疑", "场景写作", "第 3 幕"],
+        stages: [true, true, true, true, true],
+        notes: [["最近", "生成第 1 章第 3 幕候选。"], ["草稿", "当前幕尚未确认。"], ["下一步", "审阅并确认当前场景。"]]
+      },
+      {
+        id: "mirror-sea",
+        title: "镜海远征",
+        status: "completed",
+        statusLabel: "已完成",
+        genre: "fantasy",
+        updated: "6月20日",
+        stage: "最终输出",
+        next: "查看成品",
+        progress: 100,
+        summary: "舰队驶入会映出未来的海面，每个人都必须亲手击碎自己最想要的结局。",
+        meta: ["奇幻史诗", "已完成", "TXT 可导出"],
+        stages: [true, true, true, true, true],
+        notes: [["最近", "最终故事包已导出。"], ["归档", "可在输出中心查看。"], ["下一步", "查看最终成品。"]]
+      },
+      {
+        id: "castle-dinner",
+        title: "城堡晚宴",
+        status: "completed",
+        statusLabel: "已完成",
+        genre: "fantasy",
+        updated: "6月18日",
+        stage: "最终输出",
+        next: "查看成品",
+        progress: 100,
+        summary: "温馨晚宴在龙影降临前结束，所有宾客都发现自己曾参与过同一场预言。",
+        meta: ["奇幻史诗", "已完成", "短篇"],
+        stages: [true, true, true, true, true],
+        notes: [["最近", "插件产物已生成。"], ["归档", "保留世界设定与角色表。"], ["下一步", "查看详情。"]]
+      },
+      {
+        id: "silent-rail",
+        title: "无声列车",
+        status: "paused",
+        statusLabel: "暂停",
+        genre: "sci-fi",
+        updated: "6月10日",
+        stage: "故事设定",
+        next: "恢复设定",
+        progress: 18,
+        summary: "一列不会发出声音的列车穿过废弃轨道，乘客每到一站就少一段姓名。",
+        meta: ["星际旅程", "暂停", "设定未确认"],
+        stages: [true, false, false, false, false],
+        notes: [["最近", "题材和范围等待确认。"], ["阻塞", "需要补充核心冲突。"], ["下一步", "恢复故事设定。"]]
+      },
+      {
+        id: "paper-citadel",
+        title: "纸城守夜人",
+        status: "archived",
+        statusLabel: "归档",
+        genre: "fantasy",
+        updated: "5月29日",
+        stage: "归档",
+        next: "打开归档",
+        progress: 36,
+        summary: "纸城在雨水中逐层剥落，守夜人必须决定保存哪一层谎言。",
+        meta: ["奇幻史诗", "归档", "旧版本"],
+        stages: [true, true, false, false, false],
+        notes: [["最近", "已归档为旧草稿。"], ["说明", "不参与默认继续列表。"], ["下一步", "打开归档查看。"]]
+      }
+    ];
+
+    const cards = document.querySelector("#cards");
+    const viewTabs = [...document.querySelectorAll(".view-tab")];
+    const statusButtons = [...document.querySelectorAll("#status-filters .filter-button")];
+    const genreButtons = [...document.querySelectorAll("#genre-filters .filter-button")];
+    const layoutButtons = [...document.querySelectorAll(".view-button")];
+    const search = document.querySelector("#search");
+    const resultTitle = document.querySelector("#result-title");
+    const resultSub = document.querySelector("#result-sub");
+    const sortButton = document.querySelector("#sort-button");
+    const toast = document.querySelector("#toast");
+    let activeView = "continue";
+    let activeStatus = "ongoing";
+    let activeGenre = "all";
+    let selectedId = "clocktower";
+    let layout = "grid";
+    let sortMode = "recent";
+
+    function projectMatches(project) {
+      const query = search.value.trim().toLowerCase();
+      const statusMatch = activeStatus === "all" || project.status === activeStatus;
+      const genreMatch = activeGenre === "all" || project.genre === activeGenre;
+      const queryMatch = !query || [project.title, project.summary, project.stage, ...project.meta].join(" ").toLowerCase().includes(query);
+      return statusMatch && genreMatch && queryMatch;
+    }
+
+    function renderCards() {
+      const visible = projects
+        .filter(projectMatches)
+        .sort((a, b) => sortMode === "progress" ? b.progress - a.progress : projects.indexOf(a) - projects.indexOf(b));
+      cards.classList.toggle("list", layout === "list");
+      cards.innerHTML = "";
+      if (!visible.length) {
+        cards.innerHTML = '<div class="empty-state"><div><h2>没有找到对应档案</h2><p>可以调整状态、题材或搜索词。</p></div></div>';
+        resultSub.textContent = "0 个故事档案";
+        return;
+      }
+      visible.forEach((project) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "project-card" + (project.id === selectedId ? " selected" : "");
+        card.dataset.id = project.id;
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <h2 class="project-title">${project.title}</h2>
+              <span class="status">${project.statusLabel}</span>
+            </div>
+            <p class="summary">${project.summary}</p>
+            <div class="meta-row">${project.meta.map(item => `<span class="meta">${item}</span>`).join("")}</div>
+          </div>
+          <div>
+            <div class="meta-row"><span class="meta">${project.updated}</span><span class="meta">${project.next}</span></div>
+            <div class="progress"><span style="width:${project.progress}%"></span></div>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          selectedId = project.id;
+          renderCards();
+          renderDetail();
+        });
+        card.addEventListener("dblclick", () => openSelected(project.id));
+        cards.appendChild(card);
+      });
+
+      if (visible.length && !visible.some(project => project.id === selectedId)) {
+        selectedId = visible[0].id;
+        renderCards();
+        renderDetail();
+        return;
+      }
+
+      resultSub.textContent = visible.length + " 个故事档案";
+    }
+
+    function renderDetail() {
+      const project = projects.find(item => item.id === selectedId) || projects[0];
+      document.querySelector("#detail-title").textContent = project.title;
+      document.querySelector("#detail-summary").textContent = project.summary;
+      document.querySelector("#continue-button").textContent = project.next;
+      document.querySelector("#stage-line").innerHTML = ["项目", "设定", "世界", "角色", "写作"].map((label, index) => {
+        const done = project.stages[index];
+        return `<div class="stage ${done ? "done" : ""}"><span class="stage-dot">${index + 1}</span><span>${label}</span></div>`;
+      }).join("");
+      document.querySelector("#note-list").innerHTML = project.notes.map(([key, value]) => {
+        return `<div class="note"><strong>${key}</strong><span>${value}</span></div>`;
+      }).join("");
+      toast.textContent = "";
+    }
+
+    function setView(view) {
+      activeView = view;
+      viewTabs.forEach(tab => tab.classList.toggle("active", tab.dataset.view === activeView));
+      if (view === "continue") {
+        activeStatus = "ongoing";
+        selectedId = "clocktower";
+        resultTitle.textContent = "最近继续";
+      } else if (view === "history") {
+        activeStatus = "all";
+        resultTitle.textContent = "历史创作";
+      } else {
+        activeStatus = "all";
+        resultTitle.textContent = "作品集";
+      }
+      statusButtons.forEach(button => button.classList.toggle("active", button.dataset.status === activeStatus));
+      renderCards();
+      renderDetail();
+    }
+
+    function openSelected(id = selectedId) {
+      const project = projects.find(item => item.id === id);
+      toast.textContent = project ? "正在打开：" + project.title : "";
+    }
+
+    viewTabs.forEach(tab => tab.addEventListener("click", () => setView(tab.dataset.view)));
+    statusButtons.forEach(button => button.addEventListener("click", () => {
+      activeStatus = button.dataset.status;
+      statusButtons.forEach(item => item.classList.toggle("active", item === button));
+      resultTitle.textContent = activeStatus === "ongoing" ? "最近继续" : "筛选结果";
+      renderCards();
+      renderDetail();
+    }));
+    genreButtons.forEach(button => button.addEventListener("click", () => {
+      activeGenre = button.dataset.genre;
+      genreButtons.forEach(item => item.classList.toggle("active", item === button));
+      renderCards();
+      renderDetail();
+    }));
+    layoutButtons.forEach(button => button.addEventListener("click", () => {
+      layout = button.dataset.layout;
+      layoutButtons.forEach(item => item.classList.toggle("active", item === button));
+      renderCards();
+    }));
+    search.addEventListener("input", () => {
+      renderCards();
+      renderDetail();
+    });
+    sortButton.addEventListener("click", () => {
+      sortMode = sortMode === "recent" ? "progress" : "recent";
+      sortButton.textContent = sortMode === "recent" ? "最近更新" : "进度优先";
+      renderCards();
+    });
+    document.querySelector("#continue-button").addEventListener("click", () => openSelected());
+    document.querySelector("#detail-button").addEventListener("click", () => {
+      const project = projects.find(item => item.id === selectedId);
+      toast.textContent = project ? "查看详情：" + project.title : "";
+    });
+
+    renderCards();
+    renderDetail();
+  </script>
+</body>
+</html>

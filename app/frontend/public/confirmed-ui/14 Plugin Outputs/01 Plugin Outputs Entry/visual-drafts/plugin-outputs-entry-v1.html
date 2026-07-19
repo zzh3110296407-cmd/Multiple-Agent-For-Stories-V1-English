@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>插件输出 / 插件成果入口 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 252, 244, 0.88);
+      --paper-soft: rgba(255, 252, 244, 0.48);
+      --ink: #302f2a;
+      --muted: #6f665d;
+      --quiet: #968a7d;
+      --line: rgba(105, 82, 58, 0.16);
+      --line-strong: rgba(105, 82, 58, 0.32);
+      --brass: #b4956f;
+      --clay: #b48a78;
+      --sage: #737d69;
+      --sage-deep: #56614f;
+      --blue: #6f8182;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      letter-spacing: 0;
+    }
+    button { font: inherit; cursor: pointer; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.5), rgba(236, 231, 220, 0.34) 45%, rgba(236, 231, 220, 0.06)),
+        url("../../assets/plugin-outputs-background-v1.png") center / cover no-repeat;
+    }
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.42), transparent 32%),
+        radial-gradient(circle at 78% 25%, rgba(180, 149, 111, 0.12), transparent 34%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.18), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 236px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .button,
+    .artifact-card,
+    .filter-button,
+    .tab-button {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    .button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .button:hover,
+    .artifact-card:hover,
+    .filter-button:hover,
+    .tab-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+    .primary {
+      min-width: 172px;
+      border-color: rgba(86, 97, 79, 0.48);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #765f48);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #63705c, #80684e);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(40px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.7);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .summary-item span,
+    .artifact-meta span,
+    .mini-stat span,
+    .stat-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .summary-item strong,
+    .artifact-meta strong,
+    .mini-stat strong,
+    .stat-card strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 384px;
+      gap: 26px;
+      align-items: stretch;
+    }
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.68);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(238, 227, 208, 0.72));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 860;
+      letter-spacing: 0;
+    }
+    h2, h3, h4 {
+      margin: 0;
+      color: #33332d;
+      letter-spacing: 0;
+    }
+    h2 { font-size: 27px; line-height: 1.2; font-weight: 900; }
+    h3 { font-size: 16px; line-height: 1.35; font-weight: 900; }
+    h4 { font-size: 14px; line-height: 1.36; font-weight: 900; }
+    p {
+      color: rgba(48, 47, 42, 0.64);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+    .panel-head p { margin: 8px 0 0; }
+
+    .mode-badge {
+      align-self: start;
+      min-width: 150px;
+      padding: 10px 12px;
+      border: 1px solid rgba(111, 129, 130, 0.24);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      text-align: center;
+    }
+    .mode-badge span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+    .mode-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #526465;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 26px 18px;
+    }
+    .stage-item {
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.32);
+    }
+    .stage-item span,
+    .stage-item strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-item span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+    .stage-item strong {
+      margin-top: 5px;
+      color: rgba(57, 56, 50, 0.58);
+      font-size: 12px;
+      font-weight: 860;
+    }
+    .stage-item.current {
+      border-color: rgba(86, 97, 79, 0.34);
+      background: rgba(115, 125, 105, 0.14);
+    }
+    .stage-item.current strong { color: #42483d; }
+
+    .content-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 278px;
+      gap: 18px;
+      padding: 0 26px 20px;
+      overflow: hidden;
+    }
+    .library-area {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .library-tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+    .last-refresh {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+    .filters,
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filters::-webkit-scrollbar,
+    .tab-row::-webkit-scrollbar { display: none; }
+    .filter-button,
+    .tab-button {
+      min-height: 34px;
+      padding: 0 13px;
+      color: #5c5348;
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .filter-button.active,
+    .tab-button.active {
+      border-color: rgba(86, 97, 79, 0.42);
+      background: rgba(115, 125, 105, 0.16);
+      color: #454b3f;
+    }
+
+    .artifact-list {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      overflow: auto;
+      padding: 1px 4px 2px 1px;
+    }
+    .artifact-card {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .artifact-card.selected {
+      border-color: rgba(180, 149, 111, 0.52);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.78), rgba(237, 226, 207, 0.6));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 18px 38px rgba(71, 52, 31, 0.13);
+    }
+    .artifact-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      min-width: 0;
+    }
+    .artifact-top h4 { margin-top: 5px; }
+    .artifact-type,
+    .status-tag,
+    .safe-tag {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .artifact-type {
+      color: #6d5c4c;
+      background: rgba(180, 149, 111, 0.14);
+    }
+    .status-tag {
+      flex: 0 0 auto;
+      color: #59614f;
+      background: rgba(115, 125, 105, 0.15);
+    }
+    .status-tag.pending {
+      color: #7b6138;
+      background: rgba(180, 149, 111, 0.18);
+    }
+    .status-tag.warning {
+      color: #7b534c;
+      background: rgba(180, 138, 120, 0.18);
+    }
+    .artifact-card p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.56;
+    }
+    .artifact-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: auto;
+    }
+    .artifact-meta div,
+    .mini-stat,
+    .stat-card {
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      border: 1px solid rgba(105, 82, 58, 0.11);
+    }
+    .artifact-meta strong,
+    .mini-stat strong { font-size: 12px; }
+
+    .entry-stats {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 12px;
+    }
+    .stat-card {
+      padding: 14px;
+      background: rgba(255, 252, 244, 0.52);
+    }
+    .stat-card strong { font-size: 20px; }
+    .pipeline-card {
+      min-height: 0;
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 100% 0%, rgba(111, 129, 130, 0.16), transparent 34%),
+        rgba(255, 252, 244, 0.43);
+    }
+    .pipeline-list,
+    .boundary-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 13px;
+    }
+    .pipeline-row,
+    .boundary-row {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      min-width: 0;
+    }
+    .mark {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fffaf0;
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1;
+      background: var(--sage);
+    }
+    .mark.pending { background: var(--brass); }
+    .pipeline-row strong,
+    .boundary-row strong {
+      display: block;
+      color: #363530;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+    }
+    .pipeline-row small,
+    .boundary-row small {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.45;
+      font-weight: 660;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 26px 24px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+      background: rgba(255, 252, 244, 0.24);
+    }
+    .action-note {
+      margin-right: auto;
+      color: rgba(48, 47, 42, 0.6);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .side-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .detail-card,
+    .boundary-card,
+    .version-card {
+      padding: 17px;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .safe-tag {
+      margin-bottom: 11px;
+      color: #53615f;
+      background: rgba(111, 129, 130, 0.16);
+    }
+    .safe-tag.warning {
+      color: #775750;
+      background: rgba(180, 138, 120, 0.18);
+    }
+    .detail-card p,
+    .boundary-card p {
+      margin: 8px 0 0;
+    }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+    .detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .mini-button {
+      min-height: 34px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+    .tab-row { margin-top: 14px; }
+    .version-preview {
+      min-height: 122px;
+      max-height: 172px;
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      overflow: auto;
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+    .empty-state {
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border: 1px dashed rgba(105, 82, 58, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      min-width: 240px;
+      max-width: min(380px, calc(100vw - 56px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: var(--shadow);
+      color: #3b3933;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 760;
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(16px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        width: min(100% - 36px, 980px);
+        margin: 22px auto;
+      }
+      .hero,
+      .layout,
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-left: 0; }
+      .summary-strip { max-width: 540px; }
+      .entry-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: min(100% - 24px, 640px);
+        min-height: auto;
+        margin: 14px auto 22px;
+        gap: 14px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .button,
+      .status-pill,
+      .mode-badge {
+        width: 100%;
+      }
+      .crumb { white-space: normal; }
+      h1 { font-size: 40px; }
+      .summary-strip,
+      .artifact-list,
+      .artifact-meta,
+      .entry-stats,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+      .stage-strip {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .stage-strip::-webkit-scrollbar { display: none; }
+      .stage-item { flex: 0 0 142px; }
+      .panel-head,
+      .library-tools,
+      .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .panel-head,
+      .stage-strip,
+      .content-grid,
+      .action-bar,
+      .side-panel {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .action-note { margin-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="button" type="button" aria-label="返回当前项目总览">返回总览</button>
+      <div class="crumb">主页 / 工作台 / 插件输出 / 插件成果入口</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">受控成果可查看</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">插件成果</h1>
+        <p>这里集中展示插件生成的可交付材料。所有内容先进入受控产品视图，只能作为安全预览、参考包或后续插件输入，不会直接改写正文、角色事实、世界事实或最终故事包。</p>
+      </div>
+      <div class="summary-strip" aria-label="插件成果摘要">
+        <div class="summary-item"><span>受控成果</span><strong>6 个</strong></div>
+        <div class="summary-item"><span>待确认</span><strong>1 个检查点</strong></div>
+        <div class="summary-item"><span>安全边界</span><strong>通过</strong></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <section class="main-panel" aria-labelledby="entryTitle">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">PRODUCTIZED PLUGIN OUTPUTS</p>
+            <h2 id="entryTitle">插件成果入口</h2>
+            <p>入口页只展示产品化后的插件成果与运行入口。原始 payload、调试日志和未确认插件草稿不会直接暴露给普通用户，也不会被当作故事事实。</p>
+          </div>
+          <div class="mode-badge" aria-live="polite">
+            <span>当前模式</span>
+            <strong>只读预览</strong>
+          </div>
+        </div>
+
+        <div class="stage-strip" role="list" aria-label="插件输出阶段">
+          <div class="stage-item current" role="listitem" aria-current="step"><span>01</span><strong>成果入口</strong></div>
+          <div class="stage-item" role="listitem"><span>02</span><strong>插件选择</strong></div>
+          <div class="stage-item" role="listitem"><span>03</span><strong>运行中</strong></div>
+          <div class="stage-item" role="listitem"><span>04</span><strong>检查点</strong></div>
+          <div class="stage-item" role="listitem"><span>05</span><strong>成果审阅</strong></div>
+          <div class="stage-item" role="listitem"><span>06</span><strong>问题处理</strong></div>
+        </div>
+
+        <div class="content-grid">
+          <section class="library-area" aria-labelledby="libraryTitle">
+            <div class="library-tools">
+              <div>
+                <p class="eyebrow">LIBRARY</p>
+                <h3 id="libraryTitle">受控成果库</h3>
+              </div>
+              <div class="last-refresh" id="lastRefresh">最后刷新：21:32</div>
+            </div>
+            <div class="filters" role="group" aria-label="筛选插件成果">
+              <button class="filter-button active" type="button" data-filter="all">全部</button>
+              <button class="filter-button" type="button" data-filter="review">可审阅</button>
+              <button class="filter-button" type="button" data-filter="checkpoint">检查点</button>
+              <button class="filter-button" type="button" data-filter="archived">已归档</button>
+              <button class="filter-button" type="button" data-filter="warning">有提醒</button>
+            </div>
+            <div class="artifact-list" id="artifactList" aria-live="polite"></div>
+          </section>
+
+          <aside class="entry-stats" aria-label="入口状态摘要">
+            <div class="stat-card"><span>可审阅成果</span><strong>3</strong></div>
+            <div class="stat-card"><span>已归档版本</span><strong>12</strong></div>
+            <div class="pipeline-card">
+              <p class="eyebrow">SAFE PIPELINE</p>
+              <h3>安全流向</h3>
+              <div class="pipeline-list">
+                <div class="pipeline-row"><span class="mark">1</span><div><strong>读取受控快照</strong><small>插件只读取已允许的输入边界。</small></div></div>
+                <div class="pipeline-row"><span class="mark pending">2</span><div><strong>检查点确认</strong><small>关键产物需要用户确认或修订。</small></div></div>
+                <div class="pipeline-row"><span class="mark">3</span><div><strong>产品化展示</strong><small>只展示安全摘要和可预览内容。</small></div></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="action-bar">
+          <div class="action-note" id="actionNote">选择一个成果后可打开受控视图；也可以进入插件选择创建新的插件任务。</div>
+          <button class="button" type="button" id="refreshButton">刷新成果</button>
+          <button class="button" type="button" id="newRunButton">选择插件任务</button>
+          <button class="button primary" type="button" id="openButton">打开受控视图</button>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="选中成果详情">
+        <div class="detail-card" aria-live="polite">
+          <p class="eyebrow">SELECTED OUTPUT</p>
+          <span class="safe-tag" id="detailSafeTag">派生成果，不是源故事事实</span>
+          <h3 id="detailTitle">剧本改编提示包</h3>
+          <p id="detailCopy">把最终故事包转化为剧本改编提示，供后续剧本插件使用。该成果只作为衍生输入，不会写回原故事。</p>
+          <div class="mini-grid">
+            <div class="mini-stat"><span>插件</span><strong id="detailPlugin">剧本锻造</strong></div>
+            <div class="mini-stat"><span>版本</span><strong id="detailVersion">4</strong></div>
+            <div class="mini-stat"><span>状态</span><strong id="detailStatus">可审阅</strong></div>
+            <div class="mini-stat"><span>原始载荷</span><strong id="detailPayload">隐藏</strong></div>
+          </div>
+          <div class="detail-actions">
+            <button class="button mini-button" type="button" id="previewButton">安全预览</button>
+            <button class="button mini-button" type="button" id="historyButton">版本记录</button>
+          </div>
+        </div>
+
+        <div class="boundary-card">
+          <p class="eyebrow">BOUNDARY</p>
+          <h3>插件边界</h3>
+          <div class="boundary-list">
+            <div class="boundary-row"><span class="mark">A</span><div><strong>不写回源故事</strong><small>插件成果不能直接改变正文、角色、世界或章节计划。</small></div></div>
+            <div class="boundary-row"><span class="mark">B</span><div><strong>不修改最终故事包</strong><small>最终导出包仍由 13 最终输出模块管理。</small></div></div>
+            <div class="boundary-row"><span class="mark pending">C</span><div><strong>检查点需要人工确认</strong><small>待确认产物进入 04 检查点处理，不在入口页直接通过。</small></div></div>
+          </div>
+        </div>
+
+        <div class="version-card">
+          <p class="eyebrow">SAFE PREVIEW</p>
+          <h3>安全摘要</h3>
+          <div class="tab-row" role="group" aria-label="预览切换">
+            <button class="tab-button active" type="button" data-tab="summary">摘要</button>
+            <button class="tab-button" type="button" data-tab="counts">计数</button>
+            <button class="tab-button" type="button" data-tab="refs">来源</button>
+          </div>
+          <div class="version-preview" id="previewText">已生成剧本改编所需的结构提示、主题约束、角色关系引用和场景节奏边界。当前预览不包含原始插件 payload。</div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const artifacts = [
+      { id: "adaptation", title: "剧本改编提示包", type: "剧本派生", status: "可审阅", tone: "review", plugin: "剧本锻造", versions: 4, payload: "隐藏", safe: "派生成果，不是源故事事实", copy: "把最终故事包转化为剧本改编提示，供后续剧本插件使用。该成果只作为衍生输入，不会写回原故事。", summary: "已生成剧本改编所需的结构提示、主题约束、角色关系引用和场景节奏边界。当前预览不包含原始插件 payload。", counts: "章节引用 12，核心角色 7，场景边界 60，用户锁定约束 9。", refs: "来源来自最终故事包快照、角色表、世界摘要和锁定约束清单。" },
+      { id: "screenplay", title: "第一幕剧本草案", type: "剧本草稿", status: "有提醒", tone: "warning", plugin: "剧本锻造", versions: 2, payload: "隐藏", safe: "需要复核，不写回源故事", copy: "插件已生成第一幕剧本草案，但安全摘要提示部分旁白转换需要人工复核。", summary: "草案可作为后续剧本审阅材料，暂不进入正式故事事实，也不会覆盖原正文。", counts: "场景 8，台词段 41，旁白段 12，提醒 2。", refs: "来源来自第 1 章到第 2 章的已确认正文和角色关系状态。" },
+      { id: "storyboard", title: "关键场景分镜包", type: "分镜派生", status: "检查点", tone: "checkpoint", plugin: "剧本锻造", versions: 1, payload: "隐藏", safe: "等待检查点确认", copy: "关键场景分镜包已到达检查点，用户需要确认、修订、延后或拒绝。", summary: "分镜包包含镜头段落、场景重点、视觉节奏和资产依赖摘要。入口页只显示安全预览。", counts: "关键场景 15，镜头建议 68，资产提示 24，检查点 1。", refs: "来源来自最终故事包快照和已确认场景索引。" },
+      { id: "assets", title: "数字资产清单", type: "资产派生", status: "已归档", tone: "archived", plugin: "剧本锻造", versions: 3, payload: "隐藏", safe: "已归档，只读引用", copy: "已归档的角色、地点、道具和主题符号资产清单，可供后续制作工具读取。", summary: "清单已完成边界检查，适合作为外部制作流程的参考包。", counts: "角色资产 11，地点资产 18，道具资产 27，主题符号 6。", refs: "来源来自角色表、世界画布摘要和事件时间线。" },
+      { id: "selfcheck", title: "剧本自检报告", type: "质量报告", status: "可审阅", tone: "review", plugin: "剧本锻造", versions: 1, payload: "隐藏", safe: "派生报告，不是修订指令", copy: "插件生成了剧本结构自检报告，用于审阅节奏、人物出场和场景连续性。", summary: "报告只作为质量参考，不自动产生修订，不写回章节或场景。", counts: "节奏提示 6，连续性提示 3，角色提示 5，阻断 0。", refs: "来源来自剧本草案、角色关系状态和场景索引。" },
+      { id: "shotlist", title: "镜头清单", type: "制作清单", status: "可审阅", tone: "review", plugin: "剧本锻造", versions: 1, payload: "隐藏", safe: "只读制作参考", copy: "镜头清单把关键分镜拆成可执行制作条目，供后续外部工具或人工制作使用。", summary: "当前清单可用于制作排期和资产准备，不影响故事事实。", counts: "镜头 92，场景 15，角色引用 9，道具引用 21。", refs: "来源来自分镜包和数字资产清单。" }
+    ];
+
+    const artifactList = document.querySelector("#artifactList");
+    const filters = Array.from(document.querySelectorAll(".filter-button"));
+    const tabs = Array.from(document.querySelectorAll(".tab-button"));
+    const toast = document.querySelector("#toast");
+    const topStatus = document.querySelector("#topStatus");
+    const lastRefresh = document.querySelector("#lastRefresh");
+    const actionNote = document.querySelector("#actionNote");
+    const detailSafeTag = document.querySelector("#detailSafeTag");
+    const detailTitle = document.querySelector("#detailTitle");
+    const detailCopy = document.querySelector("#detailCopy");
+    const detailPlugin = document.querySelector("#detailPlugin");
+    const detailVersion = document.querySelector("#detailVersion");
+    const detailStatus = document.querySelector("#detailStatus");
+    const detailPayload = document.querySelector("#detailPayload");
+    const previewText = document.querySelector("#previewText");
+    let currentFilter = "all";
+    let selectedId = "adaptation";
+    let currentTab = "summary";
+
+    function selectedArtifact() {
+      return artifacts.find((item) => item.id === selectedId) || artifacts[0];
+    }
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+    function statusClass(tone) {
+      if (tone === "checkpoint") return "pending";
+      if (tone === "warning") return "warning";
+      return "";
+    }
+    function visibleArtifacts() {
+      if (currentFilter === "all") return artifacts;
+      return artifacts.filter((item) => item.tone === currentFilter);
+    }
+    function previewFor(item) {
+      if (currentTab === "counts") return item.counts;
+      if (currentTab === "refs") return item.refs;
+      return item.summary;
+    }
+    function renderArtifacts() {
+      const items = visibleArtifacts();
+      artifactList.innerHTML = "";
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "当前筛选下没有插件成果。";
+        artifactList.appendChild(empty);
+        return;
+      }
+      items.forEach((item) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `artifact-card ${item.id === selectedId ? "selected" : ""}`;
+        card.setAttribute("aria-label", `选择${item.title}`);
+        card.innerHTML = `
+          <span class="artifact-top">
+            <span><span class="artifact-type">${item.type}</span><h4>${item.title}</h4></span>
+            <span class="status-tag ${statusClass(item.tone)}">${item.status}</span>
+          </span>
+          <p>${item.copy}</p>
+          <span class="artifact-meta">
+            <span><span>插件</span><strong>${item.plugin}</strong></span>
+            <span><span>版本</span><strong>${item.versions}</strong></span>
+            <span><span>边界</span><strong>${item.payload}</strong></span>
+          </span>`;
+        card.addEventListener("click", () => selectArtifact(item.id));
+        artifactList.appendChild(card);
+      });
+    }
+    function selectArtifact(id) {
+      selectedId = id;
+      const item = selectedArtifact();
+      detailSafeTag.textContent = item.safe;
+      detailSafeTag.className = item.tone === "warning" ? "safe-tag warning" : "safe-tag";
+      detailTitle.textContent = item.title;
+      detailCopy.textContent = item.copy;
+      detailPlugin.textContent = item.plugin;
+      detailVersion.textContent = String(item.versions);
+      detailStatus.textContent = item.status;
+      detailPayload.textContent = item.payload;
+      previewText.textContent = previewFor(item);
+      actionNote.textContent = `当前选中：${item.title}。可以打开受控视图继续审阅。`;
+      renderArtifacts();
+    }
+
+    filters.forEach((button) => {
+      button.addEventListener("click", () => {
+        currentFilter = button.dataset.filter;
+        filters.forEach((item) => item.classList.toggle("active", item === button));
+        renderArtifacts();
+      });
+    });
+    tabs.forEach((button) => {
+      button.addEventListener("click", () => {
+        currentTab = button.dataset.tab;
+        tabs.forEach((item) => item.classList.toggle("active", item === button));
+        previewText.textContent = previewFor(selectedArtifact());
+      });
+    });
+    document.querySelector("#refreshButton").addEventListener("click", (event) => {
+      topStatus.textContent = "正在刷新成果库";
+      actionNote.textContent = "正在重新读取产品化插件成果视图。";
+      event.currentTarget.disabled = true;
+      showToast("正在刷新插件成果。");
+      window.setTimeout(() => {
+        const now = new Date();
+        lastRefresh.textContent = `最后刷新：${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        topStatus.textContent = "受控成果可查看";
+        actionNote.textContent = "成果库已刷新。选择一个成果后可打开受控视图。";
+        event.currentTarget.disabled = false;
+        showToast("刷新完成：安全边界通过。");
+      }, 850);
+    });
+    document.querySelector("#newRunButton").addEventListener("click", () => {
+      showToast("将进入 02 插件选择 / 输入确认。");
+      actionNote.textContent = "下一步：选择插件任务并确认输入边界。";
+    });
+    document.querySelector("#openButton").addEventListener("click", () => {
+      showToast(`将打开 ${selectedArtifact().title} 的受控视图。`);
+      actionNote.textContent = "下一步：进入 05 插件成果审阅。";
+    });
+    document.querySelector("#previewButton").addEventListener("click", () => {
+      currentTab = "summary";
+      tabs.forEach((item) => item.classList.toggle("active", item.dataset.tab === "summary"));
+      previewText.textContent = selectedArtifact().summary;
+      showToast("已切换到安全摘要预览。");
+    });
+    document.querySelector("#historyButton").addEventListener("click", () => {
+      currentTab = "counts";
+      tabs.forEach((item) => item.classList.toggle("active", item.dataset.tab === "counts"));
+      previewText.textContent = selectedArtifact().counts;
+      showToast("版本信息会在成果审阅页展开。");
+    });
+    document.querySelector(".topbar .button").addEventListener("click", () => {
+      showToast("将返回当前项目总览。");
+      actionNote.textContent = "下一步：返回当前项目总览。";
+    });
+
+    renderArtifacts();
+    selectArtifact(selectedId);
+  </script>
+</body>
+</html>

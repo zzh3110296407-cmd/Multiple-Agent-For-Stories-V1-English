@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>插件输出 / 检查点处理 V1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --cream: #fffdf6;
+      --panel: rgba(255, 252, 244, 0.72);
+      --panel-strong: rgba(255, 252, 244, 0.88);
+      --vellum: #f4ecde;
+      --ink: #303029;
+      --soft-ink: rgba(48, 47, 42, 0.72);
+      --quiet: rgba(48, 47, 42, 0.5);
+      --line: rgba(105, 82, 58, 0.16);
+      --line-strong: rgba(105, 82, 58, 0.26);
+      --sage: #76806f;
+      --sage-deep: #55614f;
+      --brass: #b4956f;
+      --rose: #a07266;
+      --blue: #6f8182;
+      --danger: #8f5f53;
+      --shadow: 0 24px 60px rgba(70, 52, 31, 0.18);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--paper); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      letter-spacing: 0;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.93) 0%, rgba(236, 231, 220, 0.82) 46%, rgba(236, 231, 220, 0.54) 100%),
+        url("../../assets/plugin-outputs-background-v1.png") center right / cover fixed no-repeat;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .page {
+      max-width: 1536px;
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 34px 38px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .ghost-button,
+    .status-pill {
+      min-height: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.62);
+      color: rgba(48, 47, 42, 0.8);
+      box-shadow: 0 18px 40px rgba(70, 52, 31, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .ghost-button {
+      min-width: 138px;
+      padding: 0 22px;
+      font-weight: 820;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 26px;
+      font-size: 14px;
+      font-weight: 820;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.18);
+    }
+
+    .dot.ready { background: var(--sage); box-shadow: 0 0 0 5px rgba(118, 128, 111, 0.18); }
+    .dot.warn { background: var(--danger); box-shadow: 0 0 0 5px rgba(143, 95, 83, 0.18); }
+
+    .crumb {
+      flex: 1;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 440px;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 10px;
+      color: #2f312b;
+      font-size: clamp(44px, 5vw, 68px);
+      line-height: 0.98;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 820px;
+      margin-bottom: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 16px;
+      line-height: 1.75;
+      font-weight: 520;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: var(--radius);
+      background: rgba(115, 95, 71, 0.24);
+      box-shadow: 0 18px 48px rgba(70, 52, 31, 0.16);
+      backdrop-filter: blur(18px);
+    }
+
+    .summary-card {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .summary-card span,
+    .field span,
+    .mini span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .summary-card strong,
+    .field strong,
+    .mini strong {
+      display: block;
+      margin-top: 5px;
+      color: #2f302b;
+      font-size: 16px;
+      font-weight: 920;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(244, 236, 222, 0.74)),
+        rgba(255, 252, 244, 0.68);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      color: #33332d;
+      font-size: 27px;
+      line-height: 1.2;
+      font-weight: 920;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      color: #33332d;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 920;
+    }
+
+    h4 {
+      margin-bottom: 8px;
+      color: #33332d;
+      font-size: 14px;
+      line-height: 1.36;
+      font-weight: 900;
+    }
+
+    p {
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    .mode-badge {
+      flex: 0 0 162px;
+      padding: 10px 12px;
+      border: 1px solid rgba(115, 125, 105, 0.3);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      text-align: center;
+    }
+
+    .mode-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #52614f;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 26px 18px;
+    }
+
+    .stage-item {
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.32);
+    }
+
+    .stage-item span,
+    .stage-item strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage-item span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .stage-item strong {
+      margin-top: 5px;
+      color: rgba(57, 56, 50, 0.58);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .stage-item.current {
+      border-color: rgba(86, 97, 79, 0.34);
+      background: rgba(115, 125, 105, 0.14);
+    }
+
+    .stage-item.current strong { color: #42483d; }
+    .stage-item.done strong { color: rgba(76, 91, 70, 0.92); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(260px, 330px) minmax(0, 1fr) minmax(300px, 370px);
+      gap: 24px;
+      padding: 0 26px 22px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .checkpoint-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .checkpoint-button {
+      width: 100%;
+      padding: 15px 14px;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: var(--ink);
+      text-align: left;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .checkpoint-button:hover,
+    .checkpoint-button.active {
+      transform: translateY(-1px);
+      border-color: rgba(86, 97, 79, 0.36);
+      background: rgba(255, 252, 244, 0.78);
+    }
+
+    .checkpoint-button header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .checkpoint-button strong {
+      display: block;
+      color: #34342e;
+      font-size: 14px;
+      font-weight: 920;
+    }
+
+    .checkpoint-button small {
+      display: block;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 620;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: #6d5c4c;
+      background: rgba(180, 149, 111, 0.15);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .tag.ready,
+    .tag.confirmed { color: #53615f; background: rgba(111, 129, 130, 0.16); }
+    .tag.warn,
+    .tag.revision,
+    .tag.deferred { color: #7a5f3f; background: rgba(180, 149, 111, 0.18); }
+    .tag.reject { color: #855b51; background: rgba(160, 114, 102, 0.2); }
+
+    .decision-card,
+    .side-card,
+    .preview-card,
+    .field,
+    .note-card,
+    .result-card {
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .decision-card {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 610px;
+      overflow: hidden;
+    }
+
+    .decision-head {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .decision-head-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .decision-head p { margin-bottom: 0; }
+
+    .decision-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 22px 22px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.8fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .preview-card {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .artifact-pane {
+      min-height: 260px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.6), rgba(244, 236, 222, 0.5)),
+        rgba(255, 252, 244, 0.44);
+    }
+
+    .artifact-lines {
+      display: grid;
+      gap: 9px;
+      align-content: start;
+    }
+
+    .artifact-line {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr);
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.11);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+    }
+
+    .artifact-line span {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .artifact-line strong {
+      color: #33332d;
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 820;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      min-width: 0;
+      padding: 13px;
+    }
+
+    .note-card {
+      margin-top: 14px;
+      padding: 16px;
+    }
+
+    .note-card textarea {
+      width: 100%;
+      min-height: 96px;
+      resize: vertical;
+      margin-top: 10px;
+      padding: 13px 14px;
+      border: 1px solid rgba(105, 82, 58, 0.18);
+      border-radius: var(--radius);
+      outline: none;
+      color: var(--ink);
+      background: rgba(255, 252, 244, 0.62);
+      line-height: 1.6;
+    }
+
+    .note-card textarea:focus {
+      border-color: rgba(86, 97, 79, 0.46);
+      box-shadow: 0 0 0 4px rgba(115, 125, 105, 0.13);
+    }
+
+    .revision-box {
+      display: none;
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid rgba(180, 149, 111, 0.28);
+      border-radius: var(--radius);
+      background: rgba(180, 149, 111, 0.1);
+    }
+
+    .revision-box.show { display: block; animation: rise 220ms ease both; }
+
+    .revision-box textarea {
+      width: 100%;
+      min-height: 126px;
+      margin-top: 10px;
+      padding: 13px 14px;
+      resize: vertical;
+      border: 1px solid rgba(105, 82, 58, 0.2);
+      border-radius: var(--radius);
+      outline: none;
+      background: rgba(255, 252, 244, 0.72);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .submit-revision {
+      min-height: 42px;
+      margin-top: 10px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      color: #fffaf0;
+      background: var(--brass);
+      font-weight: 860;
+    }
+
+    .side-card {
+      padding: 18px;
+    }
+
+    .side-card p { margin-bottom: 0; }
+
+    .guard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .guard {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .guard span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .guard strong {
+      display: block;
+      margin-top: 5px;
+      color: #35352f;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .result-card {
+      margin-top: 12px;
+      padding: 15px;
+      background: rgba(255, 252, 244, 0.55);
+    }
+
+    .result-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #35352f;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .result-card p { margin-bottom: 0; }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 26px 22px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .action-note {
+      max-width: 570px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 560;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .action-button {
+      min-height: 44px;
+      min-width: 106px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 860;
+      transition: transform 160ms ease, opacity 160ms ease;
+    }
+
+    .action-button:hover:not(:disabled) { transform: translateY(-1px); }
+    .action-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .action-button.primary {
+      min-width: 146px;
+      color: #fffaf0;
+      background: var(--sage);
+    }
+
+    .action-button.secondary {
+      color: #534d42;
+      background: rgba(255, 252, 244, 0.72);
+      border: 1px solid rgba(105, 82, 58, 0.14);
+    }
+
+    .action-button.brass {
+      color: #fffaf0;
+      background: var(--brass);
+    }
+
+    .action-button.danger {
+      color: #fffaf0;
+      background: var(--rose);
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 20;
+      max-width: min(380px, calc(100vw - 40px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      color: #33332d;
+      box-shadow: 0 18px 48px rgba(70, 52, 31, 0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 200ms ease, transform 200ms ease;
+      font-size: 13px;
+      font-weight: 760;
+      line-height: 1.5;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1180px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .summary-strip { max-width: 620px; }
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .decision-card { min-height: 0; }
+      .preview-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        background:
+          linear-gradient(180deg, rgba(236, 231, 220, 0.94), rgba(236, 231, 220, 0.78)),
+          url("../../assets/plugin-outputs-background-v1.png") center top / cover fixed no-repeat;
+      }
+      .page {
+        padding: 10px 7px 18px;
+      }
+      .topbar {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .ghost-button,
+      .status-pill {
+        width: 100%;
+        justify-content: center;
+      }
+      .crumb {
+        order: -1;
+        font-size: 11px;
+      }
+      .hero {
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      h1 { font-size: 38px; }
+      .hero p { font-size: 13px; }
+      .summary-strip {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .panel-head {
+        display: grid;
+        padding: 18px 14px 14px;
+      }
+      .mode-badge {
+        width: 100%;
+        flex-basis: auto;
+      }
+      .stage-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 0 14px 14px;
+      }
+      .workspace {
+        padding: 0 14px 16px;
+        gap: 14px;
+      }
+      .decision-head,
+      .decision-scroll {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .decision-head-row {
+        display: grid;
+      }
+      .field-grid,
+      .guard-grid {
+        grid-template-columns: 1fr;
+      }
+      .artifact-line {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+      .action-bar {
+        display: grid;
+        padding: 14px;
+      }
+      .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .action-button { width: 100%; }
+      .toast {
+        right: 12px;
+        bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" aria-labelledby="pageTitle">
+    <div class="topbar">
+      <button class="ghost-button" type="button">返回运行页</button>
+      <div class="crumb">主页 / 工作台 / 插件输出 / 检查点处理</div>
+      <div class="status-pill"><span class="dot" id="topDot"></span><span id="topStatus">等待用户确认</span></div>
+    </div>
+
+    <section class="hero">
+      <div>
+        <h1 id="pageTitle">检查点处理</h1>
+        <p>插件已经停在用户决策前。这里用于确认派生产物是否可以继续流转，也可以要求修订、拒绝或延后处理；页面只显示安全摘要与可审阅内容。</p>
+      </div>
+      <div class="summary-strip" aria-label="插件检查点摘要">
+        <div class="summary-card"><span>当前插件</span><strong>剧本锻造</strong></div>
+        <div class="summary-card"><span>检查点状态</span><strong id="summaryStatus">待确认</strong></div>
+        <div class="summary-card"><span>待处理数量</span><strong id="summaryCount">3</strong></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="panelTitle">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">PLUGIN CHECKPOINT</div>
+          <h2 id="panelTitle">处理插件检查点</h2>
+          <p>确认后进入成果审阅；要求修订会把用户说明交回插件运行；拒绝或延后不会写回源故事。</p>
+        </div>
+        <div class="mode-badge">
+          <span>当前检查点</span>
+          <strong id="modeBadge">结构确认</strong>
+        </div>
+      </div>
+
+      <div class="stage-strip" aria-label="插件输出流程">
+        <div class="stage-item done"><span>01</span><strong>成果入口</strong></div>
+        <div class="stage-item done"><span>02</span><strong>插件选择</strong></div>
+        <div class="stage-item done"><span>03</span><strong>运行中</strong></div>
+        <div class="stage-item current"><span>04</span><strong>检查点</strong></div>
+        <div class="stage-item"><span>05</span><strong>成果审阅</strong></div>
+        <div class="stage-item"><span>06</span><strong>问题处理</strong></div>
+      </div>
+
+      <div class="workspace">
+        <aside class="stack" aria-labelledby="queueTitle">
+          <div>
+            <div class="eyebrow">QUEUE</div>
+            <h3 id="queueTitle">待处理检查点</h3>
+            <p>单击切换检查点。每个检查点都需要独立决策。</p>
+          </div>
+          <div class="checkpoint-list" id="checkpointList"></div>
+        </aside>
+
+        <section class="decision-card" aria-labelledby="checkpointTitle">
+          <div class="decision-head">
+            <div class="decision-head-row">
+              <div>
+                <div class="eyebrow" id="checkpointType">STRUCTURE GATE</div>
+                <h3 id="checkpointTitle">成稿结构确认</h3>
+                <p id="checkpointCopy">插件准备把最终故事包转换为成稿目录、正文组织与附录索引，需要用户确认是否允许继续生成派生产物。</p>
+              </div>
+              <span class="tag warn" id="checkpointTag">待确认</span>
+            </div>
+          </div>
+
+          <div class="decision-scroll">
+            <div class="preview-grid">
+              <div class="artifact-pane" aria-label="检查点产物摘要">
+                <div>
+                  <div class="eyebrow">SAFE PREVIEW</div>
+                  <h3 id="previewTitle">派生产物预览</h3>
+                </div>
+                <div class="artifact-lines" id="artifactLines"></div>
+              </div>
+
+              <div class="preview-card">
+                <div class="eyebrow">DECISION BOUNDARY</div>
+                <h3>决策边界</h3>
+                <p id="decisionBoundary">确认只允许插件继续生成派生成果，不会修改故事事实、正文、记忆、事件线或最终故事包快照。</p>
+                <div class="field-grid" id="fieldGrid"></div>
+              </div>
+            </div>
+
+            <div class="note-card">
+              <div class="eyebrow">USER NOTE</div>
+              <h3>给插件的安全说明</h3>
+              <p>可填写希望保留、调整或避免的公开说明。该内容会作为 `safeUserNote` 传入对应接口。</p>
+              <textarea id="safeNote" placeholder="例如：保留章节标题的古典感，正文导出前不要加入额外旁白。"></textarea>
+            </div>
+
+            <div class="revision-box" id="revisionBox">
+              <div class="eyebrow">REVISION REQUEST</div>
+              <h3>修订要求</h3>
+              <p>要求修订时填写修订条目；前端提交时按行整理为 `requestedChanges: string[]`。提交后本检查点进入 revision_requested，插件运行回到处理状态。</p>
+              <textarea id="revisionText" placeholder="例如：&#10;目录层级太细，请合并附录索引。&#10;只保留正文、角色表、世界摘要和事件线。"></textarea>
+              <button class="submit-revision" id="submitRevision" type="button">提交修订要求</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="stack" aria-labelledby="safetyTitle">
+          <div class="side-card">
+            <div class="eyebrow">SAFETY CHECK</div>
+            <h3 id="safetyTitle">安全边界</h3>
+            <p>检查点只处理插件派生产物，不改变源故事和最终故事包。</p>
+            <div class="guard-grid">
+              <div class="guard"><span>源故事写入</span><strong>禁止</strong></div>
+              <div class="guard"><span>最终快照</span><strong>只读</strong></div>
+              <div class="guard"><span>原始响应</span><strong>隐藏</strong></div>
+              <div class="guard"><span>未确认草稿</span><strong>不可读</strong></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <div class="eyebrow">CHECKPOINT DETAIL</div>
+            <h3>检查点详情</h3>
+            <div class="field-grid">
+              <div class="field"><span>checkpoint_id</span><strong id="checkpointId">cp_0427_outline</strong></div>
+              <div class="field"><span>状态</span><strong id="stateField">pending</strong></div>
+              <div class="field"><span>运行 ID</span><strong>run_0427</strong></div>
+              <div class="field"><span>产物</span><strong id="artifactField">artifact_outline</strong></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <div class="eyebrow">NEXT</div>
+            <h3>下一步</h3>
+            <p id="nextCopy">确认当前检查点后，可以进入 05 成果审阅。若要求修订，插件会回到运行状态。</p>
+            <div class="result-card">
+              <strong id="resultTitle">等待决策</strong>
+              <p id="resultCopy">选择确认、修订、拒绝或延后后，这里会展示当前决策结果。</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="action-bar">
+        <p class="action-note" id="actionNote">当前检查点等待用户处理。确认后才允许进入成果审阅。</p>
+        <div class="action-buttons">
+          <button class="action-button secondary" id="deferButton" type="button">延后处理</button>
+          <button class="action-button danger" id="rejectButton" type="button">拒绝检查点</button>
+          <button class="action-button brass" id="reviseButton" type="button">要求修订</button>
+          <button class="action-button primary" id="confirmButton" type="button">确认检查点</button>
+          <button class="action-button primary" id="nextButton" type="button" disabled>进入成果审阅</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const checkpoints = [
+      {
+        id: "cp_0427_outline",
+        type: "STRUCTURE GATE",
+        title: "成稿结构确认",
+        short: "目录、正文组织与附录索引",
+        copy: "插件准备把最终故事包转换为成稿目录、正文组织与附录索引，需要用户确认是否允许继续生成派生产物。",
+        tag: "待确认",
+        status: "pending",
+        artifact: "artifact_outline",
+        boundary: "确认只允许插件继续生成派生成果，不会修改故事事实、正文、记忆、事件线或最终故事包快照。",
+        fields: [
+          ["来源快照", "正式成稿快照"],
+          ["影响范围", "派生成果"],
+          ["下一产物", "目录与正文壳层"],
+          ["用户动作", "确认 / 修订 / 拒绝 / 延后"]
+        ],
+        lines: [
+          ["正文组织", "12 章 / 60 幕将被整理为连续成稿结构。"],
+          ["附录索引", "角色表、世界摘要、事件线、锁定约束会作为只读附录。"],
+          ["安全限制", "不读取实时故事状态，不展示原始响应。"]
+        ]
+      },
+      {
+        id: "cp_0427_format",
+        type: "EXPORT GATE",
+        title: "导出格式确认",
+        short: "PDF、Markdown 与纯文本导出边界",
+        copy: "插件准备生成可下载格式的预设参数，需要用户确认导出格式与归档边界。",
+        tag: "待确认",
+        status: "pending",
+        artifact: "artifact_export_plan",
+        boundary: "确认后只会生成导出配置和派生文件，不会把配置反写回故事内容。",
+        fields: [
+          ["默认格式", "PDF + Markdown"],
+          ["归档方式", "只归档派生文件"],
+          ["下载状态", "等待生成"],
+          ["用户动作", "确认 / 修订 / 拒绝 / 延后"]
+        ],
+        lines: [
+          ["PDF", "保留封面、目录、正文、附录顺序。"],
+          ["Markdown", "用于后续编辑和版本对比。"],
+          ["纯文本", "可选导出，不作为默认下载项。"]
+        ]
+      },
+      {
+        id: "cp_0427_archive",
+        type: "ARCHIVE GATE",
+        title: "归档说明确认",
+        short: "成果命名、版本标记与归档备注",
+        copy: "插件准备写入派生成果的归档说明，需要用户确认命名和安全摘要是否可见。",
+        tag: "待确认",
+        status: "pending",
+        artifact: "artifact_archive_note",
+        boundary: "归档说明只描述派生产物，不把插件分析过程、内部推理或原始 payload 写入用户可见内容。",
+        fields: [
+          ["版本标记", "v0.7.0"],
+          ["归档名", "钟楼证词 成稿包"],
+          ["备注来源", "safe_summary"],
+          ["用户动作", "确认 / 修订 / 拒绝 / 延后"]
+        ],
+        lines: [
+          ["成果名称", "钟楼证词 - 成稿导出包"],
+          ["版本备注", "基于正式成稿快照生成。"],
+          ["隐藏内容", "不包含 prompt、原始响应、隐藏推理。"]
+        ]
+      }
+    ];
+
+    const list = document.querySelector("#checkpointList");
+    const checkpointType = document.querySelector("#checkpointType");
+    const checkpointTitle = document.querySelector("#checkpointTitle");
+    const checkpointCopy = document.querySelector("#checkpointCopy");
+    const checkpointTag = document.querySelector("#checkpointTag");
+    const previewTitle = document.querySelector("#previewTitle");
+    const artifactLines = document.querySelector("#artifactLines");
+    const decisionBoundary = document.querySelector("#decisionBoundary");
+    const fieldGrid = document.querySelector("#fieldGrid");
+    const checkpointId = document.querySelector("#checkpointId");
+    const stateField = document.querySelector("#stateField");
+    const artifactField = document.querySelector("#artifactField");
+    const modeBadge = document.querySelector("#modeBadge");
+    const summaryStatus = document.querySelector("#summaryStatus");
+    const summaryCount = document.querySelector("#summaryCount");
+    const actionNote = document.querySelector("#actionNote");
+    const resultTitle = document.querySelector("#resultTitle");
+    const resultCopy = document.querySelector("#resultCopy");
+    const topStatus = document.querySelector("#topStatus");
+    const topDot = document.querySelector("#topDot");
+    const toast = document.querySelector("#toast");
+    const revisionBox = document.querySelector("#revisionBox");
+    const revisionText = document.querySelector("#revisionText");
+    const safeNote = document.querySelector("#safeNote");
+    const nextButton = document.querySelector("#nextButton");
+    const confirmButton = document.querySelector("#confirmButton");
+    const reviseButton = document.querySelector("#reviseButton");
+    const rejectButton = document.querySelector("#rejectButton");
+    const deferButton = document.querySelector("#deferButton");
+    const submitRevision = document.querySelector("#submitRevision");
+
+    let selectedIndex = 0;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function statusLabel(status) {
+      return {
+        pending: "待确认",
+        confirmed: "已确认",
+        revision_requested: "已请求修订",
+        rejected: "已拒绝",
+        deferred: "已延后"
+      }[status] || "待确认";
+    }
+
+    function tagClass(status) {
+      return {
+        pending: "tag warn",
+        confirmed: "tag confirmed",
+        revision_requested: "tag revision",
+        rejected: "tag reject",
+        deferred: "tag deferred"
+      }[status] || "tag warn";
+    }
+
+    function renderList() {
+      list.innerHTML = checkpoints.map((item, index) => `
+        <button class="checkpoint-button ${index === selectedIndex ? "active" : ""}" type="button" data-index="${index}">
+          <header>
+            <strong>${item.title}</strong>
+            <span class="${tagClass(item.status)}">${statusLabel(item.status)}</span>
+          </header>
+          <small>${item.short}</small>
+        </button>
+      `).join("");
+      list.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedIndex = Number(button.dataset.index);
+          revisionBox.classList.remove("show");
+          render();
+        });
+      });
+    }
+
+    function render() {
+      const item = checkpoints[selectedIndex];
+      checkpointType.textContent = item.type;
+      checkpointTitle.textContent = item.title;
+      checkpointCopy.textContent = item.copy;
+      checkpointTag.textContent = statusLabel(item.status);
+      checkpointTag.className = tagClass(item.status);
+      previewTitle.textContent = item.title.replace("确认", "预览");
+      decisionBoundary.textContent = item.boundary;
+      checkpointId.textContent = item.id;
+      stateField.textContent = item.status;
+      artifactField.textContent = item.artifact;
+      modeBadge.textContent = item.title.replace("确认", "");
+      artifactLines.innerHTML = item.lines.map(([label, value]) => `
+        <div class="artifact-line"><span>${label}</span><strong>${value}</strong></div>
+      `).join("");
+      fieldGrid.innerHTML = item.fields.map(([label, value]) => `
+        <div class="field"><span>${label}</span><strong>${value}</strong></div>
+      `).join("");
+      renderList();
+      updateGlobalStatus();
+    }
+
+    function updateGlobalStatus() {
+      const remaining = checkpoints.filter((item) => item.status === "pending").length;
+      summaryCount.textContent = String(remaining);
+      const current = checkpoints[selectedIndex];
+      summaryStatus.textContent = statusLabel(current.status);
+      nextButton.disabled = remaining > 0 || checkpoints.some((item) => item.status !== "confirmed");
+      topDot.className = current.status === "confirmed" ? "dot ready" : current.status === "rejected" ? "dot warn" : "dot";
+      if (current.status === "confirmed") {
+        topStatus.textContent = remaining === 0 ? "检查点已确认" : "仍有检查点待处理";
+        actionNote.textContent = remaining === 0 ? "所有检查点已确认，可以进入成果审阅。" : `当前检查点已确认，还有 ${remaining} 个检查点待处理。`;
+        resultTitle.textContent = "已确认";
+        resultCopy.textContent = remaining === 0 ? "将调用 confirmPluginCheckpoint，随后进入 05 成果审阅。" : "将调用 confirmPluginCheckpoint。其余检查点处理完成后才能进入 05 成果审阅。";
+      } else if (current.status === "revision_requested") {
+        topStatus.textContent = "已请求修订";
+        actionNote.textContent = "修订要求已记录，插件运行会回到处理状态。";
+        resultTitle.textContent = "修订请求已提交";
+        resultCopy.textContent = "将调用 revisePluginCheckpoint，并把 requestedChanges 数组交给插件处理。";
+      } else if (current.status === "rejected") {
+        topStatus.textContent = "检查点已拒绝";
+        actionNote.textContent = "当前检查点已拒绝。拒绝不会修改源故事或最终故事包。";
+        resultTitle.textContent = "已拒绝";
+        resultCopy.textContent = "将调用 rejectPluginCheckpoint，后续可进入问题处理或返回插件选择。";
+      } else if (current.status === "deferred") {
+        topStatus.textContent = "检查点已延后";
+        actionNote.textContent = "当前检查点已延后处理，可稍后回到本页继续确认。";
+        resultTitle.textContent = "已延后";
+        resultCopy.textContent = "将调用 deferPluginCheckpoint，本次运行保持等待用户处理。";
+      } else {
+        topStatus.textContent = "等待用户确认";
+        actionNote.textContent = "当前检查点等待用户处理。确认后才允许进入成果审阅。";
+        resultTitle.textContent = "等待决策";
+        resultCopy.textContent = "选择确认、修订、拒绝或延后后，这里会展示当前决策结果。";
+      }
+    }
+
+    function setCurrentStatus(status) {
+      checkpoints[selectedIndex].status = status;
+      checkpoints[selectedIndex].tag = statusLabel(status);
+      render();
+    }
+
+    confirmButton.addEventListener("click", () => {
+      revisionBox.classList.remove("show");
+      setCurrentStatus("confirmed");
+      const remaining = checkpoints.filter((item) => item.status !== "confirmed").length;
+      showToast(remaining === 0 ? "所有检查点已确认，可以进入成果审阅。" : `检查点已确认，还有 ${remaining} 个检查点待处理。`);
+    });
+
+    reviseButton.addEventListener("click", () => {
+      revisionBox.classList.add("show");
+      revisionText.focus();
+      showToast("请填写修订要求后提交。");
+    });
+
+    submitRevision.addEventListener("click", () => {
+      setCurrentStatus("revision_requested");
+      revisionBox.classList.remove("show");
+      showToast("修订要求已记录。");
+    });
+
+    rejectButton.addEventListener("click", () => {
+      revisionBox.classList.remove("show");
+      setCurrentStatus("rejected");
+      showToast("检查点已拒绝。");
+    });
+
+    deferButton.addEventListener("click", () => {
+      revisionBox.classList.remove("show");
+      setCurrentStatus("deferred");
+      showToast("检查点已延后处理。");
+    });
+
+    nextButton.addEventListener("click", () => {
+      const note = safeNote.value.trim();
+      showToast(note ? "将带着安全说明进入 05 成果审阅。" : "将进入 05 成果审阅。");
+      actionNote.textContent = "下一步：进入 05 插件成果审阅。";
+    });
+    document.querySelector(".topbar .ghost-button").addEventListener("click", () => {
+      showToast("将返回 03 插件运行中。");
+      actionNote.textContent = "下一步：返回插件运行页。";
+    });
+
+    render();
+  </script>
+</body>
+</html>

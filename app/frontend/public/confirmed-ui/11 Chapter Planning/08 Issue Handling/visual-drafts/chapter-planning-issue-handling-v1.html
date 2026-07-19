@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 问题处理 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --ink: #28312b;
+      --muted: #756b60;
+      --quiet: #9b8d7f;
+      --line: rgba(116, 92, 66, 0.2);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92), rgba(236, 231, 220, 0.62) 47%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.36), rgba(176, 138, 107, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1400px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr) 172px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .issue-card,
+    .choice-button,
+    .filter-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .issue-card:hover,
+    .choice-button:hover,
+    .filter-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 14px;
+      line-height: 1.62;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 640px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 354px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 20px 28px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .summary-grid {
+      min-width: 470px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-height: 58px;
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 8px;
+      color: #3c4039;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .issue-body {
+      min-height: 0;
+      padding: 14px 28px 12px;
+      display: grid;
+      grid-template-columns: 304px minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .queue-panel,
+    .detail-panel {
+      min-height: 0;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 84% 12%, rgba(200, 168, 104, 0.1), transparent 34%),
+        rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      overflow: hidden;
+    }
+
+    .queue-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .queue-head,
+    .detail-head {
+      padding: 12px 14px 9px;
+      border-bottom: 1px solid rgba(116, 92, 66, 0.14);
+    }
+
+    .queue-head h3,
+    .detail-head h3 {
+      margin: 0;
+      color: #343932;
+      font-size: 18px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .queue-head p,
+    .detail-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(116, 92, 66, 0.12);
+    }
+
+    .filter-button {
+      min-height: 32px;
+      padding: 0;
+      border-color: rgba(116, 92, 66, 0.12);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: none;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .filter-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+    }
+
+    .issue-list {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .issue-card {
+      width: 100%;
+      min-height: 76px;
+      padding: 10px 12px;
+      text-align: left;
+      border-color: rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 8px 18px rgba(75, 55, 34, 0.06);
+    }
+
+    .issue-card.active {
+      transform: translateY(-1px);
+      border-color: rgba(180, 138, 120, 0.42);
+      background: rgba(255, 249, 235, 0.88);
+      box-shadow: 0 16px 32px rgba(142, 103, 91, 0.14);
+    }
+
+    .issue-card.resolved {
+      border-color: rgba(111, 123, 104, 0.24);
+      background: rgba(241, 246, 240, 0.58);
+    }
+
+    .issue-card strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #363a34;
+      font-size: 13px;
+      line-height: 1.34;
+      font-weight: 900;
+    }
+
+    .issue-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 540;
+    }
+
+    .tag {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--bronze-deep);
+      font-size: 11px;
+      font-weight: 860;
+    }
+
+    .tag.warn {
+      background: rgba(200, 168, 104, 0.16);
+      color: var(--gold-deep);
+    }
+
+    .tag.ask {
+      background: rgba(111, 126, 131, 0.16);
+      color: var(--blue-gray-deep);
+    }
+
+    .tag.done {
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+    }
+
+    .detail-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .detail-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 11px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .detail-block,
+    .decision-box {
+      padding: 9px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.54);
+    }
+
+    .detail-block.wide {
+      grid-column: 1 / -1;
+    }
+
+    .detail-block span,
+    .decision-box span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 840;
+    }
+
+    .detail-block strong,
+    .decision-box strong {
+      display: block;
+      margin-top: 5px;
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.42;
+      font-weight: 900;
+    }
+
+    .detail-block p,
+    .decision-box p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .choice-button {
+      min-height: 38px;
+      padding: 0 12px;
+      border-color: rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.56);
+      box-shadow: 0 8px 18px rgba(75, 55, 34, 0.06);
+    }
+
+    .choice-button.active {
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.5);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      resize: none;
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.2);
+      background: rgba(255, 252, 244, 0.62);
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.45;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 126, 131, 0.42);
+      box-shadow: 0 0 0 4px rgba(111, 126, 131, 0.12);
+    }
+
+    .inline-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 28px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 16px 36px rgba(86, 98, 79, 0.22);
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .state-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.14);
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .state-pill.ready {
+      background: rgba(111, 123, 104, 0.14);
+      color: var(--sage-deep);
+    }
+
+    .health-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .health-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .health-item.warn {
+      border-color: rgba(180, 138, 120, 0.28);
+      background: rgba(255, 246, 236, 0.58);
+    }
+
+    .health-item.ready {
+      border-color: rgba(111, 123, 104, 0.22);
+      background: rgba(241, 246, 240, 0.56);
+    }
+
+    .health-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .health-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(116, 92, 66, 0.12);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .health-item.warn .mini-dot {
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--bronze-deep);
+    }
+
+    .health-item.ready .mini-dot {
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+    }
+
+    .handoff-card {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .handoff-card strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .handoff-card p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .issue-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 112px;
+      }
+
+      .summary-grid {
+        min-width: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .issue-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .summary-grid,
+      .detail-grid,
+      .choice-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group,
+      .inline-actions {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回场景数</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 问题处理</div>
+      <div class="model-pill"><span class="status-dot"></span><span id="top-state">待处理</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>处理章节计划确认前的阻塞、警告和用户确认项；必要时发起修订，处理完成后再进入确认计划。</p>
+      </div>
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">当前章 Framework</button>
+        <button class="stage-button" type="button">章节路线</button>
+        <button class="stage-button" type="button">场景数与修复</button>
+        <button class="stage-button active" type="button">问题处理</button>
+        <button class="stage-button" type="button">确认计划</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <header class="panel-head">
+          <div>
+            <p class="eyebrow">问题处理</p>
+            <h2>确认前验证</h2>
+            <p class="hint">这些问题来自系统验证结果，包含阻塞、警告和需要用户确认的剧情判断。</p>
+          </div>
+          <div class="summary-grid" aria-label="问题摘要">
+            <div class="summary-item">
+              <span>阻塞</span>
+              <strong id="summary-blocking">1 项</strong>
+            </div>
+            <div class="summary-item">
+              <span>警告</span>
+              <strong id="summary-warning">1 项</strong>
+            </div>
+            <div class="summary-item">
+              <span>需确认</span>
+              <strong id="summary-confirm">1 项</strong>
+            </div>
+            <div class="summary-item">
+              <span>已处理</span>
+              <strong id="summary-done">0 / 3</strong>
+            </div>
+          </div>
+        </header>
+
+        <div class="issue-body">
+          <section class="queue-panel" aria-label="问题队列">
+            <div class="queue-head">
+              <h3>问题队列</h3>
+              <p>点击问题查看处理动作。</p>
+            </div>
+            <div class="filters">
+              <button class="filter-button active" data-filter="all" type="button">全部</button>
+              <button class="filter-button" data-filter="blocking" type="button">阻塞</button>
+              <button class="filter-button" data-filter="warning" type="button">警告</button>
+              <button class="filter-button" data-filter="confirmation" type="button">确认</button>
+            </div>
+            <div class="issue-list" id="issue-list"></div>
+          </section>
+
+          <section class="detail-panel" aria-label="问题详情">
+            <header class="detail-head">
+              <h3 id="detail-title">场景数缺口</h3>
+              <p id="detail-subtitle">阻塞项会阻止章节计划确认。</p>
+            </header>
+            <div class="detail-scroll">
+              <div class="detail-grid">
+                <div class="detail-block">
+                  <span>类型</span>
+                  <strong id="detail-type">阻塞</strong>
+                </div>
+                <div class="detail-block">
+                  <span>状态</span>
+                  <strong id="detail-state">待处理</strong>
+                </div>
+                <div class="detail-block wide">
+                  <span>问题说明</span>
+                  <p id="detail-description">第 6 章仍缺少已保存的场景数，章节计划不能进入确认。</p>
+                </div>
+                <div class="detail-block">
+                  <span>影响范围</span>
+                  <strong id="detail-scope">第 6 章 / 场景数</strong>
+                </div>
+                <div class="detail-block">
+                  <span>建议处理</span>
+                  <strong id="detail-suggestion">返回场景数设置并保存</strong>
+                </div>
+              </div>
+
+              <div class="decision-box">
+                <span>处理选择</span>
+                <strong id="choice-title">选择本问题的处理结果</strong>
+                <div class="choice-grid" id="choice-grid"></div>
+              </div>
+
+              <div class="decision-box">
+                <span>修订 / 确认说明</span>
+                <textarea id="resolution-note" placeholder="写下给章节计划修订或确认保存的说明。"></textarea>
+              </div>
+
+              <div class="inline-actions">
+                <button class="soft-button" id="mark-pending-button" type="button">保持待处理</button>
+                <button class="primary-button" id="resolve-button" type="button">标记已处理</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="action-note">阻塞项处理完成前不能确认章节计划。警告和确认项需要用户明确选择。</p>
+          <div class="button-group">
+            <button class="soft-button" id="revise-button" type="button">修订章节计划</button>
+            <button class="soft-button" id="refresh-button" type="button">刷新验证</button>
+            <button class="primary-button" id="confirm-button" type="button" disabled>进入确认计划</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="处理状态">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">处理状态</p>
+            <h2 id="side-title">需要处理</h2>
+          </div>
+          <span class="state-pill" id="state-pill">未完成</span>
+        </div>
+
+        <div class="health-list">
+          <div class="health-item warn" id="health-blocking">
+            <strong><span class="mini-dot">1</span>阻塞项</strong>
+            <p id="health-blocking-copy">还有 1 个阻塞项未处理。</p>
+          </div>
+          <div class="health-item warn" id="health-warning">
+            <strong><span class="mini-dot">2</span>警告项</strong>
+            <p id="health-warning-copy">还有 1 个警告项需要接受或转为修订。</p>
+          </div>
+          <div class="health-item warn" id="health-confirm">
+            <strong><span class="mini-dot">3</span>确认项</strong>
+            <p id="health-confirm-copy">还有 1 个剧情揭示问题需要用户确认。</p>
+          </div>
+          <div class="health-item">
+            <strong><span class="mini-dot">4</span>确认条件</strong>
+            <p id="health-ready-copy">全部问题处理完成后，可以进入确认计划。</p>
+          </div>
+        </div>
+
+        <div class="handoff-card">
+          <strong>后续动作</strong>
+          <p>如果需要修改路线，使用修订章节计划；如果只是接受警告或回答确认项，处理完成后进入确认计划。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const issues = [
+      {
+        id: "scene-count-gap",
+        type: "blocking",
+        title: "场景数缺口",
+        subtitle: "第 6 章缺少场景数",
+        description: "第 6 章还没有已保存的场景数，确认章节计划前必须补齐。",
+        scope: "第 6 章 / 场景数",
+        suggestion: "返回场景数设置并保存",
+        choices: ["返回场景数设置", "已在前一步保存", "转为修订"],
+        selectedChoice: "",
+        status: "pending"
+      },
+      {
+        id: "prompt-fidelity",
+        type: "warning",
+        title: "路线目标覆盖偏弱",
+        subtitle: "章节路线目标覆盖不足",
+        description: "章节路线覆盖了主目标，但第 8 章的揭示节奏与用户目标存在轻微偏离。",
+        scope: "第 8 章 / 协议影子",
+        suggestion: "接受警告或修订第 8 章揭示节奏",
+        choices: ["接受警告", "修订第 8 章", "推迟揭示"],
+        selectedChoice: "",
+        status: "pending"
+      },
+      {
+        id: "early-reveal",
+        type: "confirmation",
+        title: "协议揭示过早",
+        subtitle: "需要用户确认剧情节奏",
+        description: "第 8 章可能过早展示旧贵族与商会协议轮廓，需要确认是否保留当前揭示位置。",
+        scope: "第 8 章 / 剧情确认",
+        suggestion: "保留当前揭示，或把明确证据推迟到第 10 章以后",
+        choices: ["保留当前揭示", "推迟到第 10 章", "降低证据强度"],
+        selectedChoice: "",
+        status: "pending"
+      }
+    ];
+
+    const typeLabels = {
+      blocking: "阻塞",
+      warning: "警告",
+      confirmation: "需确认"
+    };
+
+    const typeTagClasses = {
+      blocking: "",
+      warning: "warn",
+      confirmation: "ask"
+    };
+
+    const issueList = document.getElementById("issue-list");
+    const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
+    const detailTitle = document.getElementById("detail-title");
+    const detailSubtitle = document.getElementById("detail-subtitle");
+    const detailType = document.getElementById("detail-type");
+    const detailState = document.getElementById("detail-state");
+    const detailDescription = document.getElementById("detail-description");
+    const detailScope = document.getElementById("detail-scope");
+    const detailSuggestion = document.getElementById("detail-suggestion");
+    const choiceGrid = document.getElementById("choice-grid");
+    const resolutionNote = document.getElementById("resolution-note");
+    const resolveButton = document.getElementById("resolve-button");
+    const markPendingButton = document.getElementById("mark-pending-button");
+    const reviseButton = document.getElementById("revise-button");
+    const refreshButton = document.getElementById("refresh-button");
+    const confirmButton = document.getElementById("confirm-button");
+    const actionNote = document.getElementById("action-note");
+    const topState = document.getElementById("top-state");
+    const sideTitle = document.getElementById("side-title");
+    const statePill = document.getElementById("state-pill");
+    const summaryBlocking = document.getElementById("summary-blocking");
+    const summaryWarning = document.getElementById("summary-warning");
+    const summaryConfirm = document.getElementById("summary-confirm");
+    const summaryDone = document.getElementById("summary-done");
+    const healthBlocking = document.getElementById("health-blocking");
+    const healthWarning = document.getElementById("health-warning");
+    const healthConfirm = document.getElementById("health-confirm");
+    const healthBlockingCopy = document.getElementById("health-blocking-copy");
+    const healthWarningCopy = document.getElementById("health-warning-copy");
+    const healthConfirmCopy = document.getElementById("health-confirm-copy");
+    const healthReadyCopy = document.getElementById("health-ready-copy");
+
+    let activeIssueId = issues[0].id;
+    let activeFilter = "all";
+
+    function currentIssue() {
+      return issues.find((issue) => issue.id === activeIssueId) || issues[0];
+    }
+
+    function pendingByType(type) {
+      return issues.filter((issue) => issue.type === type && issue.status !== "resolved").length;
+    }
+
+    function updateHealthItem(element, isReady) {
+      element.classList.toggle("warn", !isReady);
+      element.classList.toggle("ready", isReady);
+    }
+
+    function renderIssueList() {
+      const visibleIssues = activeFilter === "all"
+        ? issues
+        : issues.filter((issue) => issue.type === activeFilter);
+      issueList.innerHTML = "";
+
+      visibleIssues.forEach((issue) => {
+        const card = document.createElement("button");
+        const tagClass = issue.status === "resolved" ? "done" : typeTagClasses[issue.type];
+        card.type = "button";
+        card.className = `issue-card${issue.id === activeIssueId ? " active" : ""}${issue.status === "resolved" ? " resolved" : ""}`;
+        card.dataset.id = issue.id;
+        card.innerHTML = `
+          <strong>${issue.title}<span class="tag ${tagClass}">${issue.status === "resolved" ? "已处理" : typeLabels[issue.type]}</span></strong>
+          <span>${issue.subtitle}</span>
+        `;
+        issueList.appendChild(card);
+      });
+    }
+
+    function renderChoices(issue) {
+      choiceGrid.innerHTML = "";
+      issue.choices.forEach((choice) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `choice-button${issue.selectedChoice === choice ? " active" : ""}`;
+        button.textContent = choice;
+        button.addEventListener("click", () => {
+          issue.selectedChoice = choice;
+          renderChoices(issue);
+        });
+        choiceGrid.appendChild(button);
+      });
+    }
+
+    function renderDetail() {
+      const issue = currentIssue();
+      detailTitle.textContent = issue.title;
+      detailSubtitle.textContent = issue.status === "resolved" ? "该问题已处理。" : issue.subtitle;
+      detailType.textContent = typeLabels[issue.type];
+      detailState.textContent = issue.status === "resolved" ? "已处理" : "待处理";
+      detailDescription.textContent = issue.description;
+      detailScope.textContent = issue.scope;
+      detailSuggestion.textContent = issue.suggestion;
+      resolutionNote.value = issue.note || "";
+      renderChoices(issue);
+    }
+
+    function updateSummary() {
+      const blocking = pendingByType("blocking");
+      const warning = pendingByType("warning");
+      const confirmation = pendingByType("confirmation");
+      const done = issues.filter((issue) => issue.status === "resolved").length;
+      const ready = done === issues.length;
+
+      summaryBlocking.textContent = `${blocking} 项`;
+      summaryWarning.textContent = `${warning} 项`;
+      summaryConfirm.textContent = `${confirmation} 项`;
+      summaryDone.textContent = `${done} / ${issues.length}`;
+
+      updateHealthItem(healthBlocking, blocking === 0);
+      updateHealthItem(healthWarning, warning === 0);
+      updateHealthItem(healthConfirm, confirmation === 0);
+      healthBlockingCopy.textContent = blocking ? `还有 ${blocking} 个阻塞项未处理。` : "阻塞项已经处理完成。";
+      healthWarningCopy.textContent = warning ? `还有 ${warning} 个警告项需要接受或转为修订。` : "警告项已经处理完成。";
+      healthConfirmCopy.textContent = confirmation ? `还有 ${confirmation} 个剧情确认项需要选择。` : "确认项已经处理完成。";
+      healthReadyCopy.textContent = ready ? "可以进入确认计划。" : "全部问题处理完成后，可以进入确认计划。";
+
+      confirmButton.disabled = !ready;
+      confirmButton.classList.toggle("ready", ready);
+      topState.textContent = ready ? "可确认" : "待处理";
+      sideTitle.textContent = ready ? "可以确认" : "需要处理";
+      statePill.textContent = ready ? "已完成" : "未完成";
+      statePill.classList.toggle("ready", ready);
+      actionNote.textContent = ready
+        ? "所有问题已处理，可以进入确认计划。"
+        : "阻塞项处理完成前不能确认章节计划。警告和确认项需要用户明确选择。";
+    }
+
+    function updateAll() {
+      renderIssueList();
+      renderDetail();
+      updateSummary();
+    }
+
+    issueList.addEventListener("click", (event) => {
+      const card = event.target.closest(".issue-card");
+      if (!card) return;
+      activeIssueId = card.dataset.id;
+      updateAll();
+    });
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter;
+        filterButtons.forEach((item) => item.classList.toggle("active", item === button));
+        const visibleIssue = activeFilter === "all" ? issues[0] : issues.find((issue) => issue.type === activeFilter);
+        if (visibleIssue) activeIssueId = visibleIssue.id;
+        updateAll();
+      });
+    });
+
+    resolutionNote.addEventListener("input", () => {
+      currentIssue().note = resolutionNote.value;
+    });
+
+    resolveButton.addEventListener("click", () => {
+      const issue = currentIssue();
+      if (!issue.selectedChoice) {
+        issue.selectedChoice = issue.choices[0];
+      }
+      issue.status = "resolved";
+      updateAll();
+    });
+
+    markPendingButton.addEventListener("click", () => {
+      const issue = currentIssue();
+      issue.status = "pending";
+      updateAll();
+    });
+
+    reviseButton.addEventListener("click", () => {
+      const issue = currentIssue();
+      issue.selectedChoice = issue.selectedChoice || "转为修订";
+      issue.status = "resolved";
+      issue.note = resolutionNote.value || `根据「${issue.title}」修订章节计划。`;
+      updateAll();
+    });
+
+    refreshButton.addEventListener("click", () => {
+      updateAll();
+    });
+
+    updateAll();
+  </script>
+</body>
+</html>

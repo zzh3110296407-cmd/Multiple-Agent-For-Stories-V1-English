@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最终输出 / 成稿组装中 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(237, 226, 207, 0.7);
+      --ink: #302f2a;
+      --muted: #71685f;
+      --quiet: #978c7f;
+      --line: rgba(105, 82, 58, 0.2);
+      --line-strong: rgba(105, 82, 58, 0.34);
+      --brass: #b4956f;
+      --brass-deep: #856947;
+      --clay: #b48a78;
+      --sage: #767f6c;
+      --sage-deep: #59614f;
+      --blue-gray: #738284;
+      --danger: #9b665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.82), rgba(236, 231, 220, 0.6) 43%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/final-output-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.58), transparent 31%),
+        radial-gradient(circle at 76% 28%, rgba(180, 149, 111, 0.13), transparent 34%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.22), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 230px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .status-pill {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+
+    .primary-button {
+      min-width: 178px;
+      border-color: rgba(89, 97, 79, 0.46);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+
+    .primary-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px rgba(71, 52, 31, 0.08);
+    }
+
+    .primary-button:not(:disabled):hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #65705d, #806d50);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.16);
+      flex: 0 0 auto;
+      animation: pulseDot 1400ms ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 0.75; }
+      50% { transform: scale(1.25); opacity: 1; }
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(40px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(238, 227, 208, 0.72)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 860;
+      letter-spacing: 0;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      color: #33332d;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 27px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    h3 {
+      font-size: 16px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .panel-head p:last-child,
+    .muted {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.63);
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    .assembly-badge {
+      align-self: start;
+      min-width: 146px;
+      padding: 10px 12px;
+      border: 1px solid rgba(180, 149, 111, 0.28);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      text-align: center;
+    }
+
+    .assembly-badge span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .assembly-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #5f604f;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .flow-strip {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      padding: 0 26px 18px;
+    }
+
+    .flow-strip::before {
+      content: "";
+      position: absolute;
+      left: 44px;
+      right: 44px;
+      top: 15px;
+      height: 1px;
+      background: rgba(105, 82, 58, 0.18);
+    }
+
+    .flow-item {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      padding: 0 10px;
+      background: transparent;
+    }
+
+    .flow-item span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(105, 82, 58, 0.18);
+      border-radius: 50%;
+      color: #8f8477;
+      font-size: 11px;
+      font-weight: 860;
+      background: rgba(255, 252, 244, 0.84);
+    }
+
+    .flow-item.current span {
+      color: #fffaf0;
+      background: var(--sage-deep);
+      border-color: rgba(89, 97, 79, 0.42);
+      box-shadow: 0 10px 20px rgba(71, 52, 31, 0.18);
+    }
+
+    .flow-item strong {
+      display: block;
+      margin-top: 9px;
+      color: #393832;
+      font-size: 13px;
+      line-height: 1.3;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .flow-item:not(.current) strong {
+      color: rgba(57, 56, 50, 0.55);
+      font-weight: 820;
+    }
+
+    .assembly-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 20px;
+      padding: 0 26px 20px;
+      overflow: hidden;
+    }
+
+    .stage {
+      min-height: 0;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 45% 28%, rgba(180, 149, 111, 0.14), transparent 34%),
+        rgba(255, 252, 244, 0.42);
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 18px;
+    }
+
+    .assembly-visual {
+      position: relative;
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    .assembly-visual::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 50% 48%, rgba(180, 149, 111, 0.2), transparent 35%),
+        linear-gradient(90deg, transparent, rgba(105, 82, 58, 0.08), transparent);
+      opacity: 0.72;
+    }
+
+    .assembly-visual::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      top: 50%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(133, 105, 71, 0.34), transparent);
+      animation: guideGlow 2400ms ease-in-out infinite;
+    }
+
+    @keyframes guideGlow {
+      0%, 100% { opacity: 0.35; transform: scaleX(0.72); }
+      50% { opacity: 0.9; transform: scaleX(1); }
+    }
+
+    .source-chip {
+      --x: 0px;
+      --y: 0px;
+      position: absolute;
+      z-index: 2;
+      min-width: 96px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: 999px;
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: 0 12px 26px rgba(71, 52, 31, 0.08);
+      color: #5a5147;
+      font-size: 12px;
+      font-weight: 820;
+      transform: translate(var(--x), var(--y));
+      animation: sourceMerge 5200ms ease-in-out infinite;
+      backdrop-filter: blur(8px);
+    }
+
+    .source-chip::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 4px rgba(180, 149, 111, 0.13);
+    }
+
+    .source-chip.story {
+      --x: -220px;
+      --y: -94px;
+      animation-delay: 0ms;
+    }
+
+    .source-chip.index {
+      --x: 218px;
+      --y: -82px;
+      animation-delay: 420ms;
+    }
+
+    .source-chip.roles {
+      --x: -232px;
+      --y: 2px;
+      animation-delay: 840ms;
+    }
+
+    .source-chip.world {
+      --x: 226px;
+      --y: 22px;
+      animation-delay: 1260ms;
+    }
+
+    .source-chip.events {
+      --x: -188px;
+      --y: 104px;
+      animation-delay: 1680ms;
+    }
+
+    .source-chip.rules {
+      --x: 190px;
+      --y: 108px;
+      animation-delay: 2100ms;
+    }
+
+    @keyframes sourceMerge {
+      0%, 100% {
+        opacity: 0.46;
+        transform: translate(var(--x), var(--y)) scale(0.96);
+      }
+      42% {
+        opacity: 1;
+        transform: translate(calc(var(--x) * 0.34), calc(var(--y) * 0.34)) scale(1);
+      }
+      62% {
+        opacity: 0.12;
+        transform: translate(0, 0) scale(0.72);
+      }
+    }
+
+    .manuscript-core {
+      position: relative;
+      z-index: 5;
+      width: min(430px, 76%);
+      height: 252px;
+      filter: drop-shadow(0 24px 38px rgba(71, 52, 31, 0.12));
+      animation: coreBreathe 2600ms ease-in-out infinite;
+    }
+
+    @keyframes coreBreathe {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .bound-page {
+      position: absolute;
+      inset: 30px 18px 12px 38px;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 5px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.96), rgba(235, 224, 204, 0.92)),
+        repeating-linear-gradient(0deg, transparent 0 23px, rgba(105, 82, 58, 0.07) 24px 25px);
+      transform-origin: left center;
+      animation: pageSettle 4200ms ease-in-out infinite;
+    }
+
+    .bound-page.back {
+      inset: 44px 8px 0 54px;
+      opacity: 0.42;
+      transform: rotate(3deg);
+      animation-delay: 180ms;
+    }
+
+    .bound-page.mid {
+      inset: 36px 13px 6px 46px;
+      opacity: 0.62;
+      transform: rotate(1.5deg);
+      animation-delay: 360ms;
+    }
+
+    .bound-page.front {
+      z-index: 3;
+      transform: rotate(0deg);
+    }
+
+    .bound-page.front::before {
+      content: "";
+      position: absolute;
+      left: 46px;
+      right: 42px;
+      top: 42px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(105, 82, 58, 0.12);
+      box-shadow:
+        0 32px 0 rgba(105, 82, 58, 0.1),
+        0 64px 0 rgba(105, 82, 58, 0.08),
+        0 96px 0 rgba(105, 82, 58, 0.08);
+    }
+
+    @keyframes pageSettle {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.035); }
+    }
+
+    .spine {
+      position: absolute;
+      z-index: 6;
+      left: 82px;
+      top: 50px;
+      bottom: 28px;
+      width: 2px;
+      border-radius: 999px;
+      background: rgba(133, 105, 71, 0.42);
+    }
+
+    .thread-line {
+      position: absolute;
+      z-index: 7;
+      left: 82px;
+      top: 50px;
+      width: 2px;
+      height: calc(100% - 78px);
+      border-radius: 999px;
+      background: linear-gradient(180deg, transparent, rgba(133, 105, 71, 0.9), transparent);
+      transform-origin: top;
+      animation: threadDraw 2600ms ease-in-out infinite;
+    }
+
+    @keyframes threadDraw {
+      0%, 100% { transform: scaleY(0.18); opacity: 0.4; }
+      55% { transform: scaleY(1); opacity: 1; }
+    }
+
+    .stitch {
+      position: absolute;
+      z-index: 8;
+      left: 76px;
+      width: 14px;
+      height: 14px;
+      border: 1px solid rgba(133, 105, 71, 0.56);
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.86);
+      box-shadow: inset 0 0 0 3px rgba(180, 149, 111, 0.14);
+      animation: stitchGlow 2600ms ease-in-out infinite;
+    }
+
+    .stitch.s1 { top: 66px; animation-delay: 0ms; }
+    .stitch.s2 { top: 114px; animation-delay: 180ms; }
+    .stitch.s3 { top: 162px; animation-delay: 360ms; }
+    .stitch.s4 { top: 210px; animation-delay: 540ms; }
+
+    @keyframes stitchGlow {
+      0%, 100% { opacity: 0.55; transform: scale(0.94); }
+      50% { opacity: 1; transform: scale(1.08); }
+    }
+
+    .progress-card {
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .progress-top strong {
+      color: #3d3b35;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .progress-top span {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .progress-track {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(105, 82, 58, 0.12);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 64%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--brass));
+      transition: width 520ms ease;
+    }
+
+    .steps {
+      min-height: 0;
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+      padding: 2px 3px 2px 0;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 13px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+    }
+
+    .step.current {
+      border-color: rgba(180, 149, 111, 0.42);
+      background: rgba(245, 237, 219, 0.74);
+    }
+
+    .step.done {
+      background: rgba(255, 252, 244, 0.62);
+    }
+
+    .mark {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fffaf0;
+      background: var(--sage);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .step.current .mark {
+      background: var(--brass);
+      animation: pulseDot 1400ms ease-in-out infinite;
+    }
+
+    .step.pending .mark {
+      color: #958a7b;
+      background: rgba(105, 82, 58, 0.12);
+    }
+
+    .step h4 {
+      margin: 0;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .step p {
+      margin: 6px 0 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.52;
+      font-weight: 520;
+    }
+
+    .step-state {
+      min-width: 68px;
+      padding: 6px 8px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.64);
+      color: #675c50;
+      font-size: 11px;
+      text-align: center;
+      font-weight: 860;
+    }
+
+    .step.done .step-state {
+      color: #59614f;
+      background: rgba(118, 127, 108, 0.14);
+    }
+
+    .step.current .step-state {
+      color: #7b6138;
+      background: rgba(180, 149, 111, 0.15);
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 26px 24px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+      background: rgba(255, 252, 244, 0.24);
+    }
+
+    .action-note {
+      margin-right: auto;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .side-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 17px;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .side-card p {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.66;
+      font-weight: 540;
+    }
+
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .metadata-grid div {
+      min-width: 0;
+      padding: 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+    }
+
+    .metadata-grid span,
+    .source-row small,
+    .boundary-row small {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.45;
+      font-weight: 660;
+    }
+
+    .metadata-grid strong {
+      display: block;
+      margin-top: 4px;
+      color: #363530;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .source-list,
+    .boundary-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .source-row,
+    .boundary-row {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .source-row .mark,
+    .boundary-row .mark {
+      width: 18px;
+      height: 18px;
+    }
+
+    .source-row strong,
+    .boundary-row strong {
+      display: block;
+      color: #363530;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      min-width: 240px;
+      max-width: min(380px, calc(100vw - 56px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: var(--shadow);
+      color: #3b3933;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 760;
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(16px);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1120px) {
+      .workspace {
+        width: min(100% - 36px, 980px);
+        margin: 22px auto;
+      }
+
+      .hero,
+      .layout,
+      .assembly-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-left: 0;
+      }
+
+      .summary-strip {
+        max-width: 540px;
+      }
+
+      body {
+        overflow-y: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: min(100% - 24px, 640px);
+        min-height: auto;
+        margin: 14px auto 22px;
+        gap: 14px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .back-button,
+      .status-pill {
+        width: 100%;
+      }
+
+      .crumb {
+        white-space: normal;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-strip {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .flow-strip::before {
+        left: 31px;
+        right: auto;
+        top: 15px;
+        bottom: 34px;
+        width: 1px;
+        height: auto;
+      }
+
+      .flow-item {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        padding: 0;
+      }
+
+      .flow-item strong {
+        margin-top: 0;
+      }
+
+      .panel-head,
+      .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .flow-strip,
+      .assembly-grid,
+      .action-bar,
+      .side-panel {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .assembly-badge {
+        width: 100%;
+      }
+
+      .stage {
+        padding: 16px;
+      }
+
+      .assembly-visual {
+        min-height: 270px;
+      }
+
+      .source-chip {
+        min-width: 76px;
+        height: 30px;
+        padding: 0 9px;
+        font-size: 11px;
+      }
+
+      .source-chip.story { --x: -116px; --y: -92px; }
+      .source-chip.index { --x: 112px; --y: -84px; }
+      .source-chip.roles { --x: -124px; --y: -12px; }
+      .source-chip.world { --x: 120px; --y: 4px; }
+      .source-chip.events { --x: -102px; --y: 86px; }
+      .source-chip.rules { --x: 104px; --y: 90px; }
+
+      .manuscript-core {
+        width: 86%;
+        height: 214px;
+      }
+
+      .bound-page {
+        inset: 24px 12px 10px 32px;
+      }
+
+      .bound-page.back {
+        inset: 36px 4px 0 44px;
+      }
+
+      .bound-page.mid {
+        inset: 30px 8px 5px 38px;
+      }
+
+      .spine,
+      .thread-line {
+        left: 58px;
+      }
+
+      .stitch {
+        left: 52px;
+      }
+
+      .stitch.s1 { top: 56px; }
+      .stitch.s2 { top: 94px; }
+      .stitch.s3 { top: 132px; }
+      .stitch.s4 { top: 170px; }
+
+      .step {
+        grid-template-columns: 28px minmax(0, 1fr);
+      }
+
+      .step-state {
+        grid-column: 2;
+        justify-self: start;
+      }
+
+      .metadata-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-note {
+        margin-right: 0;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button" aria-label="返回完成度检查">返回检查</button>
+      <div class="crumb">主页 / 工作台 / 最终输出 / 成稿组装中</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">正在组装成稿</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">成稿组装中</h1>
+        <p>系统正在把已确认正文、章节索引、角色表、世界摘要、关系状态和关键事件整理为可审阅的最终故事包快照。</p>
+      </div>
+      <div class="summary-strip" aria-label="成稿组装摘要">
+        <div class="summary-item">
+          <span>来源段落</span>
+          <strong>8 类内容</strong>
+        </div>
+        <div class="summary-item">
+          <span>正文规模</span>
+          <strong>12 章 / 60 幕</strong>
+        </div>
+        <div class="summary-item">
+          <span>组装状态</span>
+          <strong id="summaryStatus">装订中</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <section class="main-panel" aria-labelledby="assemblyTitle" aria-busy="true">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">ASSEMBLY</p>
+            <h2 id="assemblyTitle">成稿组装</h2>
+            <p>这一步会创建受控快照和成稿预览，不会改写故事正文、角色事实或世界事实。</p>
+          </div>
+          <div class="assembly-badge" aria-live="polite">
+            <span>当前阶段</span>
+            <strong id="badgeLabel">整理来源</strong>
+          </div>
+        </div>
+
+        <div class="flow-strip" role="list" aria-label="最终输出阶段">
+          <div class="flow-item" role="listitem">
+            <span>01</span>
+            <strong>完成度检查</strong>
+          </div>
+          <div class="flow-item current" role="listitem" aria-current="step">
+            <span>02</span>
+            <strong>成稿组装</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>03</span>
+            <strong>成稿审阅</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>04</span>
+            <strong>导出交付</strong>
+          </div>
+        </div>
+
+        <div class="assembly-grid">
+          <section class="stage" aria-label="组装动画">
+            <div class="assembly-visual">
+              <div class="source-chip story" aria-hidden="true">正文</div>
+              <div class="source-chip index" aria-hidden="true">目录</div>
+              <div class="source-chip roles" aria-hidden="true">角色</div>
+              <div class="source-chip world" aria-hidden="true">世界</div>
+              <div class="source-chip events" aria-hidden="true">事件</div>
+              <div class="source-chip rules" aria-hidden="true">约束</div>
+              <div class="manuscript-core" aria-hidden="true">
+                <div class="bound-page back"></div>
+                <div class="bound-page mid"></div>
+                <div class="bound-page front"></div>
+                <div class="spine"></div>
+                <div class="thread-line"></div>
+                <div class="stitch s1"></div>
+                <div class="stitch s2"></div>
+                <div class="stitch s3"></div>
+                <div class="stitch s4"></div>
+              </div>
+            </div>
+            <div class="progress-card">
+              <div class="progress-top">
+                <strong id="progressTitle">正在建立成稿快照</strong>
+                <span id="progressValue">64%</span>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="steps" aria-label="组装步骤">
+            <div class="step done" data-step="0">
+              <span class="mark">✓</span>
+              <div>
+                <h4>收集完整正文</h4>
+                <p>读取已确认的章节与场景正文，排除未确认草稿和候选提案。</p>
+              </div>
+              <span class="step-state">完成</span>
+            </div>
+            <div class="step done" data-step="1">
+              <span class="mark">✓</span>
+              <div>
+                <h4>建立章节场景索引</h4>
+                <p>按章节与场景顺序生成成稿目录和场景定位。</p>
+              </div>
+              <span class="step-state">完成</span>
+            </div>
+            <div class="step current" data-step="2">
+              <span class="mark">•</span>
+              <div>
+                <h4>汇入角色表与世界摘要</h4>
+                <p>整理角色、世界画布、关系状态和关键事件，形成审阅侧栏来源。</p>
+              </div>
+              <span class="step-state">进行中</span>
+            </div>
+            <div class="step pending" data-step="3">
+              <span class="mark">4</span>
+              <div>
+                <h4>固化来源边界</h4>
+                <p>记录来源版本、内容哈希和安全边界，确保输出不会污染正式故事事实。</p>
+              </div>
+              <span class="step-state">等待</span>
+            </div>
+            <div class="step pending" data-step="4">
+              <span class="mark">5</span>
+              <div>
+                <h4>生成预览段落</h4>
+                <p>创建正文、目录、人物表、世界摘要、事件时间线等预览分区。</p>
+              </div>
+              <span class="step-state">等待</span>
+            </div>
+            <div class="step pending" data-step="5">
+              <span class="mark">6</span>
+              <div>
+                <h4>完成成稿快照</h4>
+                <p>形成可进入审阅页的最终故事包快照。</p>
+              </div>
+              <span class="step-state">等待</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-bar">
+          <div class="action-note" id="actionNote">正在组装成稿，请保持当前页面。</div>
+          <button class="soft-button" type="button" id="returnButton">返回检查</button>
+          <button class="primary-button" type="button" id="nextButton" disabled>进入成稿审阅</button>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="成稿组装信息">
+        <div class="side-card">
+          <p class="eyebrow">SNAPSHOT</p>
+          <h3>本次组装</h3>
+          <p>系统会生成真实项目最终包快照，用于后续审阅、下载和插件受控读取。</p>
+          <div class="metadata-grid">
+            <div>
+              <span>类型</span>
+              <strong>真实最终包</strong>
+            </div>
+            <div>
+              <span>状态</span>
+              <strong id="sideStatus">创建中</strong>
+            </div>
+            <div>
+              <span>门禁</span>
+              <strong>已通过</strong>
+            </div>
+            <div>
+              <span>警告</span>
+              <strong>2 条保留</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <p class="eyebrow">SOURCE SECTIONS</p>
+          <h3>写入快照的分区</h3>
+          <div class="source-list">
+            <div class="source-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>完整正文</strong>
+                <small>complete_story_text</small>
+              </div>
+            </div>
+            <div class="source-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>章节与场景索引</strong>
+                <small>chapter_scene_index</small>
+              </div>
+            </div>
+            <div class="source-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>角色、世界与关系摘要</strong>
+                <small>character_table / world_canvas_summary / relationship_state_summary</small>
+              </div>
+            </div>
+            <div class="source-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>关键事件与锁定约束</strong>
+                <small>key_event_timeline / user_locked_constraints</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <p class="eyebrow">BOUNDARY</p>
+          <h3>组装边界</h3>
+          <div class="boundary-list">
+            <div class="boundary-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>不改写原始故事事实</strong>
+                <small>只创建快照和预览段落。</small>
+              </div>
+            </div>
+            <div class="boundary-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>调试证据默认不进入用户界面</strong>
+                <small>来源追踪在后续审阅中以受控方式查看。</small>
+              </div>
+            </div>
+            <div class="boundary-row">
+              <span class="mark">✓</span>
+              <div>
+                <strong>插件只能读取最终快照</strong>
+                <small>插件输出不会写回原故事。</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const progressFill = document.querySelector("#progressFill");
+    const progressValue = document.querySelector("#progressValue");
+    const progressTitle = document.querySelector("#progressTitle");
+    const badgeLabel = document.querySelector("#badgeLabel");
+    const actionNote = document.querySelector("#actionNote");
+    const nextButton = document.querySelector("#nextButton");
+    const topStatus = document.querySelector("#topStatus");
+    const summaryStatus = document.querySelector("#summaryStatus");
+    const sideStatus = document.querySelector("#sideStatus");
+    const toast = document.querySelector("#toast");
+    const returnButton = document.querySelector("#returnButton");
+
+    const states = [
+      { value: 64, active: 2, title: "正在建立成稿快照", badge: "整理来源" },
+      { value: 72, active: 3, title: "正在固化来源边界", badge: "固化边界" },
+      { value: 84, active: 4, title: "正在生成预览段落", badge: "生成预览" },
+      { value: 96, active: 5, title: "正在完成成稿快照", badge: "写入快照" },
+      { value: 100, active: 6, title: "成稿组装完成", badge: "组装完成" }
+    ];
+
+    let index = 0;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2200);
+    }
+
+    function updateSteps(active) {
+      document.querySelectorAll(".step").forEach((step, stepIndex) => {
+        const mark = step.querySelector(".mark");
+        const state = step.querySelector(".step-state");
+        step.classList.remove("done", "current", "pending");
+        if (stepIndex < active) {
+          step.classList.add("done");
+          mark.textContent = "✓";
+          state.textContent = "完成";
+        } else if (stepIndex === active && active < 6) {
+          step.classList.add("current");
+          mark.textContent = "•";
+          state.textContent = "进行中";
+        } else {
+          step.classList.add("pending");
+          mark.textContent = String(stepIndex + 1);
+          state.textContent = "等待";
+        }
+      });
+    }
+
+    function applyState(state) {
+      progressFill.style.width = `${state.value}%`;
+      progressValue.textContent = `${state.value}%`;
+      progressTitle.textContent = state.title;
+      badgeLabel.textContent = state.badge;
+      updateSteps(state.active);
+      if (state.value === 100) {
+        nextButton.disabled = false;
+        topStatus.textContent = "成稿组装完成";
+        summaryStatus.textContent = "可审阅";
+        sideStatus.textContent = "已创建";
+        actionNote.textContent = "成稿快照已创建，可以进入成稿审阅。";
+        document.querySelector(".main-panel").setAttribute("aria-busy", "false");
+      }
+    }
+
+    nextButton.addEventListener("click", () => {
+      showToast("将进入 03 成稿审阅。");
+      actionNote.textContent = "正在进入成稿审阅流程。";
+    });
+
+    returnButton.addEventListener("click", () => {
+      showToast("返回完成度检查会保留当前组装状态。");
+    });
+
+    applyState({
+      value: 0,
+      active: 0,
+      title: "等待后端创建真实成稿快照",
+      badge: "等待后端"
+    });
+  </script>
+</body>
+</html>

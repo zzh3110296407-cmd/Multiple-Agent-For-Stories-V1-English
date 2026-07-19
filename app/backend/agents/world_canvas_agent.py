@@ -32,7 +32,7 @@ class WorldCanvasAgent:
             ],
             options={
                 "temperature": 0.35,
-                "max_output_tokens": 2200,
+                "max_output_tokens": 3600,
             },
             schema_hint={
                 "kind": "world_canvas",
@@ -63,7 +63,7 @@ class WorldCanvasAgent:
             ],
             options={
                 "temperature": 0.35,
-                "max_output_tokens": 1800,
+                "max_output_tokens": 3200,
             },
             schema_hint={
                 "kind": "world_canvas",

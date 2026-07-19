@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>当前项目总览 - Current Project V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: #f7f1e6;
+      --paper-deep: #e9ddbf;
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --ink: #302c28;
+      --muted: #7b7068;
+      --bluegray: #68787a;
+      --bluegray-deep: #4f6265;
+      --line: rgba(120, 95, 80, 0.18);
+      --white: rgba(255, 252, 244, 0.78);
+      --shadow: 0 28px 70px rgba(86, 64, 49, 0.16);
+      --soft-shadow: 0 12px 30px rgba(86, 64, 49, 0.12);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 17%, rgba(255, 250, 239, 0.7), transparent 32%),
+        radial-gradient(circle at 84% 78%, rgba(180, 138, 120, 0.18), transparent 30%),
+        linear-gradient(135deg, #ece7dc 0%, #eee8db 46%, #e6dccb 100%);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      opacity: 0.18;
+      pointer-events: none;
+      background-image:
+        linear-gradient(90deg, rgba(76, 56, 42, 0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(76, 56, 42, 0.035) 1px, transparent 1px);
+      background-size: 34px 34px, 42px 42px;
+    }
+
+    .map-ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .map-ambient svg {
+      position: absolute;
+      left: 38%;
+      top: 17%;
+      width: 760px;
+      height: 660px;
+      opacity: 0.16;
+      transform: rotate(-6deg);
+    }
+
+    .map-ambient .seal {
+      position: absolute;
+      left: 96px;
+      bottom: 50px;
+      width: 156px;
+      height: 156px;
+      border: 1px solid rgba(143, 103, 92, 0.22);
+      border-radius: 50%;
+      opacity: 0.16;
+    }
+
+    .map-ambient .seal::before,
+    .map-ambient .seal::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(143, 103, 92, 0.26);
+      border-radius: 50%;
+    }
+
+    .map-ambient .seal::after {
+      inset: 48px;
+    }
+
+    .page {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      padding: 50px 74px 44px;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 46px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .back,
+    .theme {
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(247, 241, 230, 0.58);
+      color: #443c37;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .back {
+      min-width: 118px;
+      cursor: pointer;
+    }
+
+    .theme {
+      min-width: 176px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+    }
+
+    .crumb {
+      color: #83776e;
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .headline {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-left: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 54px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      color: #2f2d29;
+      font-weight: 880;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: #756a62;
+      font-size: 16px;
+      line-height: 1.6;
+      font-weight: 520;
+    }
+
+    .project-pill {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.56);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      color: #5c514a;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .project-pill span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--bluegray);
+      box-shadow: 0 0 0 5px rgba(104, 120, 122, 0.12);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 2;
+      margin-top: 30px;
+      height: calc(100vh - 266px);
+      min-height: 610px;
+      display: grid;
+      grid-template-columns: minmax(700px, 1fr) 360px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-area {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 148px minmax(250px, 1fr) 146px;
+      gap: 18px;
+    }
+
+    .identity-band,
+    .route-board,
+    .bottom-band,
+    .action-panel {
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.78), rgba(239, 228, 207, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .identity-band {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(360px, 1.1fr) 1fr;
+      gap: 22px;
+      padding: 22px 30px;
+    }
+
+    .identity-band::after {
+      content: "";
+      position: absolute;
+      right: 26px;
+      top: 22px;
+      width: 170px;
+      height: 110px;
+      opacity: 0.1;
+      background:
+        linear-gradient(90deg, transparent 0 20%, rgba(80, 64, 48, 0.22) 20% 21%, transparent 21% 42%, rgba(80, 64, 48, 0.18) 42% 43%, transparent 43% 64%, rgba(80, 64, 48, 0.2) 64% 65%, transparent 65%),
+        linear-gradient(0deg, transparent 0 30%, rgba(80, 64, 48, 0.16) 30% 31%, transparent 31% 62%, rgba(80, 64, 48, 0.16) 62% 63%, transparent 63%);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #8f675c;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .project-title {
+      margin: 0;
+      color: #2f2d29;
+      font-size: 29px;
+      line-height: 1.18;
+      font-weight: 880;
+    }
+
+    .project-desc {
+      margin: 8px 0 0;
+      max-width: 600px;
+      color: #746960;
+      font-size: 14px;
+      line-height: 1.7;
+      font-weight: 520;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-self: center;
+    }
+
+    .meta-item {
+      min-height: 48px;
+      padding: 9px 14px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.52);
+      border: 1px solid rgba(120, 95, 80, 0.12);
+    }
+
+    .meta-item span {
+      display: block;
+      color: #8a7d72;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .meta-item strong {
+      display: block;
+      margin-top: 4px;
+      color: #3d3732;
+      font-size: 14px;
+      font-weight: 820;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .route-board {
+      position: relative;
+      padding: 22px 30px 18px;
+    }
+
+    .route-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #433b35;
+      font-size: 18px;
+      font-weight: 860;
+    }
+
+    .section-note {
+      margin: 6px 0 0;
+      color: #81756b;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 530;
+    }
+
+    .stage-counter {
+      flex: 0 0 auto;
+      min-width: 132px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #5d5048;
+      font-size: 13px;
+      font-weight: 780;
+      background: rgba(233, 221, 191, 0.58);
+      border: 1px solid rgba(120, 95, 80, 0.12);
+    }
+
+    .route-map {
+      position: relative;
+      height: 222px;
+      margin-top: 18px;
+    }
+
+    .route-path {
+      position: absolute;
+      left: 62px;
+      right: 52px;
+      top: 120px;
+      height: 92px;
+      pointer-events: none;
+    }
+
+    .route-path svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .route-path path {
+      fill: none;
+      stroke: rgba(120, 95, 80, 0.24);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+    }
+
+    .route-path .flow {
+      stroke: rgba(180, 138, 120, 0.54);
+      stroke-dasharray: 8 12;
+      animation: drift 4.8s linear infinite;
+    }
+
+    @keyframes drift {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -80; }
+    }
+
+    .stage-node {
+      position: absolute;
+      width: 124px;
+      min-height: 88px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      text-align: center;
+      color: #5f564f;
+      font: inherit;
+    }
+
+    .stage-node:focus-visible {
+      outline: 3px solid rgba(180, 138, 120, 0.34);
+      outline-offset: 6px;
+      border-radius: 16px;
+    }
+
+    .stage-dot {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fbf7ed;
+      font-size: 15px;
+      font-weight: 880;
+      background: #a79b8f;
+      box-shadow: 0 12px 22px rgba(80, 61, 48, 0.13);
+    }
+
+    .stage-node.done .stage-dot {
+      background: var(--bluegray);
+    }
+
+    .stage-node.current .stage-dot {
+      width: 56px;
+      height: 56px;
+      margin-top: -6px;
+      background: var(--accent-deep);
+      box-shadow: 0 0 0 9px rgba(180, 138, 120, 0.15), 0 16px 28px rgba(107, 76, 63, 0.2);
+    }
+
+    .stage-node.locked {
+      cursor: default;
+      opacity: 0.58;
+    }
+
+    .stage-node.locked .stage-dot {
+      background: #b7aea3;
+      color: #f6efe3;
+    }
+
+    .stage-node strong {
+      display: block;
+      color: #3d3732;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 840;
+    }
+
+    .stage-node span {
+      display: block;
+      margin-top: 5px;
+      color: #81766b;
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 660;
+    }
+
+    .node-1 { left: 0; top: 94px; }
+    .node-2 { left: 15%; top: 26px; }
+    .node-3 { left: 31%; top: 94px; }
+    .node-4 { left: 47%; top: 18px; }
+    .node-5 { left: 62%; top: 90px; }
+    .node-6 { left: 77%; top: 34px; }
+    .node-7 { right: -8px; top: 102px; }
+
+    .stage-detail {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      bottom: 14px;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(120, 95, 80, 0.13);
+    }
+
+    .stage-detail strong {
+      color: #403832;
+      font-size: 14px;
+      font-weight: 840;
+    }
+
+    .stage-detail p {
+      margin: 5px 0 0;
+      color: #7b7068;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .stage-status {
+      flex: 0 0 auto;
+      min-width: 92px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: #4f4540;
+      font-size: 12px;
+      font-weight: 820;
+      background: rgba(233, 221, 191, 0.6);
+      border: 1px solid rgba(120, 95, 80, 0.12);
+    }
+
+    .bottom-band {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .surface-panel {
+      padding: 16px 22px;
+      min-width: 0;
+    }
+
+    .surface-panel + .surface-panel {
+      border-left: 1px solid rgba(120, 95, 80, 0.12);
+    }
+
+    .surface-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: #514942;
+      font-size: 13px;
+      font-weight: 860;
+    }
+
+    .surface-title span {
+      min-width: 28px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      color: #f8f2e7;
+      background: var(--accent);
+      font-size: 12px;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: 8px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 36px;
+      padding: 6px 0;
+      border-top: 1px solid rgba(120, 95, 80, 0.08);
+    }
+
+    .task-row:first-of-type {
+      border-top: 0;
+    }
+
+    .task-mark {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bluegray);
+    }
+
+    .task-row.warn .task-mark {
+      background: var(--accent);
+    }
+
+    .task-row strong {
+      display: block;
+      color: #433b35;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 820;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-row span {
+      display: block;
+      margin-top: 3px;
+      color: #81766b;
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 540;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-action {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid rgba(120, 95, 80, 0.16);
+      border-radius: 9px;
+      background: rgba(255, 252, 244, 0.54);
+      color: #5c5048;
+      font-size: 12px;
+      font-weight: 780;
+      cursor: pointer;
+    }
+
+    .action-panel {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-width: 0;
+      padding: 20px 24px 18px;
+    }
+
+    .action-card {
+      position: relative;
+      min-height: 194px;
+      padding: 20px 22px;
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(233, 221, 191, 0.76), rgba(255, 252, 244, 0.68));
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), var(--soft-shadow);
+      overflow: hidden;
+    }
+
+    .action-card::after {
+      content: "";
+      position: absolute;
+      right: -42px;
+      bottom: -48px;
+      width: 170px;
+      height: 170px;
+      border: 1px solid rgba(143, 103, 92, 0.18);
+      border-radius: 50%;
+    }
+
+    .action-kicker {
+      margin: 0 0 10px;
+      color: #8f675c;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .action-title {
+      margin: 0;
+      color: #302c28;
+      font-size: 25px;
+      line-height: 1.2;
+      font-weight: 880;
+    }
+
+    .action-reason {
+      position: relative;
+      z-index: 1;
+      margin: 12px 0 14px;
+      color: #746960;
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .primary-action {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 44px;
+      border: 0;
+      border-radius: 12px;
+      background: #4f6265;
+      color: #fbf6ec;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 14px 28px rgba(60, 72, 73, 0.22);
+    }
+
+    .primary-action:hover {
+      background: #465a5d;
+    }
+
+    .action-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .action-meta div {
+      min-height: 46px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.46);
+      border: 1px solid rgba(120, 95, 80, 0.11);
+    }
+
+    .action-meta span {
+      display: block;
+      color: #8b7d72;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .action-meta strong {
+      display: block;
+      margin-top: 4px;
+      color: #443d37;
+      font-size: 13px;
+      font-weight: 820;
+    }
+
+    .quick-panel {
+      min-height: 0;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(120, 95, 80, 0.12);
+      overflow: hidden;
+    }
+
+    .quick-title {
+      margin: 0 0 12px;
+      color: #514942;
+      font-size: 13px;
+      font-weight: 860;
+    }
+
+    .quick-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .quick-item {
+      width: 100%;
+      min-height: 42px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(120, 95, 80, 0.12);
+      background: rgba(255, 252, 244, 0.36);
+      color: #514942;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .quick-item.active {
+      background: rgba(233, 221, 191, 0.66);
+      border-color: rgba(180, 138, 120, 0.22);
+    }
+
+    .quick-item.locked {
+      opacity: 0.58;
+      cursor: default;
+    }
+
+    .quick-no {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fbf6ec;
+      background: #a79b8f;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .quick-item.active .quick-no {
+      background: var(--accent-deep);
+    }
+
+    .quick-item.done .quick-no {
+      background: var(--bluegray);
+    }
+
+    .quick-main strong {
+      display: block;
+      color: #433b35;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 820;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quick-main span {
+      display: block;
+      margin-top: 3px;
+      color: #82766c;
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quick-state {
+      display: none;
+      color: #81756b;
+      font-size: 11px;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .toast {
+      height: 36px;
+      display: grid;
+      place-items: center;
+      margin-top: 10px;
+      border-radius: 12px;
+      color: #5b5049;
+      background: rgba(255, 252, 244, 0.42);
+      border: 1px solid rgba(120, 95, 80, 0.12);
+      font-size: 12px;
+      font-weight: 720;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1080px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100vh;
+        padding: 34px 24px;
+      }
+
+      .headline {
+        display: block;
+        padding-left: 0;
+      }
+
+      .project-pill {
+        margin-top: 18px;
+        width: fit-content;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+
+      .main-area {
+        grid-template-rows: auto auto auto;
+      }
+
+      .identity-band,
+      .bottom-band {
+        grid-template-columns: 1fr;
+      }
+
+      .surface-panel + .surface-panel {
+        border-left: 0;
+        border-top: 1px solid rgba(120, 95, 80, 0.12);
+      }
+
+      .route-map {
+        height: 360px;
+      }
+
+      .stage-node {
+        position: relative;
+        left: auto;
+        right: auto;
+        top: auto;
+        display: inline-block;
+        width: 130px;
+        margin: 12px;
+        vertical-align: top;
+      }
+
+      .route-path {
+        display: none;
+      }
+
+      .stage-detail {
+        position: static;
+        margin-top: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="map-ambient" aria-hidden="true">
+    <svg viewBox="0 0 760 660">
+      <path d="M92 512 C184 380 238 438 330 286 C408 158 516 190 664 84" fill="none" stroke="rgba(80, 62, 48, 0.54)" stroke-width="2" stroke-dasharray="10 14"/>
+      <path d="M128 134 C248 210 236 316 394 360 C514 394 568 506 686 560" fill="none" stroke="rgba(80, 62, 48, 0.38)" stroke-width="1.4"/>
+      <path d="M92 286 C180 250 246 228 344 238 C470 250 540 296 670 260" fill="none" stroke="rgba(80, 62, 48, 0.32)" stroke-width="1.5"/>
+      <circle cx="198" cy="410" r="34" fill="none" stroke="rgba(80, 62, 48, 0.35)"/>
+      <circle cx="486" cy="214" r="46" fill="none" stroke="rgba(80, 62, 48, 0.28)"/>
+      <path d="M594 100 l34 30 -48 8 z" fill="rgba(80, 62, 48, 0.24)"/>
+    </svg>
+    <div class="seal"></div>
+  </div>
+
+  <main class="page">
+    <nav class="topbar" aria-label="当前项目导航">
+      <div class="top-left">
+        <button class="back" type="button">返回档案馆</button>
+        <div class="crumb">主页 / 故事档案馆 / 当前项目</div>
+      </div>
+    </nav>
+
+    <header class="headline">
+      <div>
+        <h1>当前项目</h1>
+        <div class="subtitle">进入一个故事后，先确认它现在停在哪里，以及下一步该推进什么。</div>
+      </div>
+      <div class="project-pill"><span></span> 活动项目已选择</div>
+    </header>
+
+    <section class="workspace" aria-label="当前项目总览">
+      <div class="main-area">
+        <section class="identity-band" aria-label="项目身份">
+          <div>
+            <p class="eyebrow">PROJECT DOSSIER</p>
+            <h2 class="project-title">雾港钟楼证词</h2>
+            <p class="project-desc">港口城市的钟楼在雨夜留下互相矛盾的证词。当前故事壳已建立，Framework 已完成初步编排，正在等待世界画布确认。</p>
+          </div>
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span>来源</span>
+              <strong>从构想开始</strong>
+            </div>
+            <div class="meta-item">
+              <span>模型</span>
+              <strong>已配置</strong>
+            </div>
+            <div class="meta-item">
+              <span>当前阶段</span>
+              <strong id="currentStageText">世界画布</strong>
+            </div>
+            <div class="meta-item">
+              <span>故事事实</span>
+              <strong>等待确认</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="route-board" aria-label="创作进度地图">
+          <div class="route-head">
+            <div>
+              <h2 class="section-title">创作进度地图</h2>
+              <p class="section-note">路线状态来自项目导航与进度视图，当前页只负责导航和提醒。</p>
+            </div>
+            <div class="stage-counter" id="stageCounter">3 / 7 当前阶段</div>
+          </div>
+
+          <div class="route-map">
+            <div class="route-path" aria-hidden="true">
+              <svg viewBox="0 0 760 92" preserveAspectRatio="none">
+                <path d="M0 68 C112 16 186 16 284 58 S462 84 558 30 S690 20 760 72" />
+                <path class="flow" d="M0 68 C112 16 186 16 284 58 S462 84 558 30 S690 20 760 72" />
+              </svg>
+            </div>
+
+            <button class="stage-node node-1 done" data-key="story_setup" type="button">
+              <div class="stage-dot">1</div>
+              <strong>故事设定</strong>
+              <span>已完成</span>
+            </button>
+            <button class="stage-node node-2 done" data-key="framework" type="button">
+              <div class="stage-dot">2</div>
+              <strong>Framework</strong>
+              <span>已编排</span>
+            </button>
+            <button class="stage-node node-3 current" data-key="world_canvas" type="button">
+              <div class="stage-dot">3</div>
+              <strong>世界画布</strong>
+              <span>当前阶段</span>
+            </button>
+            <button class="stage-node node-4" data-key="characters" type="button">
+              <div class="stage-dot">4</div>
+              <strong>角色</strong>
+              <span>可进入</span>
+            </button>
+            <button class="stage-node node-5 locked" data-key="chapter_plan" type="button">
+              <div class="stage-dot">5</div>
+              <strong>章节计划</strong>
+              <span>暂不可用</span>
+            </button>
+            <button class="stage-node node-6 locked" data-key="chapter_scene" type="button">
+              <div class="stage-dot">6</div>
+              <strong>场景写作</strong>
+              <span>暂不可用</span>
+            </button>
+            <button class="stage-node node-7 locked" data-key="final_outputs" type="button">
+              <div class="stage-dot">7</div>
+              <strong>最终输出</strong>
+              <span>暂不可用</span>
+            </button>
+          </div>
+
+          <div class="stage-detail" aria-live="polite">
+            <div>
+              <strong id="stageDetailTitle">世界画布等待确认</strong>
+              <p id="stageDetailText">草案已经生成，需要用户确认后才能成为后续角色和章节的事实底座。</p>
+            </div>
+            <div class="stage-status" id="stageStatus">需要确认</div>
+          </div>
+        </section>
+
+        <section class="bottom-band" aria-label="决策与阻塞">
+          <div class="surface-panel">
+            <div class="surface-title">待确认事项 <span>2</span></div>
+            <div class="task-row">
+              <div class="task-mark"></div>
+              <div>
+                <strong>确认世界画布</strong>
+                <span>草案确认后进入正式故事事实</span>
+              </div>
+              <button class="mini-action" type="button">前往</button>
+            </div>
+            <div class="task-row">
+              <div class="task-mark"></div>
+              <div>
+                <strong>确认主角团</strong>
+                <span>已有 A 级角色后需要独立确认</span>
+              </div>
+              <button class="mini-action" type="button">查看</button>
+            </div>
+          </div>
+          <div class="surface-panel">
+            <div class="surface-title">阻塞提醒 <span>1</span></div>
+            <div class="task-row warn">
+              <div class="task-mark"></div>
+              <div>
+                <strong>章节计划暂不可用</strong>
+                <span>Framework、世界画布与角色需要先完成</span>
+              </div>
+              <button class="mini-action" type="button">定位</button>
+            </div>
+            <div class="task-row">
+              <div class="task-mark"></div>
+              <div>
+                <strong>模型状态正常</strong>
+                <span>当前模型可用于生成类工作区</span>
+              </div>
+              <button class="mini-action" type="button">设置</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="action-panel" aria-label="下一步行动">
+        <div class="action-card">
+          <p class="action-kicker">NEXT ACTION</p>
+          <h2 class="action-title" id="actionTitle">确认世界画布</h2>
+          <p class="action-reason" id="actionReason">世界画布仍处于草稿状态，需要用户确认后才能作为故事事实。</p>
+          <button class="primary-action" id="primaryAction" type="button">前往世界画布</button>
+          <div class="action-meta">
+            <div>
+              <span>目标工作区</span>
+              <strong id="targetWorkspace">world_canvas</strong>
+            </div>
+            <div>
+              <span>确认要求</span>
+              <strong id="confirmNeed">需要确认</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-panel">
+          <h2 class="quick-title">工作区快速入口</h2>
+          <div class="quick-list">
+            <button class="quick-item done" data-key="story_setup" type="button">
+              <span class="quick-no">1</span>
+              <span class="quick-main"><strong>故事设定</strong><span>已完成</span></span>
+              <span class="quick-state">进入</span>
+            </button>
+            <button class="quick-item done" data-key="framework" type="button">
+              <span class="quick-no">2</span>
+              <span class="quick-main"><strong>Framework</strong><span>已编排</span></span>
+              <span class="quick-state">进入</span>
+            </button>
+            <button class="quick-item active" data-key="world_canvas" type="button">
+              <span class="quick-no">3</span>
+              <span class="quick-main"><strong>世界画布</strong><span>等待确认</span></span>
+              <span class="quick-state">当前</span>
+            </button>
+            <button class="quick-item" data-key="characters" type="button">
+              <span class="quick-no">4</span>
+              <span class="quick-main"><strong>角色</strong><span>可进入</span></span>
+              <span class="quick-state">进入</span>
+            </button>
+            <button class="quick-item locked" data-key="chapter_plan" type="button">
+              <span class="quick-no">5</span>
+              <span class="quick-main"><strong>章节计划</strong><span>等待前置确认</span></span>
+              <span class="quick-state">锁定</span>
+            </button>
+            <button class="quick-item locked" data-key="chapter_scene" type="button">
+              <span class="quick-no">6</span>
+              <span class="quick-main"><strong>场景写作</strong><span>等待章节计划</span></span>
+              <span class="quick-state">锁定</span>
+            </button>
+            <button class="quick-item locked" data-key="final_outputs" type="button">
+              <span class="quick-no">7</span>
+              <span class="quick-main"><strong>最终输出</strong><span>等待故事完成</span></span>
+              <span class="quick-state">锁定</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="toast" id="toast">将进入对应工作区</div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const stages = {
+      story_setup: {
+        index: 1,
+        title: "故事设定已完成",
+        text: "题材、基调、范围和基础交接已经建立，可以回看但不需要重复确认。",
+        status: "已完成",
+        action: "回看故事设定",
+        reason: "故事设定已经完成；这里可以检查项目最初的设定交接。",
+        target: "story_setup",
+        confirm: "无需确认"
+      },
+      world_canvas: {
+        index: 3,
+        title: "世界画布等待确认",
+        text: "草案已经生成，需要用户确认后才能成为后续角色和章节的事实底座。",
+        status: "需要确认",
+        action: "确认世界画布",
+        reason: "世界画布仍处于草稿状态，需要用户确认后才能作为故事事实。",
+        target: "world_canvas",
+        confirm: "需要确认"
+      },
+      characters: {
+        index: 4,
+        title: "角色主轴可继续",
+        text: "可以进入角色工作区创建或确认 A/B/C/D 角色，主角团完成后会解锁后续节奏。",
+        status: "可进入",
+        action: "进入角色",
+        reason: "角色工作区可进入；确认 A 级角色后，主角团需要独立完成确认。",
+        target: "characters",
+        confirm: "部分需要"
+      },
+      framework: {
+        index: 2,
+        title: "Framework 已完成初步编排",
+        text: "Framework 已在世界画布之前完成基础结构编排；也可以从这里回到分析器分支处理导入故事。",
+        status: "已编排",
+        action: "回看 Framework",
+        reason: "Framework 位于世界画布之前，用于承接模板、分析器分支和故事结构编排。",
+        target: "framework",
+        confirm: "已处理"
+      },
+      chapter_plan: {
+        index: 5,
+        title: "章节计划暂不可用",
+        text: "Framework、世界画布和角色主轴需要先完成关键确认。",
+        status: "暂不可用",
+        action: "查看前置条件",
+        reason: "章节计划需要世界、角色和框架都达到可用状态。",
+        target: "chapter_plan",
+        confirm: "等待前置"
+      },
+      chapter_scene: {
+        index: 6,
+        title: "场景写作等待章节计划",
+        text: "当前还不能生成场景，后续这里会承载记忆与连续性状态。",
+        status: "暂不可用",
+        action: "查看章节计划",
+        reason: "场景写作需要已确认的章节计划和当前章节场景数。",
+        target: "chapter_scene",
+        confirm: "等待前置"
+      },
+      final_outputs: {
+        index: 7,
+        title: "最终输出等待故事完成",
+        text: "最终故事包和插件输出需要故事草稿完成后才进入。",
+        status: "暂不可用",
+        action: "查看完成条件",
+        reason: "最终输出只在故事草稿完成并通过 readiness 后开放。",
+        target: "final_outputs",
+        confirm: "等待完成"
+      }
+    };
+
+    const nodes = document.querySelectorAll(".stage-node");
+    const quickItems = document.querySelectorAll(".quick-item");
+    const stageTitle = document.getElementById("stageDetailTitle");
+    const stageText = document.getElementById("stageDetailText");
+    const stageStatus = document.getElementById("stageStatus");
+    const stageCounter = document.getElementById("stageCounter");
+    const currentStageText = document.getElementById("currentStageText");
+    const actionTitle = document.getElementById("actionTitle");
+    const actionReason = document.getElementById("actionReason");
+    const targetWorkspace = document.getElementById("targetWorkspace");
+    const confirmNeed = document.getElementById("confirmNeed");
+    const primaryAction = document.getElementById("primaryAction");
+    const toast = document.getElementById("toast");
+
+    function selectStage(key) {
+      const stage = stages[key];
+      if (!stage) return;
+      nodes.forEach((node) => {
+        node.classList.toggle("current", node.dataset.key === key);
+      });
+      quickItems.forEach((item) => {
+        item.classList.toggle("active", item.dataset.key === key);
+      });
+      stageTitle.textContent = stage.title;
+      stageText.textContent = stage.text;
+      stageStatus.textContent = stage.status;
+      stageCounter.textContent = `${stage.index} / 7 ${stage.status}`;
+      currentStageText.textContent = stage.action.replace("进入 ", "").replace("确认", "");
+      actionTitle.textContent = stage.action;
+      actionReason.textContent = stage.reason;
+      targetWorkspace.textContent = stage.target;
+      confirmNeed.textContent = stage.confirm;
+      primaryAction.textContent = stage.action;
+    }
+
+    nodes.forEach((node) => {
+      node.addEventListener("click", () => selectStage(node.dataset.key));
+    });
+
+    quickItems.forEach((item) => {
+      item.addEventListener("click", () => selectStage(item.dataset.key));
+    });
+
+    primaryAction.addEventListener("click", () => {
+      toast.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove("show"), 1500);
+    });
+  </script>
+</body>
+</html>

@@ -97,6 +97,10 @@ def run_model_provider_health_check(profile_id: str) -> ProviderHealthCheckRespo
         return model_settings_service.run_health_check(profile_id)
     except ModelSettingsNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ModelSettingsSafetyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ModelSettingsError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except StorageError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

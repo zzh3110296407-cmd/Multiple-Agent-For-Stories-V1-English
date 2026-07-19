@@ -234,10 +234,12 @@ class StorySetupSafetyReport(BaseModel):
 class StorySetupCurrentState(BaseModel):
     project_id: str = ""
     state_status: str = "empty"
+    controlled_prompt_text: str = ""
     story_setup_prompt: Optional[StorySetupPrompt] = None
     story_setup_intake: Optional[StorySetupIntake] = None
     story_setup_draft_bundle: Optional[StorySetupDraftBundle] = None
     story_setup_questions: list[StorySetupQuestion] = Field(default_factory=list)
+    controlled_question_answers: dict[str, str] = Field(default_factory=dict)
     story_setup_decision: Optional[StorySetupDecision] = None
     story_setup_handoff: Optional[StorySetupHandoff] = None
     story_setup_safety_report: Optional[StorySetupSafetyReport] = None

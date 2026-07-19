@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色上下文预览</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/character-spine-background-v1.png")'>
+    <header class="topbar">
+      <div>
+        <p class="crumb">主页 / 工作台 / 角色主轴 / 上下文预览</p>
+        <h1>角色上下文预览</h1>
+      </div>
+      <div class="top-actions">
+        <span class="badge sage">只读预览</span>
+        <span class="badge">上下文包</span>
+      </div>
+    </header>
+
+    <section class="workspace-grid">
+      <section class="panel tall">
+        <p class="eyebrow">预览请求</p>
+        <h2>选择下游使用场景</h2>
+        <div class="form-grid">
+          <label class="field">
+            <span>目标工作区</span>
+            <select id="targetWorkspace" aria-label="目标工作区">
+              <option value="framework">Framework 编排</option>
+              <option value="chapter_plan">章节计划</option>
+              <option value="chapter_scene">场景写作</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>章节 / 场景</span>
+            <input value="第 3 章 / 第 2 幕" aria-label="章节或场景范围" />
+          </label>
+          <label class="field full">
+            <span>用户说明</span>
+            <textarea aria-label="上下文预览说明">只预览可被下游读取的角色上下文，不修改角色事实，不创建新角色。</textarea>
+          </label>
+        </div>
+
+        <div class="tabs" style="margin: 16px 0;" aria-label="包含角色等级">
+          <button class="tab-button active" type="button" data-role-tier="A">A 主轴</button>
+          <button class="tab-button active" type="button" data-role-tier="B">B 配角</button>
+          <button class="tab-button" type="button" data-role-tier="C">C 章节</button>
+          <button class="tab-button" type="button" data-role-tier="D">D 场景</button>
+        </div>
+
+        <div class="split">
+          <article class="soft-panel">
+            <h3>角色上下文包</h3>
+            <div class="scroll-area">
+              <div class="list">
+                <div class="item selected"><div class="item-head"><strong>当前角色</strong><span class="badge sage">A</span></div><p>角色上下文会从当前项目后端数据同步。</p></div>
+              </div>
+            </div>
+          </article>
+          <article class="soft-panel">
+            <h3>下游可读内容</h3>
+            <div class="timeline">
+              <div class="step current"><span class="step-dot">1</span><div><h4>身份与职能</h4><p class="muted">名称、等级、故事职能、状态。</p></div></div>
+              <div class="step"><span class="step-dot">2</span><div><h4>关系边界</h4><p class="muted">确认关系、冲突关系、禁止随意改写项。</p></div></div>
+              <div class="step"><span class="step-dot">3</span><div><h4>记忆与目标</h4><p class="muted">只传安全摘要和已确认引用。</p></div></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <aside class="panel tall">
+        <p class="eyebrow">只读结果</p>
+        <h2>预览结果</h2>
+        <div class="stats-grid">
+          <div class="stat"><span>角色</span><strong>3</strong></div>
+          <div class="stat"><span>关系</span><strong>5</strong></div>
+          <div class="stat"><span>保护项</span><strong>4</strong></div>
+          <div class="stat"><span>风险</span><strong>1</strong></div>
+        </div>
+        <div class="soft-panel" style="margin-top: 16px;">
+          <h3>安全摘要</h3>
+          <p class="muted" id="previewText">Framework 编排将读取 A/B 级角色的主线约束和已确认关系，不会读取 D 级场景角色。</p>
+        </div>
+        <div class="soft-panel" style="margin-top: 16px;">
+          <h3>阻止写入</h3>
+          <p class="muted">该预览不会调用角色创建、修订、确认、分级或归档接口。</p>
+        </div>
+        <div class="button-row" style="margin-top: 16px;">
+          <button class="button primary" id="buildPreview" type="button">构建预览</button>
+          <button class="button accent" id="acceptPreview" type="button">使用此上下文</button>
+        </div>
+        <p class="muted" id="actionNote" style="margin-top: 16px;">等待用户构建角色上下文预览。</p>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const summaries = {
+      framework: "Framework 编排将读取 A/B 级角色的主线约束和已确认关系，不会读取 D 级场景角色。",
+      chapter_plan: "章节计划将读取本章相关 A/B/C 级角色，保留角色出场和冲突边界。",
+      chapter_scene: "场景写作将读取当前场景需要的参与角色、行动意图和记忆摘要。"
+    };
+    const target = document.getElementById("targetWorkspace");
+    const previewText = document.getElementById("previewText");
+    const note = document.getElementById("actionNote");
+    target.addEventListener("change", () => previewText.textContent = summaries[target.value]);
+    document.querySelectorAll("[data-role-tier]").forEach((button) => {
+      button.addEventListener("click", () => button.classList.toggle("active"));
+    });
+    document.getElementById("buildPreview").addEventListener("click", () => note.textContent = "将刷新只读预览。");
+    document.getElementById("acceptPreview").addEventListener("click", () => note.textContent = "已选择该上下文作为下游读取依据，不写入角色事实。");
+  </script>
+</body>
+</html>

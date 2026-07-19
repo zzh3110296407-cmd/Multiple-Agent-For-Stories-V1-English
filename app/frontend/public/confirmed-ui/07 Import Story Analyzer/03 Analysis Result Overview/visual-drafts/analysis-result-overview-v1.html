@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>分析结果总览 UI V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(250, 246, 235, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.92);
+      --paper-soft: rgba(242, 234, 216, 0.82);
+      --ink: #302d29;
+      --muted: #746c61;
+      --quiet: #9d9284;
+      --line: rgba(151, 125, 96, 0.24);
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --teal: #667d7b;
+      --teal-deep: #4f6664;
+      --sage: #858a79;
+      --shadow: 0 24px 70px rgba(82, 64, 45, 0.15);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255, 252, 244, 0.82), transparent 32%),
+        radial-gradient(circle at 88% 84%, rgba(180, 138, 120, 0.15), transparent 34%),
+        linear-gradient(135deg, #ece7dc 0%, #f0e8d8 46%, #e5dac7 100%);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .background-art {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sheet {
+      position: absolute;
+      width: 470px;
+      height: 620px;
+      border: 1px solid rgba(153, 128, 96, 0.19);
+      background:
+        linear-gradient(120deg, rgba(255, 252, 244, 0.46), rgba(222, 208, 184, 0.24)),
+        repeating-linear-gradient(180deg, transparent 0 34px, rgba(94, 71, 50, 0.035) 35px 36px);
+      box-shadow: 0 34px 100px rgba(91, 68, 44, 0.08);
+    }
+
+    .sheet.one {
+      right: 10px;
+      top: 40px;
+      transform: rotate(7deg);
+      opacity: 0.45;
+    }
+
+    .sheet.two {
+      left: -130px;
+      bottom: -240px;
+      transform: rotate(-10deg);
+      opacity: 0.34;
+    }
+
+    .network {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      width: 760px;
+      height: 760px;
+      border: 1px solid rgba(102, 125, 123, 0.12);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.8;
+    }
+
+    .network::before,
+    .network::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(180, 138, 120, 0.11);
+      border-radius: 50%;
+    }
+
+    .network::before {
+      inset: 96px;
+    }
+
+    .network::after {
+      inset: 198px;
+      border-color: rgba(102, 125, 123, 0.14);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1296px, calc(100vw - 84px));
+      height: calc(100vh - 70px);
+      margin: 35px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px 1fr 138px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .ledger-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      color: var(--ink);
+      box-shadow: 0 10px 24px rgba(74, 55, 38, 0.06);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .ghost-button {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .ghost-button:hover,
+    .ledger-button:hover,
+    .tab-button:hover,
+    .result-card:hover,
+    .dock-button:hover,
+    .primary-action:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+      box-shadow: 0 14px 30px rgba(74, 55, 38, 0.1);
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ledger-button {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      color: #2f332f;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+
+    .route-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 430px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.48);
+      background: rgba(255, 252, 244, 0.28);
+      box-shadow: 0 12px 28px rgba(74, 55, 38, 0.06);
+    }
+
+    .route-step {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 11px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .route-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      box-shadow: 0 10px 24px rgba(79, 102, 100, 0.2);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 278px minmax(0, 1fr) 298px;
+      gap: 18px;
+    }
+
+    .panel,
+    .core-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.5);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.64), rgba(242, 234, 216, 0.7));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .panel,
+    .side-panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .section-title strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--teal);
+      box-shadow: 0 0 0 6px rgba(102, 125, 123, 0.12);
+    }
+
+    .status-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .status-item {
+      min-height: 62px;
+      padding: 12px 13px;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .status-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 7px;
+    }
+
+    .status-item strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .verdict {
+      margin-top: auto;
+      padding: 16px;
+      border: 1px solid rgba(102, 125, 123, 0.28);
+      border-radius: var(--radius);
+      background: rgba(102, 125, 123, 0.1);
+    }
+
+    .verdict span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .verdict strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 22px;
+      color: var(--teal-deep);
+    }
+
+    .verdict p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .core-panel {
+      padding: 20px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .result-card {
+      min-height: 108px;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      padding: 14px;
+      text-align: left;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .result-card.active {
+      border-color: rgba(102, 125, 123, 0.42);
+      background: rgba(102, 125, 123, 0.12);
+    }
+
+    .result-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .result-card strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .result-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid rgba(255, 252, 244, 0.45);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.3);
+    }
+
+    .tab-button {
+      flex: 1;
+      height: 38px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .tab-button.active {
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      color: #fffaf2;
+      box-shadow: 0 10px 24px rgba(79, 102, 100, 0.18);
+    }
+
+    .detail-panel {
+      min-height: 0;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    .detail-copy {
+      min-width: 0;
+    }
+
+    .detail-copy span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .detail-copy h2 {
+      margin: 8px 0 12px;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .detail-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .detail-list {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid rgba(151, 125, 96, 0.15);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .detail-row b {
+      color: var(--accent-deep);
+    }
+
+    .detail-meter {
+      display: grid;
+      align-content: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .ring {
+      width: 190px;
+      height: 190px;
+      justify-self: center;
+      border-radius: 50%;
+      background:
+        conic-gradient(var(--teal) 0 86%, rgba(151, 125, 96, 0.16) 86% 100%);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 18px 42px rgba(80, 62, 44, 0.09);
+    }
+
+    .ring-inner {
+      width: 136px;
+      height: 136px;
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.9);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--teal-deep);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .pill {
+      padding: 7px 9px;
+      border-radius: 999px;
+      background: rgba(102, 125, 123, 0.12);
+      color: var(--teal-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .next-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .next-item {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 13px 0;
+      border-top: 1px solid rgba(151, 125, 96, 0.16);
+    }
+
+    .next-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .next-label {
+      color: var(--accent-deep);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .next-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .next-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .side-actions {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .dock-button,
+    .primary-action {
+      min-height: 50px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 900;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .dock-button {
+      border: 1px solid rgba(151, 125, 96, 0.22);
+      background: rgba(255, 252, 244, 0.5);
+      color: var(--ink);
+    }
+
+    .primary-action {
+      grid-column: 1 / -1;
+      border: 0;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      color: #fffaf2;
+      box-shadow: 0 16px 32px rgba(79, 102, 100, 0.22);
+    }
+
+    .primary-action.secondary-state {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      justify-items: end;
+      background: rgba(48, 45, 41, 0.16);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .drawer-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .issue-drawer {
+      width: min(430px, calc(100vw - 34px));
+      height: calc(100vh - 34px);
+      margin: 17px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(250, 246, 235, 0.95), rgba(236, 226, 207, 0.95));
+      box-shadow: 0 28px 80px rgba(44, 37, 29, 0.22);
+      transform: translateX(24px);
+      transition: transform 220ms ease;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .drawer-backdrop.show .issue-drawer {
+      transform: translateX(0);
+    }
+
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .drawer-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .drawer-head strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+    }
+
+    .close-drawer {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(151, 125, 96, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .issue-list {
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .issue-item {
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      padding: 12px 13px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .issue-item strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 260px;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 13px 18px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(55, 49, 42, 0.88);
+      color: #fffaf2;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 18px 42px rgba(55, 49, 42, 0.24);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  </style>
+</head>
+<body>
+  <div class="background-art" aria-hidden="true">
+    <div class="sheet one"></div>
+    <div class="sheet two"></div>
+    <div class="network"></div>
+  </div>
+
+  <main class="workspace">
+    <nav class="topbar" aria-label="页面导航">
+      <a class="ghost-button" href="../../02 Analyzing/visual-drafts/analyzing-v1.html">返回分析中</a>
+      <div class="breadcrumb">主页 / 当前项目 / Framework 编排 / 分析结果</div>
+      <button class="ledger-button" id="issueButton" type="button">问题记录</button>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <h1>分析结果</h1>
+        <p>导入源已完成初步处理，先审阅结果，再决定是否生成 Framework 候选。</p>
+      </div>
+      <div class="route-strip" aria-label="导入流程">
+        <button class="route-step" type="button" data-route="source">导入源</button>
+        <button class="route-step" type="button" data-route="analysis">分析</button>
+        <button class="route-step active" type="button" data-route="result">结果</button>
+        <button class="route-step" type="button" data-route="candidate">候选</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="section-title">
+          <div>
+            <span>状态</span>
+            <strong>结果概况</strong>
+          </div>
+          <i class="status-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="status-list">
+          <div class="status-item">
+            <span>作品名</span>
+            <strong>港口钟楼证词</strong>
+          </div>
+          <div class="status-item">
+            <span>导入 ID</span>
+            <strong>imp_local_0427</strong>
+          </div>
+          <div class="status-item">
+            <span>文件类型</span>
+            <strong>story_analysis_report</strong>
+          </div>
+          <div class="status-item">
+            <span>导入状态</span>
+            <strong id="importStatusText">ready_for_m2</strong>
+          </div>
+          <div class="status-item">
+            <span>校验</span>
+            <strong id="validationText">通过，含 2 条提醒</strong>
+          </div>
+        </div>
+
+        <div class="verdict">
+          <span>当前结论</span>
+          <strong id="verdictText">可继续</strong>
+          <p id="verdictCopy">报告可审阅，候选可生成；回写仍需用户确认。</p>
+        </div>
+      </aside>
+
+      <section class="core-panel">
+        <div class="result-grid" aria-label="结果卡">
+          <button class="result-card active" type="button" data-tab="overview">
+            <span>导入记录</span>
+            <strong>完成</strong>
+            <p>manifest 与 artifact 已生成。</p>
+          </button>
+          <button class="result-card" type="button" data-tab="validation">
+            <span>校验报告</span>
+            <strong>通过</strong>
+            <p>无阻塞，存在提醒。</p>
+          </button>
+          <button class="result-card" type="button" data-tab="report">
+            <span>报告引用</span>
+            <strong>1 份</strong>
+            <p>可打开 Viewer 审阅。</p>
+          </button>
+          <button class="result-card" type="button" data-tab="candidate">
+            <span>Framework 候选</span>
+            <strong id="candidateCardValue">待生成</strong>
+            <p id="candidateCardCopy">生成后进入候选审阅。</p>
+          </button>
+        </div>
+
+        <div class="tabs" aria-label="结果分区">
+          <button class="tab-button active" type="button" data-tab="overview">总览</button>
+          <button class="tab-button" type="button" data-tab="validation">校验</button>
+          <button class="tab-button" type="button" data-tab="report">报告</button>
+          <button class="tab-button" type="button" data-tab="candidate">候选</button>
+        </div>
+
+        <article class="detail-panel">
+          <div class="detail-copy">
+            <span id="detailEyebrow">总览</span>
+            <h2 id="detailTitle">可以进入结果审阅</h2>
+            <p id="detailBody">导入记录已解析完成，报告引用已提取，校验未发现阻塞项。当前内容仍是审阅材料，不会自动写入 Framework。</p>
+            <div class="detail-list" id="detailList">
+              <div class="detail-row"><b>import_status</b><span>ready_for_m2</span></div>
+              <div class="detail-row"><b>parse_status</b><span>parsed</span></div>
+              <div class="detail-row"><b>raw_storage</b><span>stored</span></div>
+              <div class="detail-row"><b>confirmation</b><span>后续回写需要用户确认</span></div>
+            </div>
+          </div>
+          <div class="detail-meter">
+            <div class="ring" id="resultRing">
+              <div class="ring-inner" id="ringText">86%</div>
+            </div>
+            <div class="pill-row" id="pillRow">
+              <span class="pill">parsed</span>
+              <span class="pill">report ref</span>
+              <span class="pill">warnings 2</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="side-panel">
+        <div class="section-title">
+          <div>
+            <span>下一步</span>
+            <strong>动作</strong>
+          </div>
+          <i class="status-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="next-list">
+          <div class="next-item">
+            <div class="next-label">验</div>
+            <div>
+              <strong id="nextValidation">校验通过</strong>
+              <span>可继续，但需要审阅提醒。</span>
+            </div>
+          </div>
+          <div class="next-item">
+            <div class="next-label">报</div>
+            <div>
+              <strong>报告可查看</strong>
+              <span>打开 Viewer 后确认关键段落。</span>
+            </div>
+          </div>
+          <div class="next-item">
+            <div class="next-label">候</div>
+            <div>
+              <strong id="nextCandidate">候选待生成</strong>
+              <span id="nextCandidateCopy">生成后再进入候选审阅。</span>
+            </div>
+          </div>
+          <div class="next-item">
+            <div class="next-label">写</div>
+            <div>
+              <strong>禁止自动回写</strong>
+              <span>必须经过导入编辑会话。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-actions">
+          <button class="dock-button" id="revalidateButton" type="button">重新验证</button>
+          <button class="dock-button" id="openReportButton" type="button">打开报告</button>
+          <button class="primary-action" id="candidateButton" type="button">生成 Framework 候选</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="drawer-backdrop" id="issueBackdrop" aria-hidden="true">
+    <aside class="issue-drawer" role="dialog" aria-modal="true" aria-labelledby="issueTitle">
+      <div class="drawer-head">
+        <div>
+          <span>问题记录</span>
+          <strong id="issueTitle">Warnings & Issues</strong>
+        </div>
+        <button class="close-drawer" id="closeIssue" type="button" aria-label="关闭问题记录">x</button>
+      </div>
+      <div class="issue-list">
+        <div class="issue-item">
+          <strong>WARNING / missing_recommended_fields</strong>
+          部分章节时间线缺少明确日期，后续候选审阅时需要确认。
+        </div>
+        <div class="issue-item">
+          <strong>WARNING / report_layer_only</strong>
+          报告中的解释性内容不会自动进入 Framework。
+        </div>
+        <div class="issue-item">
+          <strong>BLOCKING</strong>
+          当前无阻塞问题。
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const tabData = {
+      overview: {
+        eyebrow: "总览",
+        title: "可以进入结果审阅",
+        body: "导入记录已解析完成，报告引用已提取，校验未发现阻塞项。当前内容仍是审阅材料，不会自动写入 Framework。",
+        ring: "86%",
+        ringValue: 86,
+        pills: ["parsed", "report ref", "warnings 2"],
+        rows: [
+          ["import_status", "ready_for_m2"],
+          ["parse_status", "parsed"],
+          ["raw_storage", "stored"],
+          ["confirmation", "后续回写需要用户确认"]
+        ]
+      },
+      validation: {
+        eyebrow: "校验",
+        title: "校验通过，存在提醒",
+        body: "当前没有 blocking issues。warnings 不阻止继续，但需要在报告 Viewer 或候选审阅中确认。",
+        ring: "2",
+        ringValue: 64,
+        pills: ["passed", "warnings", "no blocking"],
+        rows: [
+          ["passed", "true"],
+          ["can_proceed_to_m2", "true"],
+          ["warnings", "2"],
+          ["blocking_issues", "0"]
+        ]
+      },
+      report: {
+        eyebrow: "报告",
+        title: "报告引用已准备",
+        body: "系统识别到一份故事分析报告，可进入 Viewer 查看安全摘要、章节段落和引用关系。",
+        ring: "1",
+        ringValue: 72,
+        pills: ["viewer", "safe summary", "refs"],
+        rows: [
+          ["viewer_status", "available"],
+          ["review_status", "not_reviewed"],
+          ["safe_title", "港口钟楼证词"],
+          ["report_ref_id", "sar_ref_0427"]
+        ]
+      },
+      candidate: {
+        eyebrow: "候选",
+        title: "Framework 候选待生成",
+        body: "生成候选会把可用的 Framework 包整理为候选草案。用户仍需在候选审阅和导入编辑会话中确认。",
+        ring: "待",
+        ringValue: 38,
+        pills: ["candidate", "confirmation", "not active"],
+        rows: [
+          ["candidate_status", "not_created"],
+          ["can_proceed_to_m4", "false"],
+          ["requires_confirmation", "true"],
+          ["activation", "not_active"]
+        ]
+      }
+    };
+
+    let currentTab = "overview";
+    let candidateCreated = false;
+
+    const detailEyebrow = document.getElementById("detailEyebrow");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailBody = document.getElementById("detailBody");
+    const detailList = document.getElementById("detailList");
+    const ringText = document.getElementById("ringText");
+    const resultRing = document.getElementById("resultRing");
+    const pillRow = document.getElementById("pillRow");
+    const toast = document.getElementById("toast");
+    const candidateButton = document.getElementById("candidateButton");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+    }
+
+    function renderTab(tab) {
+      currentTab = tab;
+      const data = tabData[tab];
+      detailEyebrow.textContent = data.eyebrow;
+      detailTitle.textContent = data.title;
+      detailBody.textContent = data.body;
+      ringText.textContent = data.ring;
+      resultRing.style.background = `conic-gradient(var(--teal) 0 ${data.ringValue}%, rgba(151, 125, 96, 0.16) ${data.ringValue}% 100%)`;
+      detailList.innerHTML = data.rows.map(([label, value]) => `<div class="detail-row"><b>${label}</b><span>${value}</span></div>`).join("");
+      pillRow.innerHTML = data.pills.map((pill) => `<span class="pill">${pill}</span>`).join("");
+
+      document.querySelectorAll("[data-tab]").forEach((item) => {
+        item.classList.toggle("active", item.dataset.tab === tab);
+      });
+    }
+
+    function openIssues() {
+      const backdrop = document.getElementById("issueBackdrop");
+      backdrop.classList.add("show");
+      backdrop.setAttribute("aria-hidden", "false");
+      document.getElementById("closeIssue").focus();
+    }
+
+    function closeIssues() {
+      const backdrop = document.getElementById("issueBackdrop");
+      backdrop.classList.remove("show");
+      backdrop.setAttribute("aria-hidden", "true");
+      document.getElementById("issueButton").focus();
+    }
+
+    document.querySelectorAll(".tab-button, .result-card").forEach((button) => {
+      button.addEventListener("click", () => renderTab(button.dataset.tab));
+    });
+
+    document.querySelectorAll("[data-route]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.route === "source") {
+          window.location.href = "../../01 Import Source/visual-drafts/import-source-v1.html";
+          return;
+        }
+        if (button.dataset.route === "analysis") {
+          window.location.href = "../../02 Analyzing/visual-drafts/analyzing-v1.html";
+          return;
+        }
+        if (button.dataset.route === "candidate") {
+          if (candidateCreated) {
+            window.location.href = "../../04 Framework Candidate Selection/visual-drafts/framework-candidate-selection-v1.html";
+            return;
+          }
+          showToast("请先生成 Framework 候选");
+          return;
+        }
+        showToast("当前处于分析结果");
+      });
+    });
+
+    document.getElementById("issueButton").addEventListener("click", openIssues);
+    document.getElementById("closeIssue").addEventListener("click", closeIssues);
+    document.getElementById("issueBackdrop").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) {
+        closeIssues();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && document.getElementById("issueBackdrop").classList.contains("show")) {
+        closeIssues();
+      }
+    });
+
+    document.getElementById("revalidateButton").addEventListener("click", () => {
+      document.getElementById("validationText").textContent = "复验通过";
+      document.getElementById("nextValidation").textContent = "复验通过";
+      showToast("重新验证完成");
+      renderTab("validation");
+    });
+
+    document.getElementById("openReportButton").addEventListener("click", () => {
+      showToast("正在打开报告 Viewer");
+      window.setTimeout(() => {
+        window.location.href = "../../../06 Framework Composition/04 Report Viewer/visual-drafts/report-viewer-v1.html";
+      }, 450);
+    });
+
+    candidateButton.addEventListener("click", () => {
+      if (!candidateCreated) {
+        candidateCreated = true;
+        document.getElementById("candidateCardValue").textContent = "可审阅";
+        document.getElementById("candidateCardCopy").textContent = "候选已生成，等待审阅。";
+        document.getElementById("nextCandidate").textContent = "候选可审阅";
+        document.getElementById("nextCandidateCopy").textContent = "进入候选审阅后再决定是否编辑。";
+        candidateButton.textContent = "进入候选审阅";
+        candidateButton.classList.add("secondary-state");
+        tabData.candidate.title = "Framework 候选可审阅";
+        tabData.candidate.body = "候选已生成，可进入候选审阅查看规范化结果、提醒和差异。内容仍未激活。";
+        tabData.candidate.ring = "可";
+        tabData.candidate.ringValue = 82;
+        tabData.candidate.rows = [
+          ["candidate_status", "ready_for_workbench_review"],
+          ["can_proceed_to_m4", "true"],
+          ["requires_confirmation", "true"],
+          ["activation", "not_active"]
+        ];
+        showToast("Framework 候选已生成");
+        renderTab("candidate");
+        return;
+      }
+      window.location.href = "../../04 Framework Candidate Selection/visual-drafts/framework-candidate-selection-v1.html";
+    });
+
+    renderTab("overview");
+  </script>
+</body>
+</html>

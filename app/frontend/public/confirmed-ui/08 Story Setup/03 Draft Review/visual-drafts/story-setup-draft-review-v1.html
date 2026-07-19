@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>故事设定草案审阅 UI V1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --paper-strong: #fffaf2;
+      --paper-soft: rgba(255, 252, 244, 0.72);
+      --ink: #2f332f;
+      --muted: #7a6e63;
+      --line: rgba(86, 74, 61, 0.16);
+      --line-strong: rgba(86, 74, 61, 0.26);
+      --sage: #6f7e76;
+      --sage-deep: #53665f;
+      --accent: #a97868;
+      --accent-deep: #8f5d50;
+      --amber: #c6a369;
+      --radius: 8px;
+      --shadow: 0 22px 70px rgba(72, 55, 42, 0.16);
+      --soft-shadow: 0 16px 46px rgba(73, 54, 40, 0.12);
+      font-family: "Inter", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      background: #e7e0d2;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    button,
+    textarea,
+    select,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 34px 60px;
+      isolation: isolate;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92) 0%, rgba(236, 231, 220, 0.72) 46%, rgba(236, 231, 220, 0.36) 100%),
+        url("./assets/story-setup-desk-background-v1.png") center / cover no-repeat;
+      filter: saturate(0.92);
+    }
+
+    .page::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 22% 22%, rgba(255, 252, 244, 0.68), transparent 34%),
+        radial-gradient(circle at 68% 40%, rgba(180, 138, 120, 0.13), transparent 38%),
+        linear-gradient(180deg, rgba(255, 252, 244, 0.08), rgba(99, 84, 68, 0.1));
+      pointer-events: none;
+    }
+
+    .workspace {
+      width: min(1320px, calc(100vw - 120px));
+      height: calc(100vh - 68px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .status-pill {
+      min-height: 44px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      color: #4c443d;
+      box-shadow: 0 10px 32px rgba(62, 47, 36, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .ghost-button {
+      min-width: 128px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .ghost-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 620;
+    }
+
+    .status-pill {
+      min-width: 184px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #5e554d;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.12);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 432px);
+      align-items: end;
+      gap: 28px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(48px, 5vw, 74px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      font-weight: 950;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 12px 0 0;
+      color: #6b6158;
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .phase-strip {
+      min-height: 56px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.28);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 46px rgba(73, 54, 40, 0.08);
+    }
+
+    .phase-step {
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: rgba(81, 72, 64, 0.58);
+      font-size: 13px;
+      font-weight: 820;
+      transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+    }
+
+    .phase-step:hover {
+      color: #4a443d;
+      background: rgba(255, 252, 244, 0.38);
+    }
+
+    .phase-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 12px 26px rgba(83, 102, 95, 0.18);
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 316px;
+      gap: 28px;
+    }
+
+    .review-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.74), rgba(236, 225, 205, 0.6)),
+        rgba(255, 252, 244, 0.42);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 28px 30px 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #936c60;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .panel-head h2,
+    .draft-detail h3,
+    .side-title,
+    .decision-title {
+      margin: 0;
+      color: #332f2a;
+      font-weight: 930;
+      letter-spacing: 0;
+    }
+
+    .panel-head h2 {
+      font-size: 30px;
+      line-height: 1.12;
+    }
+
+    .panel-head p {
+      max-width: 710px;
+      margin: 10px 0 0;
+      color: #6f6358;
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 560;
+    }
+
+    .bundle-state {
+      flex: 0 0 auto;
+      display: grid;
+      gap: 8px;
+      min-width: 142px;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.46);
+      text-align: right;
+    }
+
+    .bundle-state strong {
+      color: var(--sage-deep);
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 940;
+    }
+
+    .bundle-state span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .review-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 284px minmax(0, 1fr);
+      gap: 18px;
+      padding: 0 30px 18px;
+    }
+
+    .draft-list {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .draft-card {
+      min-width: 0;
+      min-height: 112px;
+      display: grid;
+      align-content: center;
+      gap: 9px;
+      padding: 15px;
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      color: #51483f;
+      text-align: left;
+      box-shadow: 0 12px 30px rgba(74, 54, 40, 0.06);
+      transition: transform 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease;
+    }
+
+    .draft-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(169, 120, 104, 0.28);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .draft-card.active {
+      border-color: rgba(111, 126, 118, 0.34);
+      background: rgba(255, 252, 244, 0.74);
+      box-shadow: 0 18px 38px rgba(74, 54, 40, 0.12);
+    }
+
+    .draft-card strong {
+      color: #3c3731;
+      font-size: 17px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .draft-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #7a6e63;
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .tiny-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .draft-detail {
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(255, 252, 244, 0.72), rgba(255, 252, 244, 0.44)),
+        rgba(255, 252, 244, 0.46);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+    }
+
+    .draft-detail::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg, transparent, rgba(255, 252, 244, 0.36), transparent),
+        radial-gradient(circle at 70% 20%, rgba(198, 163, 105, 0.1), transparent 32%);
+      transform: translateX(-26%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .draft-detail.switching::before {
+      animation: pageSheen 520ms ease;
+    }
+
+    @keyframes pageSheen {
+      0% { opacity: 0; transform: translateX(-34%); }
+      34% { opacity: 1; }
+      100% { opacity: 0; transform: translateX(34%); }
+    }
+
+    .detail-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .draft-detail h3 {
+      font-size: 27px;
+      line-height: 1.14;
+    }
+
+    .draft-detail p {
+      margin: 10px 0 0;
+      color: #655b52;
+      font-size: 14px;
+      line-height: 1.75;
+      font-weight: 560;
+    }
+
+    .detail-badge {
+      flex: 0 0 auto;
+      padding: 9px 12px;
+      border-radius: 7px;
+      border: 1px solid rgba(111, 126, 118, 0.22);
+      background: rgba(111, 126, 118, 0.1);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .detail-content {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .note-block,
+    .fact-block {
+      min-height: 0;
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      padding: 16px;
+    }
+
+    .note-block h4,
+    .fact-block h4 {
+      margin: 0 0 12px;
+      color: #433b34;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .note-list,
+    .fact-list,
+    .safety-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .note-list li,
+    .fact-list li,
+    .safety-list li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      color: #5f554d;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 610;
+    }
+
+    .check-dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 7px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .detail-foot {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .metric {
+      padding: 12px;
+      border-radius: 7px;
+      background: rgba(236, 225, 205, 0.5);
+      border: 1px solid rgba(86, 74, 61, 0.1);
+    }
+
+    .metric span {
+      display: block;
+      color: #7a6e63;
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .metric b {
+      display: block;
+      margin-top: 6px;
+      color: var(--sage-deep);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .decision-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 30px 24px;
+      border-top: 1px solid rgba(86, 74, 61, 0.08);
+    }
+
+    .decision-title {
+      font-size: 15px;
+    }
+
+    .decision-copy {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      font-weight: 560;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .soft-button,
+    .primary-action {
+      min-height: 46px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 850;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    .soft-button {
+      min-width: 96px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      background: rgba(255, 252, 244, 0.42);
+      color: #574e46;
+    }
+
+    .soft-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+    }
+
+    .primary-action {
+      min-width: 166px;
+      padding: 0 20px;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #fffaf2;
+      box-shadow: 0 18px 38px rgba(142, 103, 91, 0.24);
+    }
+
+    .primary-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 44px rgba(142, 103, 91, 0.3);
+    }
+
+    .primary-action.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 18px 38px rgba(83, 102, 95, 0.22);
+    }
+
+    .side {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .side-card {
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.38);
+      box-shadow: var(--soft-shadow);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .side-title {
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .side-copy {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .question-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .question {
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.34);
+      overflow: hidden;
+    }
+
+    .question-toggle {
+      width: 100%;
+      min-height: 52px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      border: 0;
+      background: transparent;
+      padding: 12px;
+      text-align: left;
+      color: #4f463f;
+    }
+
+    .question-toggle strong {
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 860;
+    }
+
+    .question-toggle span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .question-body {
+      display: none;
+      padding: 0 12px 12px;
+    }
+
+    .question.open .question-body {
+      display: grid;
+      gap: 10px;
+    }
+
+    .answer-input {
+      width: 100%;
+      min-height: 66px;
+      resize: none;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.55);
+      color: #453e37;
+      padding: 10px;
+      outline: 0;
+      line-height: 1.6;
+      font-size: 12px;
+    }
+
+    .mini-save {
+      justify-self: end;
+      min-height: 34px;
+      border-radius: 7px;
+      border: 1px solid rgba(111, 126, 118, 0.22);
+      background: rgba(111, 126, 118, 0.1);
+      color: var(--sage-deep);
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .handoff-select {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .handoff-select label {
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.56);
+      color: #4d443d;
+      padding: 0 12px;
+      outline: 0;
+      font-weight: 760;
+    }
+
+    .safety-list {
+      margin-top: 14px;
+    }
+
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .boundary-item {
+      min-height: 62px;
+      display: grid;
+      align-content: center;
+      gap: 5px;
+      padding: 10px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.34);
+      border: 1px solid rgba(86, 74, 61, 0.1);
+    }
+
+    .boundary-item span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .boundary-item b {
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 230px;
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      background: rgba(48, 45, 41, 0.88);
+      color: #fffaf2;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: 0 18px 42px rgba(40, 30, 24, 0.2);
+      transform: translate(-50%, 16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        padding: 24px 21px;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: calc(100vw - 42px);
+      }
+
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .phase-strip {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .side {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 840px) {
+      .topbar,
+      .review-body,
+      .detail-content,
+      .decision-bar,
+      .side {
+        grid-template-columns: 1fr;
+      }
+
+      .phase-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .draft-list {
+        grid-template-rows: none;
+      }
+
+      .detail-foot,
+      .boundary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="workspace" aria-label="故事设定草案审阅">
+      <header class="topbar">
+        <button class="ghost-button" type="button" id="backButton">返回生成</button>
+        <div class="breadcrumb">主页 / 当前项目 / 故事设定 / 草案审阅</div>
+        <div class="status-pill"><span class="status-dot"></span><span id="modelState">模型已就绪</span></div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h1>故事设定</h1>
+          <p>设定草案已经整理完成。请逐项审阅世界、角色、Framework 与章节路线建议；确认后只创建交接，不会直接写入最终故事事实。</p>
+        </div>
+        <nav class="phase-strip" aria-label="故事设定阶段">
+          <button class="phase-step" type="button" data-phase="entry">设定入口</button>
+          <button class="phase-step" type="button" data-phase="generating">生成草案</button>
+          <button class="phase-step active" type="button" data-phase="review">审阅补充</button>
+          <button class="phase-step" type="button" data-phase="handoff">决策交接</button>
+        </nav>
+      </section>
+
+      <section class="layout">
+        <section class="review-panel">
+          <header class="panel-head">
+            <div>
+              <p class="eyebrow">草案审阅</p>
+              <h2>审阅设定草案</h2>
+              <p>这里展示的是候选设定方向。用户可以确认、要求修订、延后或拒绝，但后续世界画布、角色、Framework 与章节计划仍需要在各自工作台确认。</p>
+            </div>
+            <div class="bundle-state" aria-label="草案状态">
+              <strong>4/4</strong>
+              <span>草案模块已生成</span>
+            </div>
+          </header>
+
+          <div class="review-body">
+            <div class="draft-list" role="tablist" aria-label="草案模块">
+              <button class="draft-card active" type="button" role="tab" aria-selected="true" data-draft="world">
+                <div class="card-meta"><span class="tiny-dot"></span><span>世界画布</span></div>
+                <strong>世界画布建议</strong>
+                <span>港口城、潮汐禁区、行会秩序与旧贵族秘密。</span>
+              </button>
+              <button class="draft-card" type="button" role="tab" aria-selected="false" data-draft="cast">
+                <div class="card-meta"><span class="tiny-dot"></span><span>角色方向</span></div>
+                <strong>角色方向</strong>
+                <span>调查者、证词持有者、旧贵族压力与行会阻力。</span>
+              </button>
+              <button class="draft-card" type="button" role="tab" aria-selected="false" data-draft="framework">
+                <div class="card-meta"><span class="tiny-dot"></span><span>Framework</span></div>
+                <strong>Framework 建议</strong>
+                <span>从失踪线索进入规则裂缝，再推进真相暴露。</span>
+              </button>
+              <button class="draft-card" type="button" role="tab" aria-selected="false" data-draft="chapters">
+                <div class="card-meta"><span class="tiny-dot"></span><span>章节路线</span></div>
+                <strong>章节路线建议</strong>
+                <span>晚宴缺口、钟楼证词、禁区调查与回收真相。</span>
+              </button>
+            </div>
+
+            <article class="draft-detail" aria-live="polite">
+              <div class="detail-top">
+                <div>
+                  <p class="eyebrow" id="detailEyebrow">世界画布草案</p>
+                  <h3 id="detailTitle">港口城的事实底座</h3>
+                  <p id="detailSummary">草案建议把故事范围锁定在一座低魔港口城。城市表面由行会、潮汐禁区和旧贵族共同维持秩序，失忆晚宴会成为进入真相的第一处裂缝。</p>
+                </div>
+                <span class="detail-badge" id="detailBadge">需下游确认</span>
+              </div>
+
+              <div class="detail-content">
+                <section class="note-block">
+                  <h4>建议保留</h4>
+                  <ul class="note-list" id="keepList"></ul>
+                </section>
+                <section class="fact-block">
+                  <h4>需要确认</h4>
+                  <ul class="fact-list" id="confirmList"></ul>
+                </section>
+              </div>
+
+              <footer class="detail-foot">
+                <div class="metric"><span>草案来源</span><b id="sourceField">世界画布草案</b></div>
+                <div class="metric"><span>写入状态</span><b>草案，不写最终事实</b></div>
+                <div class="metric"><span>后续工作台</span><b id="targetWorkspace">世界画布</b></div>
+              </footer>
+            </article>
+          </div>
+
+          <footer class="decision-bar">
+            <div>
+              <h3 class="decision-title" id="decisionTitle">等待审阅决定</h3>
+              <p class="decision-copy" id="decisionCopy">确认后可以创建交接；修订、延后或拒绝会记录为故事设定决定记录。</p>
+            </div>
+            <div class="action-row" role="group" aria-label="草案审阅动作">
+              <button class="soft-button" type="button" data-decision="request_revision">请求修订</button>
+              <button class="soft-button" type="button" data-decision="defer">延后</button>
+              <button class="soft-button" type="button" data-decision="reject">拒绝</button>
+              <button class="primary-action" type="button" id="confirmButton">确认为交接草案</button>
+            </div>
+          </footer>
+        </section>
+
+        <aside class="side" aria-label="草案审阅辅助信息">
+          <section class="side-card">
+            <h3 class="side-title">待补充问题</h3>
+            <p class="side-copy">问题来自故事设定问题列表。回答后重新进入审阅，不直接改写最终故事事实。</p>
+            <div class="question-stack">
+              <article class="question open">
+                <button class="question-toggle" type="button" aria-expanded="true">
+                  <strong>世界范围是否只限港口城？</strong>
+                  <span>未回答</span>
+                </button>
+                <div class="question-body">
+                  <textarea class="answer-input" aria-label="回答世界范围问题">先限定港口城，后续章节再决定是否扩展到外海。</textarea>
+                  <button class="mini-save" type="button">保存回答</button>
+                </div>
+              </article>
+              <article class="question">
+                <button class="question-toggle" type="button" aria-expanded="false">
+                  <strong>主角是否已经有明确身份？</strong>
+                  <span>待确认</span>
+                </button>
+                <div class="question-body">
+                  <textarea class="answer-input" aria-label="回答主角身份问题"></textarea>
+                  <button class="mini-save" type="button">保存回答</button>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3 class="side-title">交接目标</h3>
+            <p class="side-copy">确认草案后，系统会按目标工作台创建交接，目标页仍需要继续确认对应内容。</p>
+            <div class="handoff-select">
+              <label for="handoffTarget">目标工作台</label>
+              <select id="handoffTarget">
+                <option value="world_canvas_workspace">世界画布工作台</option>
+                <option value="character_workspace">角色主轴工作台</option>
+                <option value="framework_workspace">Framework 工作台</option>
+                <option value="chapter_planning_workspace">章节计划工作台</option>
+              </select>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3 class="side-title">边界检查</h3>
+            <p class="side-copy">当前审阅只确认设定草案方向，不越过下游工作台确认。</p>
+            <div class="boundary-grid">
+              <div class="boundary-item"><span>世界画布</span><b>不确认最终版</b></div>
+              <div class="boundary-item"><span>角色</span><b>不确认最终版</b></div>
+              <div class="boundary-item"><span>Framework</span><b>不激活最终版</b></div>
+              <div class="boundary-item"><span>章节计划</span><b>不确认最终版</b></div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const draftData = {
+        world: {
+          eyebrow: "世界画布草案",
+          title: "港口城的事实底座",
+          summary: "草案建议把故事范围锁定在一座低魔港口城。城市表面由行会、潮汐禁区和旧贵族共同维持秩序，失忆晚宴会成为进入真相的第一处裂缝。",
+          badge: "需下游确认",
+          source: "世界画布草案",
+          target: "世界画布",
+          keep: ["港口城作为主要空间，便于后续世界画布细化规则。", "潮汐禁区、行会秩序和旧贵族秘密形成可验证的事实层。", "失忆晚宴和钟楼证词可以成为初始谜团。"],
+          confirm: ["禁区规则是否来自自然潮汐、低魔机制或人为封锁。", "城市外部是否在第一阶段保持模糊。", "哪些事实只作为传闻，不能直接确认。"]
+        },
+        cast: {
+          eyebrow: "角色方向草案",
+          title: "主角团与压力关系",
+          summary: "草案暂不创建正式角色，只给出角色方向：调查者负责进入事件，证词持有者掌握关键缺口，旧贵族和行会提供结构性压力。",
+          badge: "方向草案",
+          source: "角色方向草案",
+          target: "角色主轴",
+          keep: ["调查者要有进入钟楼证词的行动理由。", "证词持有者应和失忆晚宴存在直接联系。", "旧贵族压力不直接等同反派，先保留复杂性。"],
+          confirm: ["主角是否已经有明确身份。", "主角团人数与 A/B/C/D 层级后续如何拆分。", "是否需要保留一个不可靠叙述者位置。"]
+        },
+        framework: {
+          eyebrow: "Framework 建议",
+          title: "从线索到规则裂缝",
+          summary: "草案建议用悬疑递进结构：普通失踪线索打开晚宴缺口，随后从钟楼证词进入城市规则和旧秩序的裂缝。",
+          badge: "可映射 Framework",
+          source: "Framework 建议草案",
+          target: "Framework",
+          keep: ["第一阶段不要直接揭露大规模真相。", "把行会秩序作为外层阻力，把旧贵族秘密作为深层阻力。", "Framework 可以保留日常秩序被慢慢撕开的节奏。"],
+          confirm: ["是否使用已确认的港口城主骨架。", "故事更偏调查、政治压迫还是低魔规则。", "是否允许结尾前出现外部势力。"]
+        },
+        chapters: {
+          eyebrow: "章节路线建议",
+          title: "章节路线候选",
+          summary: "草案给出章节级方向，不生成正式章节计划。它只帮助后续章节计划工作台理解可能的推进节奏。",
+          badge: "章节候选",
+          source: "章节路线草案",
+          target: "章节计划",
+          keep: ["第一章围绕失忆晚宴和失踪线索。", "中段推进钟楼证词和潮汐禁区。", "后段回收禁区规则、旧贵族秘密和证词真相。"],
+          confirm: ["总章节数是否仍由 Framework 编排决定。", "每章幕数是否需要在章节计划页单独设置。", "是否保留支线调查章节。"]
+        }
+      };
+
+      const toast = document.getElementById("toast");
+      const detail = document.querySelector(".draft-detail");
+      const keepList = document.getElementById("keepList");
+      const confirmList = document.getElementById("confirmList");
+      const handoffTarget = document.getElementById("handoffTarget");
+      const decisionTitle = document.getElementById("decisionTitle");
+      const decisionCopy = document.getElementById("decisionCopy");
+      const confirmButton = document.getElementById("confirmButton");
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+
+      function renderList(target, items) {
+        target.innerHTML = "";
+        items.forEach((item) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="check-dot"></span><span>${item}</span>`;
+          target.appendChild(li);
+        });
+      }
+
+      function renderDraft(key) {
+        const data = draftData[key];
+        document.querySelectorAll(".draft-card").forEach((card) => {
+          const active = card.dataset.draft === key;
+          card.classList.toggle("active", active);
+          card.setAttribute("aria-selected", String(active));
+        });
+        detail.classList.remove("switching");
+        void detail.offsetWidth;
+        detail.classList.add("switching");
+        document.getElementById("detailEyebrow").textContent = data.eyebrow;
+        document.getElementById("detailTitle").textContent = data.title;
+        document.getElementById("detailSummary").textContent = data.summary;
+        document.getElementById("detailBadge").textContent = data.badge;
+        document.getElementById("sourceField").textContent = data.source;
+        document.getElementById("targetWorkspace").textContent = data.target;
+        renderList(keepList, data.keep);
+        renderList(confirmList, data.confirm);
+      }
+
+      document.querySelectorAll(".draft-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          renderDraft(card.dataset.draft);
+          showToast(`正在审阅：${card.querySelector("strong").textContent}`);
+        });
+      });
+
+      document.querySelectorAll("[data-phase]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const messages = {
+            entry: "返回设定入口可重新编辑构想",
+            generating: "生成中状态已完成",
+            review: "当前处于草案审阅与补充",
+            handoff: "确认草案后进入决策与交接"
+          };
+          showToast(messages[button.dataset.phase]);
+        });
+      });
+
+      document.querySelectorAll(".question-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+          const item = button.closest(".question");
+          const open = !item.classList.contains("open");
+          item.classList.toggle("open", open);
+          button.setAttribute("aria-expanded", String(open));
+        });
+      });
+
+      document.querySelectorAll(".mini-save").forEach((button) => {
+        button.addEventListener("click", () => {
+          const status = button.closest(".question").querySelector(".question-toggle span");
+          status.textContent = "已保存";
+          showToast("已保存补充回答");
+        });
+      });
+
+      document.querySelectorAll("[data-decision]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const labels = {
+            request_revision: ["已记录修订请求", "系统会携带 requested_changes 重新生成或等待用户补充。"],
+            defer: ["已延后草案", "草案保留为候选状态，稍后可继续审阅。"],
+            reject: ["已拒绝草案", "该草案不会创建交接。"]
+          };
+          const label = labels[button.dataset.decision];
+          decisionTitle.textContent = label[0];
+          decisionCopy.textContent = label[1];
+          confirmButton.classList.remove("ready");
+          showToast(label[0]);
+        });
+      });
+
+      confirmButton.addEventListener("click", () => {
+        confirmButton.textContent = "创建交接";
+        confirmButton.classList.add("ready");
+        decisionTitle.textContent = "已确认为交接草案";
+        decisionCopy.textContent = `目标工作台：${handoffTarget.options[handoffTarget.selectedIndex].text}。下一步创建故事设定交接。`;
+        showToast("已确认草案，准备创建交接");
+      });
+
+      handoffTarget.addEventListener("change", () => {
+        showToast(`交接目标：${handoffTarget.options[handoffTarget.selectedIndex].text}`);
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        showToast("返回生成中状态");
+      });
+
+      renderDraft("world");
+    })();
+  </script>
+</body>
+</html>

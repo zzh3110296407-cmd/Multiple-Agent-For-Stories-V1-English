@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>分析中 UI V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(250, 246, 235, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.92);
+      --paper-soft: rgba(242, 234, 216, 0.82);
+      --ink: #302d29;
+      --muted: #746c61;
+      --quiet: #9d9284;
+      --line: rgba(151, 125, 96, 0.24);
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --teal: #667d7b;
+      --teal-deep: #4f6664;
+      --sage: #858a79;
+      --shadow: 0 24px 70px rgba(82, 64, 45, 0.15);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255, 252, 244, 0.82), transparent 32%),
+        radial-gradient(circle at 88% 84%, rgba(180, 138, 120, 0.15), transparent 34%),
+        linear-gradient(135deg, #ece7dc 0%, #f0e8d8 46%, #e5dac7 100%);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .background-art {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sheet {
+      position: absolute;
+      width: 470px;
+      height: 620px;
+      border: 1px solid rgba(153, 128, 96, 0.19);
+      background:
+        linear-gradient(120deg, rgba(255, 252, 244, 0.46), rgba(222, 208, 184, 0.24)),
+        repeating-linear-gradient(180deg, transparent 0 34px, rgba(94, 71, 50, 0.035) 35px 36px);
+      box-shadow: 0 34px 100px rgba(91, 68, 44, 0.08);
+    }
+
+    .sheet.one {
+      right: 10px;
+      top: 40px;
+      transform: rotate(7deg);
+      opacity: 0.45;
+    }
+
+    .sheet.two {
+      left: -130px;
+      bottom: -240px;
+      transform: rotate(-10deg);
+      opacity: 0.34;
+    }
+
+    .scan-orbit {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      width: 760px;
+      height: 760px;
+      border: 1px solid rgba(102, 125, 123, 0.12);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.8;
+    }
+
+    .scan-orbit::before,
+    .scan-orbit::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(180, 138, 120, 0.11);
+      border-radius: 50%;
+    }
+
+    .scan-orbit::before {
+      inset: 96px;
+    }
+
+    .scan-orbit::after {
+      inset: 198px;
+      border-color: rgba(102, 125, 123, 0.14);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1296px, calc(100vw - 84px));
+      height: calc(100vh - 70px);
+      margin: 35px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px 1fr 138px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .ledger-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      color: var(--ink);
+      box-shadow: 0 10px 24px rgba(74, 55, 38, 0.06);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .ghost-button {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .ghost-button:hover,
+    .ledger-button:hover,
+    .dock-button:hover,
+    .primary-action:hover,
+    .stage-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+      box-shadow: 0 14px 30px rgba(74, 55, 38, 0.1);
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ledger-button {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      color: #2f332f;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+
+    .route-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 430px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.48);
+      background: rgba(255, 252, 244, 0.28);
+      box-shadow: 0 12px 28px rgba(74, 55, 38, 0.06);
+    }
+
+    .route-step {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 11px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+      transition: background 180ms ease, color 180ms ease;
+    }
+
+    .route-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      box-shadow: 0 10px 24px rgba(79, 102, 100, 0.2);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 278px minmax(0, 1fr) 298px;
+      gap: 18px;
+    }
+
+    .panel,
+    .core-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.5);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.64), rgba(242, 234, 216, 0.7));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .panel,
+    .side-panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .section-title strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--teal);
+      box-shadow: 0 0 0 0 rgba(102, 125, 123, 0.32);
+      animation: pulse 1500ms ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(102, 125, 123, 0.32); }
+      100% { box-shadow: 0 0 0 12px rgba(102, 125, 123, 0); }
+    }
+
+    .source-summary {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-item {
+      min-height: 66px;
+      padding: 12px 13px;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 7px;
+    }
+
+    .summary-item strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .mini-meter {
+      margin-top: auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .meter-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .bar {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(151, 125, 96, 0.16);
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), var(--accent));
+      transition: width 360ms ease;
+    }
+
+    .core-panel {
+      padding: 24px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    .core-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .core-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .core-head h2 {
+      margin: 6px 0 0;
+      font-size: 30px;
+      line-height: 1.18;
+    }
+
+    .progress-badge {
+      min-width: 118px;
+      height: 54px;
+      border: 1px solid rgba(151, 125, 96, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+      display: grid;
+      place-items: center;
+      color: var(--teal-deep);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .analysis-visual {
+      position: relative;
+      min-height: 360px;
+      border: 1px solid rgba(151, 125, 96, 0.19);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 50% 52%, rgba(102, 125, 123, 0.13), transparent 30%),
+        radial-gradient(circle at 78% 22%, rgba(180, 138, 120, 0.12), transparent 22%),
+        rgba(255, 252, 244, 0.48);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 16px 38px rgba(78, 58, 38, 0.07);
+    }
+
+    .scan-card {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 300px;
+      height: 210px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(151, 125, 96, 0.22);
+      border-radius: var(--radius);
+      background:
+        repeating-linear-gradient(180deg, transparent 0 25px, rgba(116, 108, 97, 0.055) 26px 27px),
+        rgba(255, 252, 244, 0.7);
+      box-shadow: 0 22px 54px rgba(80, 62, 44, 0.13);
+    }
+
+    .scan-card::before {
+      content: "";
+      position: absolute;
+      left: -32px;
+      right: -32px;
+      top: 0;
+      height: 38px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(102, 125, 123, 0.22), transparent);
+      animation: scan 2200ms ease-in-out infinite;
+    }
+
+    @keyframes scan {
+      0% { transform: translateY(6px); opacity: 0.15; }
+      48% { opacity: 0.9; }
+      100% { transform: translateY(164px); opacity: 0.15; }
+    }
+
+    .orbit-ring,
+    .orbit-ring::before,
+    .orbit-ring::after {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(102, 125, 123, 0.18);
+    }
+
+    .orbit-ring {
+      left: 50%;
+      top: 50%;
+      width: 430px;
+      height: 430px;
+      transform: translate(-50%, -50%);
+      animation: rotate 18s linear infinite;
+    }
+
+    .orbit-ring::before {
+      content: "";
+      inset: 58px;
+      border-color: rgba(180, 138, 120, 0.18);
+    }
+
+    .orbit-ring::after {
+      content: "";
+      inset: 126px;
+      border-color: rgba(102, 125, 123, 0.13);
+    }
+
+    @keyframes rotate {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .float-note {
+      position: absolute;
+      min-width: 122px;
+      min-height: 46px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      background: rgba(255, 252, 244, 0.68);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 12px 30px rgba(80, 62, 44, 0.08);
+    }
+
+    .float-note.a { left: 48px; top: 54px; }
+    .float-note.b { right: 52px; top: 72px; }
+    .float-note.c { left: 74px; bottom: 60px; }
+    .float-note.d { right: 64px; bottom: 54px; }
+
+    .stage-track {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .stage-button {
+      min-height: 78px;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      color: var(--muted);
+      padding: 12px;
+      text-align: left;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .stage-button span {
+      display: block;
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: var(--quiet);
+    }
+
+    .stage-button strong {
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .stage-button.done {
+      border-color: rgba(102, 125, 123, 0.28);
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--teal-deep);
+    }
+
+    .stage-button.active {
+      border-color: rgba(102, 125, 123, 0.42);
+      background: rgba(102, 125, 123, 0.12);
+      color: var(--ink);
+      box-shadow: 0 12px 28px rgba(74, 55, 38, 0.08);
+    }
+
+    .queue-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .queue-item {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 13px 0;
+      border-top: 1px solid rgba(151, 125, 96, 0.16);
+    }
+
+    .queue-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .queue-label {
+      color: var(--accent-deep);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .queue-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .queue-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .side-actions {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .dock-button,
+    .primary-action {
+      height: 50px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 900;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .dock-button {
+      border: 1px solid rgba(151, 125, 96, 0.22);
+      background: rgba(255, 252, 244, 0.5);
+      color: var(--ink);
+    }
+
+    .primary-action {
+      grid-column: 1 / -1;
+      border: 0;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      color: #fffaf2;
+      box-shadow: 0 16px 32px rgba(79, 102, 100, 0.22);
+    }
+
+    .primary-action[disabled] {
+      cursor: default;
+      opacity: 0.55;
+      background: rgba(102, 125, 123, 0.34);
+      box-shadow: none;
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      justify-items: end;
+      background: rgba(48, 45, 41, 0.16);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .drawer-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .log-drawer {
+      width: min(420px, calc(100vw - 34px));
+      height: calc(100vh - 34px);
+      margin: 17px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(250, 246, 235, 0.95), rgba(236, 226, 207, 0.95));
+      box-shadow: 0 28px 80px rgba(44, 37, 29, 0.22);
+      transform: translateX(24px);
+      transition: transform 220ms ease;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .drawer-backdrop.show .log-drawer {
+      transform: translateX(0);
+    }
+
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .drawer-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .drawer-head strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+    }
+
+    .close-drawer {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(151, 125, 96, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .log-list {
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .log-item {
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      padding: 12px 13px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 260px;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 13px 18px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(55, 49, 42, 0.88);
+      color: #fffaf2;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 18px 42px rgba(55, 49, 42, 0.24);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    body.paused .scan-card::before,
+    body.paused .orbit-ring,
+    body.paused .pulse-dot {
+      animation-play-state: paused;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-art" aria-hidden="true">
+    <div class="sheet one"></div>
+    <div class="sheet two"></div>
+    <div class="scan-orbit"></div>
+  </div>
+
+  <main class="workspace">
+    <nav class="topbar" aria-label="页面导航">
+      <a class="ghost-button" href="../../01 Import Source/visual-drafts/import-source-v1.html">返回导入源</a>
+      <div class="breadcrumb">主页 / 当前项目 / Framework 编排 / 导入源 / 分析中</div>
+      <button class="ledger-button" id="logButton" type="button">分析日志</button>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <h1>分析中</h1>
+        <p>系统正在整理导入源，完成后进入结果审阅。</p>
+      </div>
+      <div class="route-strip" aria-label="导入流程">
+        <button class="route-step" type="button" data-route="source">导入源</button>
+        <button class="route-step active" type="button" data-route="analysis">分析</button>
+        <button class="route-step" type="button" data-route="result">结果</button>
+        <button class="route-step" type="button" data-route="candidate">候选</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="section-title">
+          <div>
+            <span>记录</span>
+            <strong>导入源</strong>
+          </div>
+          <i class="pulse-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="source-summary">
+          <div class="summary-item">
+            <span>作品名</span>
+            <strong>港口钟楼证词</strong>
+          </div>
+          <div class="summary-item">
+            <span>文件名</span>
+            <strong>story-analysis-report.json</strong>
+          </div>
+          <div class="summary-item">
+            <span>识别类型</span>
+            <strong>故事分析报告</strong>
+          </div>
+          <div class="summary-item">
+            <span>导入 ID</span>
+            <strong>imp_local_0427</strong>
+          </div>
+        </div>
+
+        <div class="mini-meter">
+          <div class="meter-row">
+            <div class="meter-label"><span>解析</span><span id="parseLabel">已完成</span></div>
+            <div class="bar"><i id="parseBar"></i></div>
+          </div>
+          <div class="meter-row">
+            <div class="meter-label"><span>校验</span><span id="validateLabel">进行中</span></div>
+            <div class="bar"><i id="validateBar"></i></div>
+          </div>
+          <div class="meter-row">
+            <div class="meter-label"><span>候选</span><span id="candidateLabel">等待</span></div>
+            <div class="bar"><i id="candidateBar"></i></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="core-panel" aria-live="polite">
+        <div class="core-head">
+          <div>
+            <span id="stageEyebrow">校验边界</span>
+            <h2 id="stageTitle">正在检查导入记录</h2>
+          </div>
+          <div class="progress-badge" id="progressBadge">46%</div>
+        </div>
+
+        <div class="analysis-visual">
+          <div class="orbit-ring" aria-hidden="true"></div>
+          <div class="scan-card" aria-hidden="true"></div>
+          <div class="float-note a" id="noteA">manifest</div>
+          <div class="float-note b" id="noteB">validation</div>
+          <div class="float-note c" id="noteC">report refs</div>
+          <div class="float-note d" id="noteD">candidate</div>
+        </div>
+
+        <div class="stage-track" aria-label="分析阶段">
+          <button class="stage-button done" type="button" data-stage="0">
+            <span>01</span>
+            <strong>接收记录</strong>
+          </button>
+          <button class="stage-button done" type="button" data-stage="1">
+            <span>02</span>
+            <strong>解析结构</strong>
+          </button>
+          <button class="stage-button active" type="button" data-stage="2">
+            <span>03</span>
+            <strong>提取报告</strong>
+          </button>
+          <button class="stage-button" type="button" data-stage="3">
+            <span>04</span>
+            <strong>校验边界</strong>
+          </button>
+          <button class="stage-button" type="button" data-stage="4">
+            <span>05</span>
+            <strong>生成候选</strong>
+          </button>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="section-title">
+          <div>
+            <span>输出</span>
+            <strong>队列</strong>
+          </div>
+          <i class="pulse-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="queue-list">
+          <div class="queue-item">
+            <div class="queue-label">源</div>
+            <div>
+              <strong id="queueImport">导入记录已创建</strong>
+              <span>manifest 与 artifact 已进入处理队列。</span>
+            </div>
+          </div>
+          <div class="queue-item">
+            <div class="queue-label">验</div>
+            <div>
+              <strong id="queueValidation">校验报告生成中</strong>
+              <span>通过后进入结果审阅。</span>
+            </div>
+          </div>
+          <div class="queue-item">
+            <div class="queue-label">报</div>
+            <div>
+              <strong id="queueReport">报告引用待确认</strong>
+              <span>仅作为审阅材料。</span>
+            </div>
+          </div>
+          <div class="queue-item">
+            <div class="queue-label">候</div>
+            <div>
+              <strong id="queueCandidate">候选尚未开放</strong>
+              <span>完成校验后解锁。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-actions">
+          <button class="dock-button" id="pauseButton" type="button">暂停</button>
+          <button class="dock-button" id="backgroundButton" type="button">后台继续</button>
+          <button class="primary-action" id="resultButton" type="button" disabled>查看结果</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="drawer-backdrop" id="logBackdrop" aria-hidden="true">
+    <aside class="log-drawer" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+      <div class="drawer-head">
+        <div>
+          <span>分析日志</span>
+          <strong id="logTitle">Process Log</strong>
+        </div>
+        <button class="close-drawer" id="closeLog" type="button" aria-label="关闭分析日志">x</button>
+      </div>
+      <div class="log-list" id="logList">
+        <div class="log-item">接收导入记录：imp_local_0427</div>
+        <div class="log-item">解析结构：story_analysis_report</div>
+        <div class="log-item">提取报告引用：等待校验</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const stages = [
+      { key: "received", eyebrow: "接收记录", title: "导入记录已接收", progress: 18, notes: ["manifest", "artifact", "fingerprint", "queue"] },
+      { key: "parsing", eyebrow: "解析结构", title: "正在识别源结构", progress: 34, notes: ["file kind", "top keys", "content hash", "parse"] },
+      { key: "report", eyebrow: "提取报告", title: "正在提取报告引用", progress: 52, notes: ["summary", "sections", "report refs", "viewer"] },
+      { key: "validation", eyebrow: "校验边界", title: "正在检查导入记录", progress: 72, notes: ["warnings", "blocking", "ready", "scope"] },
+      { key: "candidate", eyebrow: "生成候选", title: "正在准备 Framework 候选", progress: 92, notes: ["package", "candidate", "review", "handoff"] },
+      { key: "complete", eyebrow: "分析完成", title: "结果已可审阅", progress: 100, notes: ["passed", "report", "candidate", "ready"] }
+    ];
+
+    let stageIndex = 2;
+    let paused = false;
+    let timer = null;
+
+    const progressBadge = document.getElementById("progressBadge");
+    const stageEyebrow = document.getElementById("stageEyebrow");
+    const stageTitle = document.getElementById("stageTitle");
+    const noteA = document.getElementById("noteA");
+    const noteB = document.getElementById("noteB");
+    const noteC = document.getElementById("noteC");
+    const noteD = document.getElementById("noteD");
+    const parseBar = document.getElementById("parseBar");
+    const validateBar = document.getElementById("validateBar");
+    const candidateBar = document.getElementById("candidateBar");
+    const parseLabel = document.getElementById("parseLabel");
+    const validateLabel = document.getElementById("validateLabel");
+    const candidateLabel = document.getElementById("candidateLabel");
+    const queueValidation = document.getElementById("queueValidation");
+    const queueReport = document.getElementById("queueReport");
+    const queueCandidate = document.getElementById("queueCandidate");
+    const pauseButton = document.getElementById("pauseButton");
+    const resultButton = document.getElementById("resultButton");
+    const toast = document.getElementById("toast");
+    const logBackdrop = document.getElementById("logBackdrop");
+    const logList = document.getElementById("logList");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+    }
+
+    function appendLog(message) {
+      const row = document.createElement("div");
+      row.className = "log-item";
+      row.textContent = message;
+      logList.prepend(row);
+    }
+
+    function renderStage(index, fromClick = false) {
+      stageIndex = Math.max(0, Math.min(index, stages.length - 1));
+      const stage = stages[stageIndex];
+      stageEyebrow.textContent = stage.eyebrow;
+      stageTitle.textContent = stage.title;
+      progressBadge.textContent = `${stage.progress}%`;
+      [noteA, noteB, noteC, noteD].forEach((note, noteIndex) => {
+        note.textContent = stage.notes[noteIndex];
+      });
+
+      document.querySelectorAll(".stage-button").forEach((button, buttonIndex) => {
+        button.classList.toggle("done", buttonIndex < stageIndex);
+        button.classList.toggle("active", buttonIndex === Math.min(stageIndex, 4));
+      });
+
+      parseBar.style.width = `${Math.min(100, Math.max(0, stage.progress * 1.5))}%`;
+      validateBar.style.width = `${stage.progress >= 54 ? Math.min(100, (stage.progress - 45) * 2) : 18}%`;
+      candidateBar.style.width = `${stage.progress >= 80 ? Math.min(100, (stage.progress - 76) * 4) : 8}%`;
+
+      parseLabel.textContent = stage.progress >= 34 ? "已完成" : "进行中";
+      validateLabel.textContent = stage.progress >= 100 ? "通过" : stage.progress >= 54 ? "进行中" : "等待";
+      candidateLabel.textContent = stage.progress >= 100 ? "可审阅" : stage.progress >= 80 ? "进行中" : "等待";
+
+      queueValidation.textContent = stage.progress >= 100 ? "校验已通过" : stage.progress >= 54 ? "校验报告生成中" : "等待校验";
+      queueReport.textContent = stage.progress >= 52 ? "报告引用已提取" : "报告引用待确认";
+      queueCandidate.textContent = stage.progress >= 100 ? "候选可审阅" : stage.progress >= 80 ? "候选生成中" : "候选尚未开放";
+
+      resultButton.disabled = stage.progress < 100;
+      if (!resultButton.disabled) {
+        resultButton.textContent = "查看结果";
+      }
+      if (fromClick) {
+        appendLog(`${stage.eyebrow}：用户查看该阶段`);
+      }
+    }
+
+    function tick() {
+      if (paused) {
+        return;
+      }
+      if (stageIndex < stages.length - 1) {
+        renderStage(stageIndex + 1);
+        appendLog(`${stages[stageIndex].eyebrow}：处理中`);
+      } else {
+        window.clearInterval(timer);
+      }
+    }
+
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      button.addEventListener("click", () => renderStage(Number(button.dataset.stage), true));
+    });
+
+    document.querySelectorAll("[data-route]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.route === "analysis") {
+          showToast("当前处于分析中");
+          return;
+        }
+        if (button.dataset.route === "source") {
+          window.location.href = "../../01 Import Source/visual-drafts/import-source-v1.html";
+          return;
+        }
+        if (button.dataset.route === "result") {
+          if (!resultButton.disabled) {
+            window.location.href = "../../03 Analysis Result Overview/visual-drafts/analysis-result-overview-v1.html";
+            return;
+          }
+          showToast("分析完成后进入结果总览");
+          return;
+        }
+        showToast("结果审阅后进入候选选择");
+      });
+    });
+
+    pauseButton.addEventListener("click", () => {
+      paused = !paused;
+      document.body.classList.toggle("paused", paused);
+      pauseButton.textContent = paused ? "继续" : "暂停";
+      appendLog(paused ? "任务已暂停" : "任务继续");
+      showToast(paused ? "已暂停" : "继续分析");
+    });
+
+    document.getElementById("backgroundButton").addEventListener("click", () => {
+      appendLog("任务已切换为后台继续");
+      showToast("已在后台继续");
+    });
+
+    resultButton.addEventListener("click", () => {
+      if (resultButton.disabled) {
+        return;
+      }
+        window.location.href = "../../03 Analysis Result Overview/visual-drafts/analysis-result-overview-v1.html";
+    });
+
+    document.getElementById("logButton").addEventListener("click", () => {
+      logBackdrop.classList.add("show");
+      logBackdrop.setAttribute("aria-hidden", "false");
+      document.getElementById("closeLog").focus();
+    });
+
+    document.getElementById("closeLog").addEventListener("click", () => {
+      logBackdrop.classList.remove("show");
+      logBackdrop.setAttribute("aria-hidden", "true");
+      document.getElementById("logButton").focus();
+    });
+
+    logBackdrop.addEventListener("click", (event) => {
+      if (event.target === logBackdrop) {
+        logBackdrop.classList.remove("show");
+        logBackdrop.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && logBackdrop.classList.contains("show")) {
+        logBackdrop.classList.remove("show");
+        logBackdrop.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    renderStage(stageIndex);
+    timer = window.setInterval(tick, 2400);
+  </script>
+</body>
+</html>

@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>设置 / 设置总览 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 252, 244, 0.82);
+      --paper-strong: rgba(255, 252, 244, 0.92);
+      --paper-soft: rgba(255, 252, 244, 0.46);
+      --ink: #302f2a;
+      --muted: #6f665d;
+      --quiet: #968a7d;
+      --line: rgba(105, 82, 58, 0.16);
+      --line-strong: rgba(105, 82, 58, 0.32);
+      --brass: #b4956f;
+      --brass-deep: #80684e;
+      --clay: #b48a78;
+      --sage: #737d69;
+      --sage-deep: #56614f;
+      --ink-blue: #667879;
+      --warn: #9a704e;
+      --shadow: 0 28px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.52), rgba(236, 231, 220, 0.28) 48%, rgba(236, 231, 220, 0.08)),
+        url("../../assets/settings-background-v1.png") center / cover no-repeat;
+    }
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 249, 232, 0.42), transparent 34%),
+        radial-gradient(circle at 78% 22%, rgba(180, 149, 111, 0.12), transparent 36%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.1), rgba(121, 94, 65, 0.1));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 226px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .button,
+    .nav-item,
+    .setting-card,
+    .minor-button,
+    .ghost-button {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    .button,
+    .minor-button,
+    .ghost-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .button:hover,
+    .nav-item:hover,
+    .setting-card:hover,
+    .minor-button:hover,
+    .ghost-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+    .primary {
+      min-width: 154px;
+      border-color: rgba(86, 97, 79, 0.48);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #765f48);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #63705c, #80684e);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+    .ghost-button {
+      background: rgba(255, 252, 244, 0.42);
+      color: #5e554d;
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(38px, 3.8vw, 54px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.72);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+    .health-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+    .health-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .health-item span,
+    .metric span,
+    .setting-card span,
+    .side-stat span,
+    .event span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .health-item strong,
+    .metric strong,
+    .setting-card strong,
+    .side-stat strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 216px minmax(0, 1fr) 344px;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .nav-panel {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+    .nav-item {
+      width: 100%;
+      min-height: 58px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+    }
+    .nav-item.active {
+      border-color: rgba(86, 97, 79, 0.44);
+      background: rgba(255, 252, 244, 0.86);
+      box-shadow: 0 18px 40px rgba(71, 52, 31, 0.12);
+    }
+    .nav-symbol {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(180, 149, 111, 0.16);
+      color: #6f5a42;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .nav-item.active .nav-symbol {
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #8a7154);
+    }
+    .nav-copy strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-copy span {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .main-panel {
+      min-height: 620px;
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 840;
+    }
+    h2, h3 {
+      margin: 0;
+      color: #33322c;
+      letter-spacing: 0;
+    }
+    h2 {
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+    h3 {
+      font-size: 16px;
+      line-height: 1.28;
+      font-weight: 900;
+    }
+    .subtle {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+    .badge {
+      flex: 0 0 auto;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(86, 97, 79, 0.24);
+      border-radius: 999px;
+      color: #56614f;
+      background: rgba(248, 245, 235, 0.78);
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .badge.warn {
+      border-color: rgba(154, 112, 78, 0.28);
+      color: #80684e;
+      background: rgba(245, 234, 217, 0.78);
+    }
+    .badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .metric {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.54);
+    }
+
+    .card-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .setting-card {
+      min-width: 0;
+      min-height: 196px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: left;
+    }
+    .setting-card p {
+      margin: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 13px;
+      line-height: 1.58;
+      font-weight: 520;
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .card-title {
+      min-width: 0;
+    }
+    .card-title strong {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    .card-status {
+      flex: 0 0 auto;
+      min-height: 26px;
+      padding: 0 9px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      background: rgba(255, 252, 244, 0.58);
+      color: #665d54;
+      font-size: 11px;
+      font-weight: 820;
+    }
+    .swatches {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: auto;
+    }
+    .swatch {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 252, 244, 0.72);
+      box-shadow: 0 9px 20px rgba(71, 52, 31, 0.16);
+    }
+    .swatch:nth-child(1) { background: #ece7dc; }
+    .swatch:nth-child(2) { background: #e9ddbf; }
+    .swatch:nth-child(3) { background: #b48a78; }
+    .swatch:nth-child(4) { background: #737d69; }
+    .swatch:nth-child(5) { background: #80684e; }
+    .model-line {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .model-line div {
+      min-width: 0;
+      padding: 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+    }
+    .key-policy {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .key-policy div {
+      padding: 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .side-panel {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-self: stretch;
+    }
+    .side-card {
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+    }
+    .side-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .side-stat {
+      min-width: 0;
+      padding: 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+    }
+    .timeline {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .event {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+    .event::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.13);
+    }
+    .event strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      line-height: 1.36;
+      font-weight: 860;
+    }
+    .event span {
+      margin-top: 3px;
+      white-space: normal;
+      line-height: 1.42;
+    }
+    .preview-shell {
+      overflow: hidden;
+      height: 128px;
+      margin-top: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      background:
+        linear-gradient(135deg, rgba(236, 231, 220, 0.86), rgba(233, 221, 191, 0.72)),
+        linear-gradient(90deg, rgba(180, 138, 120, 0.2), transparent);
+      position: relative;
+    }
+    .preview-shell::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      width: 108px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(86, 97, 79, 0.72);
+      box-shadow: 0 34px 0 rgba(255, 252, 244, 0.66), 142px 0 0 rgba(180, 138, 120, 0.55), 142px 34px 0 rgba(255, 252, 244, 0.58);
+    }
+    .preview-shell::after {
+      content: "";
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 76px;
+      height: 24px;
+      border-radius: var(--radius);
+      background: rgba(128, 104, 78, 0.68);
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 6;
+      max-width: min(520px, calc(100vw - 36px));
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.7);
+      border-radius: var(--radius);
+      background: rgba(51, 47, 40, 0.9);
+      color: #fffaf0;
+      box-shadow: 0 18px 44px rgba(44, 32, 20, 0.24);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 620;
+      transform: translate(-50%, 24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace { width: min(1000px, calc(100vw - 44px)); }
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .nav-panel {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .side-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .side-card:first-child {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: calc(100vw - 28px);
+        min-height: calc(100vh - 28px);
+        margin: 14px auto;
+        gap: 14px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+      .layout {
+        display: flex;
+        flex-direction: column;
+      }
+      .main-panel {
+        order: 1;
+      }
+      .nav-panel {
+        order: 2;
+      }
+      .side-panel {
+        order: 3;
+      }
+      .hero {
+        gap: 14px;
+        padding-left: 0;
+      }
+      h1 {
+        font-size: 38px;
+      }
+      .health-strip,
+      .metrics,
+      .card-grid,
+      .nav-panel,
+      .side-panel,
+      .model-line,
+      .key-policy {
+        grid-template-columns: 1fr;
+      }
+      .main-panel {
+        padding: 16px;
+        min-height: auto;
+      }
+      .panel-header {
+        display: grid;
+      }
+      .setting-card {
+        min-height: 176px;
+      }
+      .action-bar {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .button,
+      .minor-button,
+      .ghost-button,
+      .primary {
+        width: 100%;
+      }
+      .backdrop {
+        background-position: 58% center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="button" type="button" data-action="返回当前项目总览">返回总览</button>
+      <div class="crumb">主页 / 当前项目 / 设置 / 设置总览</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">环境可用</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">设置总览</h1>
+        <p>在这里校准创作环境。总览页只呈现关键状态和入口，具体修改进入对应分类完成。</p>
+      </div>
+      <div class="health-strip" aria-label="关键设置摘要">
+        <div class="health-item">
+          <span>当前主题</span>
+          <strong>羊皮卷莫兰迪</strong>
+        </div>
+        <div class="health-item">
+          <span>当前模型</span>
+          <strong>Qwen Plus</strong>
+        </div>
+        <div class="health-item">
+          <span>密钥策略</span>
+          <strong>仅显示安全引用</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <nav class="panel nav-panel" aria-label="设置分类">
+        <button class="nav-item active" type="button" data-target="设置总览">
+          <span class="nav-symbol">01</span>
+          <span class="nav-copy"><strong>设置总览</strong><span>环境状态入口</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="外观与主题">
+          <span class="nav-symbol">02</span>
+          <span class="nav-copy"><strong>外观与主题</strong><span>色卡与预览</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="模型配置">
+          <span class="nav-symbol">03</span>
+          <span class="nav-copy"><strong>模型配置</strong><span>模型档案</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="当前模型">
+          <span class="nav-symbol">04</span>
+          <span class="nav-copy"><strong>当前模型</strong><span>健康检查</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="密钥与安全">
+          <span class="nav-symbol">05</span>
+          <span class="nav-copy"><strong>密钥与安全</strong><span>引用与策略</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="创作偏好">
+          <span class="nav-symbol">06</span>
+          <span class="nav-copy"><strong>创作偏好</strong><span>默认语言容量</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="帮助与引导">
+          <span class="nav-symbol">07</span>
+          <span class="nav-copy"><strong>帮助与引导</strong><span>新手提示</span></span>
+        </button>
+      </nav>
+
+      <section class="panel main-panel" aria-label="设置总览内容">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Overview</p>
+            <h2>创作环境校准</h2>
+            <p class="subtle">总览页负责让用户确认环境能否继续创作，不直接暴露调试日志和内部 trace。</p>
+          </div>
+          <span class="badge" id="workbenchBadge">ready</span>
+        </div>
+
+        <div class="metrics" aria-label="环境指标">
+          <div class="metric">
+            <span>Provider</span>
+            <strong>Qwen</strong>
+          </div>
+          <div class="metric">
+            <span>Model</span>
+            <strong>qwen-plus</strong>
+          </div>
+          <div class="metric">
+            <span>Active Profile</span>
+            <strong>qwen_default</strong>
+          </div>
+          <div class="metric">
+            <span>Latest Health</span>
+            <strong id="healthValue">healthy</strong>
+          </div>
+        </div>
+
+        <div class="card-grid">
+          <button class="setting-card" type="button" data-target="外观与主题">
+            <div class="card-top">
+              <span class="card-title"><span>Theme</span><strong>外观与主题</strong></span>
+              <span class="card-status">可调整</span>
+            </div>
+            <p>默认使用羊皮卷莫兰迪色系。后续可接入用户自定义色卡，以及基于故事氛围的 AI 主题变化。</p>
+            <div class="swatches" aria-hidden="true">
+              <span class="swatch"></span>
+              <span class="swatch"></span>
+              <span class="swatch"></span>
+              <span class="swatch"></span>
+              <span class="swatch"></span>
+            </div>
+          </button>
+
+          <button class="setting-card" type="button" data-target="模型配置">
+            <div class="card-top">
+              <span class="card-title"><span>Model</span><strong>模型配置</strong></span>
+              <span class="card-status">已配置</span>
+            </div>
+            <p>查看 Provider Profile、模型名、Base URL 和启用状态。新增或更新配置在模型配置页完成。</p>
+            <div class="model-line">
+              <div><span>配置档案</span><strong>qwen_default</strong></div>
+              <div><span>回退策略</span><strong>允许确定性回退</strong></div>
+            </div>
+          </button>
+
+          <button class="setting-card" type="button" data-target="密钥与安全">
+            <div class="card-top">
+              <span class="card-title"><span>Security</span><strong>密钥与安全</strong></span>
+              <span class="card-status">安全引用</span>
+            </div>
+            <p>前端不展示真实密钥，只显示 `env:` 等安全引用。密钥状态以可解析、不可见、不可复制为原则。</p>
+            <div class="key-policy">
+              <div><span>原始密钥</span><strong>隐藏</strong></div>
+              <div><span>安全前缀</span><strong>env:</strong></div>
+            </div>
+          </button>
+
+          <button class="setting-card" type="button" data-target="创作偏好">
+            <div class="card-top">
+              <span class="card-title"><span>Writing</span><strong>创作偏好</strong></span>
+              <span class="card-status">部分预留</span>
+            </div>
+            <p>默认语言、章节容量、导出习惯和新手提示可以在这里统一管理。未接入项在交接文档中标记为后续接口。</p>
+            <div class="model-line">
+              <div><span>Language</span><strong>中文</strong></div>
+              <div><span>Capacity</span><strong>20 章 / 20 幕</strong></div>
+            </div>
+          </button>
+        </div>
+
+        <div class="action-bar">
+          <button class="ghost-button" type="button" id="refreshButton">刷新状态</button>
+          <button class="minor-button" type="button" id="themeButton">应用当前主题</button>
+          <button class="button primary" type="button" id="healthButton">运行健康检查</button>
+        </div>
+      </section>
+
+      <aside class="panel side-panel" aria-label="当前环境状态">
+        <section class="side-card">
+          <p class="eyebrow">Current Environment</p>
+          <h3>当前环境</h3>
+          <p class="subtle">总览页右侧只保留用户需要判断的状态，不展示冗长调试细节。</p>
+          <div class="side-stats">
+            <div class="side-stat"><span>Backend</span><strong>ready</strong></div>
+            <div class="side-stat"><span>Selection</span><strong>active</strong></div>
+            <div class="side-stat"><span>Warnings</span><strong>0</strong></div>
+            <div class="side-stat"><span>阻塞项</span><strong>0</strong></div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">Theme Preview</p>
+          <h3>主题预览</h3>
+          <div class="preview-shell" aria-hidden="true"></div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">Recent Activity</p>
+          <h3>最近状态</h3>
+          <div class="timeline">
+            <div class="event">
+              <div>
+                <strong>模型连接可用</strong>
+                <span id="checkedAt">最近检查：刚刚</span>
+              </div>
+            </div>
+            <div class="event">
+              <div>
+                <strong>主题使用默认色系</strong>
+                <span>羊皮卷莫兰迪，未启用故事氛围自动切换。</span>
+              </div>
+            </div>
+            <div class="event">
+              <div>
+                <strong>密钥策略安全</strong>
+                <span>真实 key 不进入前端显示层。</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const toast = document.getElementById("toast");
+    const healthButton = document.getElementById("healthButton");
+    const healthValue = document.getElementById("healthValue");
+    const checkedAt = document.getElementById("checkedAt");
+    const topStatus = document.getElementById("topStatus");
+    const workbenchBadge = document.getElementById("workbenchBadge");
+    let toastTimer = null;
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("show");
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    const settingsRoutes = {
+      "设置总览": "../../01 Settings Overview/visual-drafts/settings-overview-v1.html",
+      "外观与主题": "../../02 Appearance And Theme/visual-drafts/settings-appearance-theme-v1.html",
+      "模型配置": "../../03 Model Configuration/visual-drafts/settings-model-configuration-v1.html",
+      "当前模型": "../../04 Current Model And Health Check/visual-drafts/settings-current-model-health-v1.html",
+      "密钥与安全": "../../05 Secrets And Security/visual-drafts/settings-secrets-security-v1.html",
+      "创作偏好": "../../06 Creative Preferences/visual-drafts/settings-creative-preferences-v1.html"
+    };
+
+    function openSettingsTarget(target, currentTarget, currentLabel) {
+      if (target === currentTarget) {
+        showToast("当前已在" + currentLabel + "。");
+        return;
+      }
+      const route = settingsRoutes[target];
+      if (route) {
+        window.location.href = route;
+        return;
+      }
+      showToast("「" + target + "」尚未设计。");
+    }
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        showToast(button.dataset.action + "。");
+      });
+    });
+
+    document.querySelectorAll("[data-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.target;
+        openSettingsTarget(target, "设置总览", "设置总览");
+      });
+    });
+
+    document.getElementById("refreshButton").addEventListener("click", () => {
+      const time = new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+      checkedAt.textContent = "最近检查：" + time;
+      showToast("已刷新设置状态。");
+    });
+
+    document.getElementById("themeButton").addEventListener("click", () => {
+      showToast("已应用当前主题预览。后续会进入外观与主题页管理色卡。");
+    });
+
+    healthButton.addEventListener("click", () => {
+      healthButton.disabled = true;
+      healthButton.textContent = "检查中";
+      healthValue.textContent = "checking";
+      topStatus.textContent = "正在检查";
+      workbenchBadge.textContent = "checking";
+      workbenchBadge.classList.add("warn");
+
+      window.setTimeout(() => {
+        healthButton.disabled = false;
+        healthButton.textContent = "运行健康检查";
+        healthValue.textContent = "healthy";
+        topStatus.textContent = "环境可用";
+        workbenchBadge.textContent = "ready";
+        workbenchBadge.classList.remove("warn");
+        checkedAt.textContent = "最近检查：刚刚";
+        showToast("健康检查完成，当前模型可用。");
+      }, 900);
+    });
+  </script>
+</body>
+</html>

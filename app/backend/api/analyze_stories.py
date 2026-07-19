@@ -71,6 +71,8 @@ from app.backend.services.imported_framework_workbench_service import (
     ImportedFrameworkWorkbenchService,
 )
 from app.backend.storage.json_store import StorageError
+from app.backend.core.config import settings
+from app.backend.core.request_limits import read_limited_request_body
 
 
 router = APIRouter()
@@ -178,7 +180,10 @@ def storage_error_response(exc: StorageError) -> HTTPException:
 
 @router.post("/imports", response_model=AnalyzeStoriesImportResult)
 async def import_analyze_stories_payload(request: Request) -> AnalyzeStoriesImportResult:
-    body = await request.body()
+    body = await read_limited_request_body(
+        request,
+        max_bytes=settings.max_analyze_stories_body_bytes,
+    )
     original_filename = request.headers.get("x-original-filename")
     verification_scope = request.headers.get("x-verification-scope") or "user_upload"
     try:

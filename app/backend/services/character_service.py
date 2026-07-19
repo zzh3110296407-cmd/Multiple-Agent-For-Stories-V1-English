@@ -281,7 +281,8 @@ class CharacterService:
             updated_at=now_iso(),
         )
         self.save_current_draft(confirmed_draft)
-        self._update_project_step("character_confirmed", "character_confirmed")
+        if not self._is_main_cast_finished():
+            self._update_project_step("character_confirmed", "character_confirmed")
         return CharacterWorkflowResponse(
             draft=confirmed_draft,
             characters=self._read_characters(),
@@ -652,14 +653,27 @@ class CharacterService:
     def _name_from_prompt(self, prompt: str) -> str:
         text = self._clean_text(prompt)
         patterns = [
-            r"(?:主角|角色|姓名|名叫|叫作|叫做)[:：\s]*([A-Za-z0-9_\-\u4e00-\u9fff]{2,16})",
+            r"(?:[A-D]\s*级\s*)?(?:主角|角色|姓名)[:：]\s*([A-Za-z0-9_\-\u4e00-\u9fff]{2,16})",
+            r"(?:名叫|叫作|叫做)[:：\s]*([A-Za-z0-9_\-\u4e00-\u9fff]{2,16})",
             r"([A-Za-z0-9_\-\u4e00-\u9fff]{2,16})[，,]\s*(?:[^。；;]{0,24})?(?:主角|审计员|侦探|记者|飞行员|科学家|工程师)",
         ]
         for pattern in patterns:
             match = re.search(pattern, text)
             if match:
-                return self._clean_text(match.group(1)).strip("，,。；;：:")
+                candidate = self._clean_text(match.group(1)).strip("，,。；;：:")
+                if self._valid_name_candidate(candidate):
+                    return candidate
         return ""
+
+    def _valid_name_candidate(self, candidate: str) -> bool:
+        text = self._clean_text(candidate)
+        if not text or len(text) > 16:
+            return False
+        if re.search(r"^(?:是|是一|是一名|一名|一个|核心|重要|年轻|长期)$", text):
+            return False
+        if any(marker in text for marker in ("主角", "角色", "级", "功能", "方向", "身份")):
+            return False
+        return True
 
     def _identity_from_prompt(self, prompt: str) -> str:
         text = self._clean_text(prompt)
@@ -936,6 +950,28 @@ class CharacterService:
             else timestamp
         )
         character_data["updated_at"] = timestamp
+        if existing_draft:
+            original_name = self._clean_text(existing_draft.character.name)
+            requested_name = self._revision_name_from_prompt(
+                latest_user_prompt,
+                current_name=original_name,
+            )
+            target_name = requested_name or original_name
+            model_name = self._clean_text(str(character_data.get("name") or ""))
+            if model_name and model_name != target_name:
+                replaced = self._replace_text_value(
+                    character_data,
+                    model_name,
+                    target_name,
+                )
+                if isinstance(replaced, dict):
+                    character_data = replaced
+            character_data["name"] = target_name
+        else:
+            character_data = self._apply_explicit_prompt_name(
+                character_data=character_data,
+                latest_user_prompt=latest_user_prompt,
+            )
         try:
             character = Character(**character_data)
         except ValidationError as exc:
@@ -972,6 +1008,70 @@ class CharacterService:
         )
         validation = self.validate_character_draft(draft)
         return copy_model(draft, validation_report=validation)
+
+    def _apply_explicit_prompt_name(
+        self,
+        *,
+        character_data: dict[str, Any],
+        latest_user_prompt: str,
+    ) -> dict[str, Any]:
+        explicit_name = self._name_from_prompt(latest_user_prompt)
+        if not explicit_name:
+            return character_data
+        current_name = self._clean_text(str(character_data.get("name") or ""))
+        if current_name == explicit_name:
+            return character_data
+        updated = self._replace_text_value(character_data, current_name, explicit_name)
+        if isinstance(updated, dict):
+            updated["name"] = explicit_name
+            profile = dict(updated.get("profile") or {})
+            profile["description"] = self._join_non_empty(
+                [
+                    f"{explicit_name} 是从用户角色构想中明确提取的角色姓名。",
+                    profile.get("description"),
+                ],
+                separator=" ",
+            )
+            updated["profile"] = profile
+            return updated
+        character_data["name"] = explicit_name
+        return character_data
+
+    def _revision_name_from_prompt(
+        self,
+        prompt: str,
+        *,
+        current_name: str,
+    ) -> str:
+        text = self._clean_text(prompt)
+        escaped_current_name = re.escape(self._clean_text(current_name))
+        patterns = [
+            r"(?:将|把)?(?:角色的?)?(?:姓名|名字)\s*(?:从\s*[^，,。；;]{1,16}\s*)?(?:改为|修改为|更改为|设为|重命名为)\s*([A-Za-z0-9_\-\u4e00-\u9fff]{2,16})",
+        ]
+        if escaped_current_name:
+            patterns.append(
+                rf"(?:将|把)?{escaped_current_name}\s*(?:改名为|重命名为)\s*([A-Za-z0-9_\-\u4e00-\u9fff]{{2,16}})"
+            )
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if not match:
+                continue
+            candidate = self._clean_text(match.group(1)).strip("，,。；;：:")
+            if self._valid_name_candidate(candidate):
+                return candidate
+        return ""
+
+    def _replace_text_value(self, value: Any, old_text: str, new_text: str) -> Any:
+        if isinstance(value, str):
+            return value.replace(old_text, new_text) if old_text else value
+        if isinstance(value, list):
+            return [self._replace_text_value(item, old_text, new_text) for item in value]
+        if isinstance(value, dict):
+            return {
+                key: self._replace_text_value(item, old_text, new_text)
+                for key, item in value.items()
+            }
+        return value
 
     def _parse_relationship_drafts(
         self,

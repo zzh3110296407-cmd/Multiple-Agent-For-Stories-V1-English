@@ -10,6 +10,11 @@ from uuid import uuid4
 from pydantic import BaseModel, ValidationError
 
 from app.backend.core.config import settings
+from app.backend.core.model_endpoint_policy import (
+    ModelEndpointPolicyError,
+    validate_model_endpoint_policy,
+    validate_model_key_ref,
+)
 from app.backend.models.agent_model_assignment import AgentModelAssignment
 from app.backend.models.model_profile import ModelCapabilities, ModelProfile
 from app.backend.models.model_provider import ModelProviderProfile as GatewayProviderProfile
@@ -184,7 +189,10 @@ class ModelSettingsService:
         if active_profile and not active_profile.enabled:
             blockers.append("active_profile_disabled")
         if active_profile and self._provider_requires_api_key(active_profile.provider_type):
-            ref_status = self._api_key_ref_status(active_profile.api_key_ref)
+            ref_status = self._api_key_ref_status(
+                active_profile.provider_type,
+                active_profile.api_key_ref,
+            )
             if ref_status != "configured":
                 warnings.append(f"api_key_{ref_status}")
         if gateway_status.issues:
@@ -304,6 +312,7 @@ class ModelSettingsService:
     ) -> ActiveModelSelection:
         self._guard_safe_payload(model_to_dict(request))
         profile = self._get_profile(request.provider_profile_id)
+        self._validate_profile(profile)
         if not profile.enabled:
             raise ModelSettingsError("Cannot activate a disabled provider profile.")
         if request.selected_by not in {"user", "system_default", "migration"}:
@@ -334,6 +343,7 @@ class ModelSettingsService:
 
     def run_health_check(self, profile_id: str) -> ProviderHealthCheckResponse:
         profile = self._get_profile(profile_id)
+        self._validate_profile(profile)
         started = time.monotonic()
         now = utc_now()
         status = "skipped"
@@ -351,7 +361,10 @@ class ModelSettingsService:
             safe_message = "Local deterministic provider check passed."
             used_deterministic_fallback = True
         else:
-            ref_status = self._api_key_ref_status(profile.api_key_ref)
+            ref_status = self._api_key_ref_status(
+                profile.provider_type,
+                profile.api_key_ref,
+            )
             if ref_status == "missing":
                 status = "not_configured"
                 safe_error_code = "missing_api_key_ref"
@@ -466,7 +479,10 @@ class ModelSettingsService:
                 requires_api_key_ref=True,
                 supports_health_check=True,
                 default_model_name=QWEN_DEFAULT_MODEL,
-                default_base_url=QWEN_DEFAULT_BASE_URL,
+                default_base_url=(
+                    os.environ.get("QWEN_BASE_URL", "").strip()
+                    or QWEN_DEFAULT_BASE_URL
+                ),
                 safe_summary="Qwen keeps provider_type=qwen even when the adapter is OpenAI-compatible.",
             ),
             ModelProviderOption(
@@ -590,33 +606,48 @@ class ModelSettingsService:
         if option.requires_api_key_ref and not profile.api_key_ref:
             raise ModelSettingsError("Provider api_key_ref is required.")
         if profile.api_key_ref:
-            self._validate_api_key_ref(profile.api_key_ref)
+            self._validate_api_key_ref(
+                profile.provider_type,
+                profile.api_key_ref,
+            )
+        try:
+            profile.base_url = validate_model_endpoint_policy(
+                provider_type=profile.provider_type,
+                base_url=profile.base_url,
+                api_key_ref=profile.api_key_ref,
+            )
+        except ModelEndpointPolicyError as exc:
+            raise ModelSettingsSafetyError(str(exc)) from exc
 
     def _api_key_configured(self, provider_type: str, api_key_ref: str) -> bool:
         if not self._provider_requires_api_key(provider_type):
             return True
-        return self._api_key_ref_status(api_key_ref) == "configured"
+        return self._api_key_ref_status(provider_type, api_key_ref) == "configured"
 
     def _provider_requires_api_key(self, provider_type: str) -> bool:
         option = self._option_by_type(provider_type)
         return bool(option and option.requires_api_key_ref)
 
-    def _api_key_ref_status(self, api_key_ref: str) -> str:
+    def _api_key_ref_status(self, provider_type: str, api_key_ref: str) -> str:
         if not api_key_ref:
             return "missing"
         if self._looks_like_plaintext_secret(api_key_ref):
             return "invalid"
         if api_key_ref.startswith("env:"):
-            env_name = api_key_ref.removeprefix("env:").strip()
-            if not env_name:
+            try:
+                env_name = validate_model_key_ref(
+                    provider_type=provider_type,
+                    api_key_ref=api_key_ref,
+                )
+            except ModelEndpointPolicyError:
                 return "invalid"
             return "configured" if os.environ.get(env_name) else "env_missing"
         if api_key_ref.startswith(("secret:", "runtime:")):
             return "unsupported_reference"
         return "invalid"
 
-    def _validate_api_key_ref(self, api_key_ref: str) -> None:
-        status = self._api_key_ref_status(api_key_ref)
+    def _validate_api_key_ref(self, provider_type: str, api_key_ref: str) -> None:
+        status = self._api_key_ref_status(provider_type, api_key_ref)
         if status == "invalid":
             raise ModelSettingsSafetyError("API key reference is invalid or unsafe.")
 
@@ -633,6 +664,7 @@ class ModelSettingsService:
         return public
 
     def _write_gateway_config(self, profile: ModelProviderProfile) -> None:
+        self._validate_profile(profile)
         auth_type = "none" if profile.provider_type == "local" else "bearer"
         gateway_provider = GatewayProviderProfile(
             provider_id=profile.profile_id,
@@ -719,7 +751,12 @@ class ModelSettingsService:
                             "content": 'Return valid JSON only. Return exactly {"ping":"ok"}.',
                         }
                     ],
-                    options={"temperature": 0, "max_output_tokens": 64},
+                    options={
+                        "temperature": 0,
+                        "max_output_tokens": 64,
+                        "timeout_seconds": 20,
+                        "max_attempts": 1,
+                    },
                     service_name="ModelSettingsProviderHealthCheck",
                     operation_name="manual_provider_health_check",
                 )

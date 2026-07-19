@@ -55,7 +55,7 @@ INSERT INTO json_import_batches (
 )
 SELECT
   'm4_smoke_batch_001',
-  './sample/local_project',
+  'C:\sample\local_project',
   'IMPORT',
   id,
   2,
@@ -349,7 +349,7 @@ SELECT
   'PRE_IMPORT_BACKUP',
   b.id,
   b.source_root,
-  './sample/backup',
+  'C:\sample\backup',
   2,
   1,
   'backup_manifest_hash',

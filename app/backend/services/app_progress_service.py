@@ -683,6 +683,15 @@ class AppProgressService:
             return "set_scene_count"
         if not chapter_plan.chapter_plan_decision_exists or chapter_plan.status != "confirmed":
             return "confirm_chapter_plan"
+        if chapter_archive.exists:
+            if story_progress.next_recommended_action in {
+                "preview_next_chapter",
+                "prepare_next_chapter",
+                "confirm_next_chapter",
+                "story_draft_complete",
+            }:
+                return story_progress.next_recommended_action
+            return "preview_next_chapter"
         if not scene.current_scene_exists:
             return "generate_first_scene"
         if scene.status in {
@@ -705,15 +714,6 @@ class AppProgressService:
             return "review_provisional_archive"
         if scene.completion_status == "final_complete":
             return "preview_chapter_archive"
-        if story_progress.next_recommended_action in {
-            "preview_next_chapter",
-            "prepare_next_chapter",
-            "confirm_next_chapter",
-            "story_draft_complete",
-        }:
-            return story_progress.next_recommended_action
-        if chapter_archive.exists:
-            return "preview_next_chapter"
         return "review_scene_gate"
 
     def _has_generated_scene_prose(self, scene: Scene) -> bool:

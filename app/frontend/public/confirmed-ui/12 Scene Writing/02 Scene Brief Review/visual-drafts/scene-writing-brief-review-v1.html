@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>场景写作 / 场景简述审阅 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.85);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(238, 227, 208, 0.68);
+      --ink: #2f312b;
+      --muted: #71685e;
+      --quiet: #9a8f83;
+      --line: rgba(110, 86, 61, 0.19);
+      --line-strong: rgba(110, 86, 61, 0.32);
+      --bronze: #b48a78;
+      --bronze-deep: #8f675b;
+      --sage: #71806f;
+      --sage-deep: #53624f;
+      --blue-gray: #6f8182;
+      --blue-gray-deep: #536869;
+      --gold: #c7a66a;
+      --gold-deep: #9b7d47;
+      --danger: #a66f63;
+      --shadow: 0 26px 72px rgba(74, 53, 32, 0.18);
+      --soft-shadow: 0 14px 34px rgba(74, 53, 32, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.84), rgba(236, 231, 220, 0.58) 44%, rgba(236, 231, 220, 0.24)),
+        url("../../assets/scene-writing-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255, 248, 229, 0.48), transparent 30%),
+        radial-gradient(circle at 78% 24%, rgba(111, 129, 130, 0.14), transparent 32%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.24), rgba(180, 138, 120, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1376px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 210px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .tab-button,
+    .focus-chip,
+    .check-card,
+    .review-button {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 12px 28px rgba(74, 53, 32, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .tab-button:hover,
+    .focus-chip:hover,
+    .check-card:hover,
+    .review-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 16px 34px rgba(74, 53, 32, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(113, 128, 111, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 468px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(47, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #373832;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.87), rgba(238, 227, 208, 0.7)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 25px 30px 17px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #30332d;
+      font-size: 27px;
+      line-height: 1.16;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+
+    .chapter-chip {
+      flex: 0 0 152px;
+      align-self: start;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.72);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .chapter-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 23px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .chapter-chip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 10px;
+      padding: 16px 30px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.28);
+    }
+
+    .tab-button {
+      min-width: 116px;
+      min-height: 40px;
+      padding: 0 16px;
+      color: var(--quiet);
+      font-size: 13px;
+      font-weight: 840;
+      box-shadow: none;
+      background: rgba(255, 252, 244, 0.3);
+    }
+
+    .tab-button.active {
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.52);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 14px 30px rgba(83, 104, 105, 0.2);
+    }
+
+    .content-area {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(315px, 0.92fr);
+      gap: 22px;
+      padding: 23px 30px 20px;
+      overflow: auto;
+    }
+
+    .section {
+      min-width: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-title span {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .field-block {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    label {
+      display: block;
+      color: #51483f;
+      font-size: 13px;
+      font-weight: 860;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 104px;
+      padding: 15px 16px;
+      border: 1px solid rgba(110, 86, 61, 0.24);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.72);
+      color: #464139;
+      font-size: 14px;
+      line-height: 1.72;
+      resize: none;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    textarea.large {
+      min-height: 168px;
+      font-size: 15px;
+      line-height: 1.76;
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 129, 130, 0.5);
+      background: rgba(255, 252, 244, 0.88);
+      box-shadow: 0 0 0 4px rgba(111, 129, 130, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .focus-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .focus-chip {
+      min-height: 34px;
+      padding: 0 12px;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 820;
+      box-shadow: none;
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .focus-chip.active {
+      border-color: rgba(111, 129, 130, 0.42);
+      background: rgba(239, 244, 242, 0.82);
+      color: var(--blue-gray-deep);
+    }
+
+    .review-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .check-card {
+      min-height: 118px;
+      padding: 14px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: none;
+    }
+
+    .check-card.active {
+      border-color: rgba(113, 128, 111, 0.38);
+      background: rgba(239, 244, 242, 0.78);
+      box-shadow: 0 14px 30px rgba(83, 104, 105, 0.12);
+    }
+
+    .check-card.warning {
+      border-color: rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.68);
+    }
+
+    .check-card strong {
+      display: block;
+      color: #3b3c35;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .check-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.52;
+      font-weight: 520;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      margin-top: 10px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.12);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .badge.warning {
+      background: rgba(199, 166, 106, 0.17);
+      color: var(--gold-deep);
+    }
+
+    .anchor-list,
+    .memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .anchor-row,
+    .memory-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 50px;
+      padding: 11px 12px;
+      border: 1px solid rgba(110, 86, 61, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .anchor-row b,
+    .memory-row b {
+      color: #3d3d36;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .anchor-row span,
+    .memory-row span {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .small-badge {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.12);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .small-badge.warning {
+      background: rgba(199, 166, 106, 0.17);
+      color: var(--gold-deep);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 30px 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .soft-button {
+      min-width: 116px;
+    }
+
+    .primary-button {
+      min-width: 158px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 16px 36px rgba(83, 104, 105, 0.24);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(83, 104, 105, 0.3);
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .ready-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.13);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .review-list {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .review-button {
+      width: 100%;
+      padding: 13px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: none;
+    }
+
+    .review-button.active {
+      border-color: rgba(199, 166, 106, 0.44);
+      background: rgba(255, 249, 235, 0.74);
+      box-shadow: 0 14px 30px rgba(74, 53, 32, 0.1);
+    }
+
+    .review-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c3d36;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .review-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .review-icon.warning {
+      background: rgba(199, 166, 106, 0.18);
+      color: var(--gold-deep);
+    }
+
+    .review-button p {
+      margin: 7px 0 0 32px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.52;
+      font-weight: 520;
+    }
+
+    .detail-panel {
+      padding: 16px;
+      border: 1px solid rgba(111, 129, 130, 0.22);
+      border-radius: var(--radius);
+      background: rgba(239, 244, 242, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .detail-panel strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .detail-panel p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.66;
+      font-weight: 520;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(47, 49, 43, 0.84);
+      color: #fffaf2;
+      box-shadow: 0 18px 42px rgba(47, 49, 43, 0.24);
+      font-size: 13px;
+      font-weight: 720;
+      transition: opacity 200ms ease, transform 200ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: min(100% - 36px, 960px);
+        height: auto;
+        min-height: calc(100vh - 48px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .hero,
+      .layout,
+      .content-area {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .summary-strip {
+        max-width: none;
+      }
+
+      .side-panel {
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .tab-row,
+      .content-area,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chapter-chip {
+        flex-basis: auto;
+      }
+
+      .summary-strip,
+      .review-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tab-row {
+        overflow-x: auto;
+      }
+
+      .tab-button {
+        min-width: 104px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回入口</button>
+      <div class="crumb">主页 / 工作台 / 场景写作 / 场景简述审阅</div>
+      <div class="status-pill"><span class="dot"></span>模型已连接</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">场景简述审阅</h1>
+        <p>在正文生成前校准当前场景的目标、行动、边界和记忆锚点，确保模型写作时不会偏离章节计划。</p>
+      </div>
+
+      <div class="summary-strip" aria-label="当前场景简述摘要">
+        <div class="summary-item">
+          <span>当前场景</span>
+          <strong>场景 1 / 4</strong>
+        </div>
+        <div class="summary-item">
+          <span>参与者</span>
+          <strong id="participantSummary">4 已确认</strong>
+        </div>
+        <div class="summary-item">
+          <span>简述状态</span>
+          <strong id="briefState">待审阅</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="场景简述审阅">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">场景简述</p>
+            <h2>钟楼证词的第一处裂缝</h2>
+            <p class="hint">这里不会生成正文；只确认当前场景写作前需要带入的目标、角色行动和事实边界。</p>
+          </div>
+          <div class="chapter-chip">
+            <strong>场景 1</strong>
+            <span id="chipState">等待审阅</span>
+          </div>
+        </div>
+
+        <nav class="tab-row" aria-label="场景简述审阅分区">
+          <button class="tab-button active" type="button" data-tab="goal">目标</button>
+          <button class="tab-button" type="button" data-tab="action">行动</button>
+          <button class="tab-button" type="button" data-tab="boundary">边界</button>
+          <button class="tab-button" type="button" data-tab="note">补充</button>
+        </nav>
+
+        <div class="content-area">
+          <section class="section">
+            <div class="section-title">
+              <h3 id="primaryTitle">场景目标</h3>
+              <span id="primaryMeta">可编辑</span>
+            </div>
+
+            <div class="field-block">
+              <label for="primaryText" id="primaryLabel">本场景要完成什么？</label>
+              <textarea class="large" id="primaryText" aria-label="场景简述主内容">主角在钟楼旧档案室重新核对晚宴后的证词，发现所有记录都跳过了同一个时间点。场景应让线索从日常秩序里露出裂缝，同时让队伍内部对是否继续追查产生轻微分歧。</textarea>
+
+              <label for="secondaryText" id="secondaryLabel">写作时必须带入</label>
+              <textarea id="secondaryText" aria-label="场景简述辅助内容">半枚火漆印章、晚宴离席者、钟楼第十三声、旧档案管理员的含糊态度。不要在本场景直接揭露龙影传说真相。</textarea>
+            </div>
+
+            <div class="focus-row" aria-label="写作侧重">
+              <button class="focus-chip active" type="button">悬疑推进</button>
+              <button class="focus-chip" type="button">克制冲突</button>
+              <button class="focus-chip" type="button">角色分歧</button>
+              <button class="focus-chip" type="button">信息留白</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <h3>审阅项</h3>
+              <span id="reviewCount">5 / 6 已确认</span>
+            </div>
+
+            <div class="review-grid">
+              <button class="check-card active" type="button">
+                <strong>必须发生</strong>
+                <span>主角发现证词时间点被整体跳过。</span>
+                <em class="badge">带入</em>
+              </button>
+              <button class="check-card active" type="button">
+                <strong>必须保留</strong>
+                <span>旧档案管理员不能说出完整真相。</span>
+                <em class="badge">带入</em>
+              </button>
+              <button class="check-card active" type="button">
+                <strong>角色行动</strong>
+                <span>薇拉质疑主角过早相信档案。</span>
+                <em class="badge">带入</em>
+              </button>
+              <button class="check-card active" type="button">
+                <strong>情绪走向</strong>
+                <span>平静查证逐渐转为不安。</span>
+                <em class="badge">带入</em>
+              </button>
+              <button class="check-card active" type="button">
+                <strong>不能发生</strong>
+                <span>不揭露幕后身份，不让主角直接获得完整证据。</span>
+                <em class="badge">带入</em>
+              </button>
+              <button class="check-card warning" type="button">
+                <strong>待用户确认</strong>
+                <span>旧档案管理员是否在本场景留下暗示性动作。</span>
+                <em class="badge warning">点击确认</em>
+              </button>
+            </div>
+
+            <div class="section-title" style="margin-top:18px;">
+              <h3>来源锚点</h3>
+              <span>正文生成会读取</span>
+            </div>
+            <div class="anchor-list">
+              <div class="anchor-row">
+                <b>章节路线</b>
+                <span>线索进入，冲突轻推，保留下一场景入口。</span>
+                <em class="small-badge">已锁定</em>
+              </div>
+              <div class="anchor-row">
+                <b>世界事实</b>
+                <span>钟楼记录只承认证词，不承认传闻。</span>
+                <em class="small-badge">已确认</em>
+              </div>
+              <div class="anchor-row">
+                <b>角色状态</b>
+                <span>主角仍保持克制，没有公开质疑商会。</span>
+                <em class="small-badge">已确认</em>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="actionNote">点击待确认项后，可以把该场景简述送入正文生成。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button" id="restoreButton">恢复来源</button>
+            <button class="soft-button" type="button" id="saveButton">保存简述</button>
+            <button class="primary-button" type="button" id="nextButton">开始生成正文</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="审阅清单">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">审阅清单</p>
+            <h2>审阅清单</h2>
+          </div>
+          <span class="ready-pill" id="readyPill">待确认</span>
+        </div>
+
+        <div class="review-list" id="checkList"></div>
+
+        <div class="detail-panel" id="detailPanel">
+          <strong>章节目标</strong>
+          <p>该场景应服务于“调查钟楼证词来源”，不提前推进到商会账册或旧贵族邀请函。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">状态已更新</div>
+
+  <script>
+    const tabs = {
+      goal: {
+        title: "场景目标",
+        meta: "可编辑",
+        label: "本场景要完成什么？",
+        text: "主角在钟楼旧档案室重新核对晚宴后的证词，发现所有记录都跳过了同一个时间点。场景应让线索从日常秩序里露出裂缝，同时让队伍内部对是否继续追查产生轻微分歧。",
+        secondaryLabel: "写作时必须带入",
+        secondary: "半枚火漆印章、晚宴离席者、钟楼第十三声、旧档案管理员的含糊态度。不要在本场景直接揭露龙影传说真相。",
+      },
+      action: {
+        title: "角色行动",
+        meta: "可调整",
+        label: "角色在本场景中如何行动？",
+        text: "林砚负责核对档案并提出时间缺口；薇拉质疑证词是否被刻意整理；巡钟人只愿意提供记录，不愿评价记录为何缺失；旧档案管理员通过回避眼神和收起旧钥匙暗示他知道更多。",
+        secondaryLabel: "对白与动作边界",
+        secondary: "角色可以争执，但不要升级成公开冲突。旧档案管理员不能直接承认真相，只能留下可被后续场景回收的动作痕迹。",
+      },
+      boundary: {
+        title: "事实边界",
+        meta: "需保持",
+        label: "哪些内容不能被正文改写？",
+        text: "钟楼第十三声是已确认现象，但它的来源仍未知。晚宴离席者尚未确认。火漆印章只出现半枚，不能在本场景补全。龙影传说仍是不能公开讨论的传闻，不应被写成已证实事实。",
+        secondaryLabel: "连续性约束",
+        secondary: "上一场景没有公开商会问题，本场景不能让主角直接指控商会。场景结尾最多让主角决定去查商会账册。",
+      },
+      note: {
+        title: "用户补充",
+        meta: "可选",
+        label: "你希望模型额外注意什么？",
+        text: "氛围要克制，不要写成激烈推理审讯。可以让读者感觉日常秩序正在轻微变形，但不要让角色突然掌握过多信息。",
+        secondaryLabel: "避免项",
+        secondary: "避免大段解释世界规则。避免角色直接说出主题。避免把旧档案管理员写成明显反派。",
+      },
+    };
+
+    const checklist = [
+      {
+        title: "章节目标",
+        state: "已确认",
+        tone: "ready",
+        text: "该场景应服务于“调查钟楼证词来源”，不提前推进到商会账册或旧贵族邀请函。",
+      },
+      {
+        title: "参与者",
+        state: "已确认",
+        tone: "ready",
+        text: "林砚、薇拉、巡钟人和旧档案管理员已进入本场景参与者包。",
+      },
+      {
+        title: "世界事实",
+        state: "已确认",
+        tone: "ready",
+        text: "钟楼记录、晚宴缺口、火漆印章和龙影传闻的事实边界已经锁定。",
+      },
+      {
+        title: "记忆引用",
+        state: "已读取",
+        tone: "ready",
+        text: "章节记忆和角色状态会作为上下文读取，本页不写入新的正式记忆。",
+      },
+      {
+        title: "连续性",
+        state: "通过",
+        tone: "ready",
+        text: "当前场景简述没有触发阻塞连续性问题，正文生成后还会再次检查。",
+      },
+      {
+        title: "暗示动作",
+        state: "待确认",
+        tone: "warning",
+        text: "是否允许旧档案管理员留下“收起旧钥匙”的暗示动作，可由用户确认或删除。",
+      },
+    ];
+
+    const primaryTitle = document.getElementById("primaryTitle");
+    const primaryMeta = document.getElementById("primaryMeta");
+    const primaryLabel = document.getElementById("primaryLabel");
+    const primaryText = document.getElementById("primaryText");
+    const secondaryLabel = document.getElementById("secondaryLabel");
+    const secondaryText = document.getElementById("secondaryText");
+    const reviewCount = document.getElementById("reviewCount");
+    const readyPill = document.getElementById("readyPill");
+    const chipState = document.getElementById("chipState");
+    const briefState = document.getElementById("briefState");
+    const actionNote = document.getElementById("actionNote");
+    const toast = document.getElementById("toast");
+    const checkList = document.getElementById("checkList");
+    const detailPanel = document.getElementById("detailPanel");
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 1450);
+    }
+
+    function setTab(name) {
+      const tab = tabs[name];
+      primaryTitle.textContent = tab.title;
+      primaryMeta.textContent = tab.meta;
+      primaryLabel.textContent = tab.label;
+      primaryText.value = tab.text;
+      secondaryLabel.textContent = tab.secondaryLabel;
+      secondaryText.value = tab.secondary;
+    }
+
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        setTab(button.dataset.tab);
+      });
+    });
+
+    document.querySelectorAll(".focus-chip").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.classList.toggle("active");
+      });
+    });
+
+    document.querySelectorAll(".check-card").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.classList.toggle("active");
+        if (button.classList.contains("warning")) {
+          button.classList.remove("warning");
+          button.querySelector(".badge").classList.remove("warning");
+          button.querySelector(".badge").textContent = "已确认";
+          reviewCount.textContent = "6 / 6 已确认";
+          readyPill.textContent = "可生成";
+          chipState.textContent = "已审阅";
+          briefState.textContent = "已审阅";
+          actionNote.textContent = "场景简述已确认，可以进入正文生成。";
+          showToast("待确认项已确认");
+        }
+      });
+    });
+
+    function renderChecklist() {
+      checkList.innerHTML = "";
+      checklist.forEach((item, index) => {
+        const button = document.createElement("button");
+        button.className = `review-button${index === 0 ? " active" : ""}`;
+        button.type = "button";
+        const iconClass = item.tone === "warning" ? "review-icon warning" : "review-icon";
+        const iconText = item.tone === "warning" ? "!" : "✓";
+        button.innerHTML = `
+          <div class="review-top"><span class="${iconClass}">${iconText}</span>${item.title}<span class="small-badge ${item.tone === "warning" ? "warning" : ""}">${item.state}</span></div>
+          <p>${item.text}</p>
+        `;
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".review-button").forEach((entry) => entry.classList.remove("active"));
+          button.classList.add("active");
+          detailPanel.querySelector("strong").textContent = item.title;
+          detailPanel.querySelector("p").textContent = item.text;
+        });
+        checkList.appendChild(button);
+      });
+    }
+
+    document.getElementById("restoreButton").addEventListener("click", () => {
+      const active = document.querySelector(".tab-button.active");
+      setTab(active.dataset.tab);
+      showToast("已恢复来源简述");
+    });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      briefState.textContent = "已保存";
+      chipState.textContent = "已保存";
+      actionNote.textContent = "场景简述已保存。确认待审阅项后即可开始生成正文。";
+      showToast("场景简述已保存");
+    });
+
+    document.getElementById("nextButton").addEventListener("click", () => {
+      if (readyPill.textContent !== "可生成") {
+        showToast("仍有待确认项");
+        actionNote.textContent = "请先确认右侧清单中的待确认项，再进入正文生成。";
+        return;
+      }
+      actionNote.textContent = "正在进入正文生成流程。";
+      showToast("已进入正文生成");
+    });
+
+    renderChecklist();
+  </script>
+</body>
+</html>

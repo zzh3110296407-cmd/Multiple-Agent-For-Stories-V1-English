@@ -1,0 +1,1358 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 章节路线审阅 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --ink: #27312b;
+      --muted: #746a60;
+      --quiet: #9a8c7d;
+      --line: rgba(116, 92, 66, 0.2);
+      --line-strong: rgba(116, 92, 66, 0.32);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.91), rgba(236, 231, 220, 0.58) 47%, rgba(236, 231, 220, 0.15)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.34), rgba(176, 138, 107, 0.11));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1400px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 192px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .route-card,
+    .tab-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .route-card:hover,
+    .tab-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 123, 104, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 520px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 354px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 26px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .summary-grid {
+      min-width: 470px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-height: 62px;
+      padding: 10px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 8px;
+      color: #3c4039;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .route-strip {
+      min-width: 0;
+      overflow: hidden;
+      padding: 16px 28px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.24);
+    }
+
+    .route-strip-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .route-strip-head strong {
+      color: #3d4039;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .route-strip-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .route-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .rail-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .rail-button {
+      width: 34px;
+      height: 30px;
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.66);
+      color: var(--blue-gray-deep);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 900;
+      box-shadow: 0 8px 18px rgba(75, 55, 34, 0.07);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .rail-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: 0 12px 24px rgba(75, 55, 34, 0.12);
+    }
+
+    .route-scroll {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+      padding: 6px 2px 14px;
+      cursor: grab;
+      user-select: none;
+      overscroll-behavior-x: contain;
+    }
+
+    .route-scroll.dragging {
+      cursor: grabbing;
+    }
+
+    .route-scroll::before {
+      content: "";
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      top: 38px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(166, 133, 82, 0.08), rgba(166, 133, 82, 0.36), rgba(166, 133, 82, 0.08));
+      pointer-events: none;
+    }
+
+    .route-track {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 12px;
+      width: max-content;
+      min-width: 100%;
+      transform: translateX(0);
+      transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      will-change: transform;
+    }
+
+    .route-scroll.dragging .route-track {
+      transition: none;
+    }
+
+    .route-position {
+      position: relative;
+      height: 6px;
+      margin: 8px 4px 0;
+      border-radius: 999px;
+      background: rgba(116, 92, 66, 0.12);
+      overflow: hidden;
+    }
+
+    .route-position-thumb {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue-gray), var(--bronze));
+      transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1), width 220ms ease;
+    }
+
+    .route-card {
+      position: relative;
+      flex: 0 0 178px;
+      min-height: 126px;
+      padding: 13px 13px 12px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: 0 12px 26px rgba(75, 55, 34, 0.08);
+    }
+
+    .route-card.active {
+      transform: translateY(-2px);
+      border-color: rgba(180, 138, 120, 0.48);
+      background: rgba(255, 249, 235, 0.92);
+      box-shadow: 0 18px 36px rgba(142, 103, 91, 0.16);
+    }
+
+    .route-card.missing {
+      border-color: rgba(180, 138, 120, 0.32);
+    }
+
+    .route-card .number {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fffaf2;
+      background: var(--blue-gray);
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 0 0 6px rgba(111, 126, 131, 0.1);
+    }
+
+    .route-card.active .number {
+      background: linear-gradient(135deg, var(--gold), var(--bronze));
+      box-shadow: 0 0 0 7px rgba(200, 168, 104, 0.14);
+    }
+
+    .route-card strong {
+      display: block;
+      margin-top: 10px;
+      color: #343932;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .route-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 520;
+    }
+
+    .route-meta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .route-meta i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--sage);
+      flex: 0 0 auto;
+    }
+
+    .route-card.missing .route-meta i {
+      background: var(--bronze);
+    }
+
+    .review-body {
+      min-height: 0;
+      padding: 20px 28px 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 20px;
+      overflow: hidden;
+    }
+
+    .detail-panel,
+    .brief-panel {
+      min-height: 0;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 86% 12%, rgba(200, 168, 104, 0.1), transparent 34%),
+        rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      overflow: auto;
+    }
+
+    .detail-panel {
+      padding: 18px;
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .detail-head h3 {
+      margin: 0;
+      color: #343932;
+      font-size: 24px;
+      line-height: 1.14;
+      font-weight: 900;
+    }
+
+    .status-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(111, 123, 104, 0.13);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .status-pill.warn {
+      background: rgba(180, 138, 120, 0.14);
+      color: var(--bronze-deep);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .detail-block,
+    .brief-card,
+    .warning-card {
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.54);
+    }
+
+    .detail-block.wide {
+      grid-column: 1 / -1;
+    }
+
+    .detail-block span,
+    .brief-card span,
+    .warning-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 840;
+    }
+
+    .detail-block strong,
+    .brief-card strong,
+    .warning-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #3d4039;
+      font-size: 14px;
+      line-height: 1.42;
+      font-weight: 900;
+    }
+
+    .detail-block p,
+    .brief-card p,
+    .warning-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.58;
+      font-weight: 520;
+    }
+
+    .brief-panel {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .brief-panel h3 {
+      margin: 0;
+      color: #3d4039;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .brief-card.current {
+      border-color: rgba(200, 168, 104, 0.34);
+      background: rgba(255, 249, 235, 0.62);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(142, 103, 91, 0.31);
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .review-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(200, 168, 104, 0.14);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .health-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .health-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .health-item.warn {
+      border-color: rgba(180, 138, 120, 0.28);
+      background: rgba(255, 246, 236, 0.58);
+    }
+
+    .health-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .health-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .health-item.warn .mini-dot {
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--bronze-deep);
+    }
+
+    .side-note {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .side-note strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .side-note p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .review-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 94px;
+      }
+
+      .summary-grid {
+        min-width: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .route-strip,
+      .review-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .summary-grid,
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回生成入口</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 章节路线审阅</div>
+      <div class="model-pill"><span class="status-dot"></span>草案已生成</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>审阅 12 章路线、当前章 brief 和每章状态，确认缺口后再进入场景数设置或修订流程。</p>
+      </div>
+
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">前提</button>
+        <button class="stage-button" type="button">框架</button>
+        <button class="stage-button active" type="button">路线</button>
+        <button class="stage-button" type="button">场景数</button>
+        <button class="stage-button" type="button">确认</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">章节路线审阅</p>
+            <h2>钟楼证词 · 12 章路线草案</h2>
+            <p class="hint">点击章节节点查看职责、冲突、承接和场景数状态。</p>
+          </div>
+          <div class="summary-grid" aria-label="章节计划摘要">
+            <div class="summary-item"><span>草案状态</span><strong>待审阅</strong></div>
+            <div class="summary-item"><span>当前章</span><strong>第 3 章</strong></div>
+            <div class="summary-item"><span>总章节</span><strong>12 章</strong></div>
+            <div class="summary-item"><span>缺口</span><strong>1 项待处理</strong></div>
+          </div>
+        </div>
+
+        <section class="route-strip" aria-label="章节轨道">
+          <div class="route-strip-head">
+            <strong>章节轨道</strong>
+            <div class="route-head-actions">
+              <span>拖拽或滚轮滑动查看全部路线</span>
+              <div class="rail-controls" aria-label="章节轨道滑动控制">
+                <button class="rail-button" id="route-prev" type="button" aria-label="向左滑动章节轨道">‹</button>
+                <button class="rail-button" id="route-next" type="button" aria-label="向右滑动章节轨道">›</button>
+              </div>
+            </div>
+          </div>
+          <div class="route-scroll" id="route-scroll" tabindex="0">
+            <div class="route-track" id="route-track"></div>
+          </div>
+          <div class="route-position" aria-hidden="true">
+            <div class="route-position-thumb" id="route-position-thumb"></div>
+          </div>
+        </section>
+
+        <div class="review-body">
+          <section class="detail-panel" aria-live="polite">
+            <div class="detail-head">
+              <div>
+                <p class="eyebrow" id="detail-eyebrow">第 3 章</p>
+                <h3 id="detail-title">钟楼证词</h3>
+              </div>
+              <span class="status-pill" id="detail-status">当前章 / 5 场景</span>
+            </div>
+            <div class="detail-grid">
+              <article class="detail-block wide">
+                <span>路线职责</span>
+                <strong id="detail-function">让火漆印章与钟楼证词第一次交叉，主角团获得推进方向但无法确认真相。</strong>
+                <p id="detail-summary">本章把上一章留下的印章转化为行动线索，同时让商会与旧贵族的压力开始进入主线。</p>
+              </article>
+              <article class="detail-block">
+                <span>主要冲突</span>
+                <strong id="detail-conflict">是否公开证据</strong>
+                <p>公开会迫使阵营回应，但也可能让证人消失。</p>
+              </article>
+              <article class="detail-block">
+                <span>读者感受</span>
+                <strong id="detail-emotion">怀疑、紧张、推进感</strong>
+                <p>证据正在变多，但每条线索都不完全可靠。</p>
+              </article>
+              <article class="detail-block">
+                <span>场景数状态</span>
+                <strong id="detail-scenes">5 场景</strong>
+                <p id="detail-scene-note">场景数已准备，可以进入后续审阅。</p>
+              </article>
+              <article class="detail-block">
+                <span>下一章钩子</span>
+                <strong id="detail-hook">错误见证人</strong>
+                <p>本章结尾将调查导向一个看似可靠但存在矛盾的人。</p>
+              </article>
+            </div>
+          </section>
+
+          <aside class="brief-panel">
+            <h3>当前章 Brief</h3>
+            <article class="brief-card current">
+              <span>章节目标</span>
+              <strong>让主角团主动追查钟楼证词来源</strong>
+              <p>不要直接揭示幕后人物，重点建立证词矛盾与阵营压力。</p>
+            </article>
+            <article class="brief-card">
+              <span>参与角色</span>
+              <strong>侦探型主角 / 贵族继承人 / 港口向导</strong>
+              <p>角色关系应推动选择，不替代主线推进。</p>
+            </article>
+            <article class="warning-card">
+              <span>审阅提示</span>
+              <strong>第 6 章缺少场景数</strong>
+              <p>确认章节计划前，需要进入场景数设置流程补齐。</p>
+            </article>
+          </aside>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note">当前路线可以审阅，但第 6 章缺少场景数。建议先处理场景数，再进入确认流程。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button">修订路线</button>
+            <button class="soft-button" type="button">处理缺口</button>
+            <button class="primary-button" type="button">进入场景数设置</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="审阅状态">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">审阅状态</p>
+            <h2>需要确认</h2>
+          </div>
+          <span class="review-pill">1 个缺口</span>
+        </div>
+
+        <div class="health-list">
+          <div class="health-item">
+            <strong><span class="mini-dot">✓</span>Prompt Fidelity</strong>
+            <p>路线目标已被草案覆盖，没有发现目标缺失。</p>
+          </div>
+          <div class="health-item">
+            <strong><span class="mini-dot">✓</span>当前章 Framework</strong>
+            <p>第 3 章 brief 已关联当前章 Framework。</p>
+          </div>
+          <div class="health-item warn">
+            <strong><span class="mini-dot">!</span>场景数缺口</strong>
+            <p>第 6 章还没有设置场景数，后续场景写作前必须补齐。</p>
+          </div>
+          <div class="health-item">
+            <strong><span class="mini-dot">✓</span>引用状态</strong>
+            <p>世界、角色、关系引用可用，没有需要自动修复的角色引用。</p>
+          </div>
+          <div class="health-item warn">
+            <strong><span class="mini-dot">?</span>用户确认</strong>
+            <p>需要确认第 8 章是否过早揭示旧贵族与商会协议。</p>
+          </div>
+        </div>
+
+        <div class="side-note">
+          <strong>后续动作</strong>
+          <p>如果路线方向正确，下一步进入场景数设置。若第 8 章揭示过早，可以先进入修订章节计划。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const chapters = [
+      {
+        index: 1,
+        title: "港口晚宴",
+        status: "已承接",
+        scenes: 4,
+        functionText: "建立港口城市的权力结构，让火漆印章作为第一个可追踪证据出现。",
+        summary: "主角团在晚宴后发现半枚火漆印章，证据不完整但足以引出调查动机。",
+        conflict: "是否介入贵族争端",
+        emotion: "好奇、克制",
+        hook: "半枚印章"
+      },
+      {
+        index: 2,
+        title: "失踪巡夜人",
+        status: "已承接",
+        scenes: 5,
+        functionText: "把晚宴线索接到钟楼巡夜制度，显示城市规则并不可靠。",
+        summary: "巡夜人的失踪让钟楼制度出现破口，主角团开始意识到证词链条被人处理过。",
+        conflict: "制度记录与目击证词冲突",
+        emotion: "疑惑、压迫",
+        hook: "被删改的巡夜记录"
+      },
+      {
+        index: 3,
+        title: "钟楼证词",
+        status: "当前章",
+        scenes: 5,
+        functionText: "让火漆印章与钟楼证词第一次交叉，主角团获得推进方向但无法确认真相。",
+        summary: "本章把上一章留下的印章转化为行动线索，同时让商会与旧贵族的压力开始进入主线。",
+        conflict: "是否公开证据",
+        emotion: "怀疑、紧张、推进感",
+        hook: "错误见证人"
+      },
+      {
+        index: 4,
+        title: "潮汐禁区",
+        status: "草案",
+        scenes: 5,
+        functionText: "把调查从城市内部推向港口边界，让禁区规则成为新的阻力。",
+        summary: "主角团进入潮汐禁区寻找账本，发现证据被故意放在规则无法保护的地方。",
+        conflict: "规则边界与现实危险",
+        emotion: "紧迫、冒险",
+        hook: "被封存的旧账"
+      },
+      {
+        index: 5,
+        title: "商会账本",
+        status: "草案",
+        scenes: 4,
+        functionText: "让商会从被调查对象变成主动诱导者，改变主角团对线索来源的判断。",
+        summary: "账本过于完整，像是被人故意交到主角团手里。",
+        conflict: "接受线索还是质疑馈赠",
+        emotion: "不安、犹豫",
+        hook: "过度完整的证据"
+      },
+      {
+        index: 6,
+        title: "旧贵族回信",
+        status: "待补齐",
+        scenes: null,
+        functionText: "让旧贵族第一次正式回应，推动阵营博弈进入公开层面。",
+        summary: "一封回信承认了某些事实，却把责任推向商会。",
+        conflict: "信件承认与责任转移",
+        emotion: "警惕、拉扯",
+        hook: "没有署名的第二封信"
+      },
+      {
+        index: 7,
+        title: "队伍裂缝",
+        status: "草案",
+        scenes: 5,
+        functionText: "把外部压力转化为主角团内部选择，让关系变化承担剧情后果。",
+        summary: "角色对公开证据、私下交易和继续追查产生分歧。",
+        conflict: "信任与策略冲突",
+        emotion: "压抑、分裂",
+        hook: "单独行动"
+      },
+      {
+        index: 8,
+        title: "协议影子",
+        status: "需确认",
+        scenes: 6,
+        functionText: "让协议轮廓浮现，但需要控制揭示速度，避免过早确认最终真相。",
+        summary: "主角团看到协议的间接证据，但仍不能确认协议双方。",
+        conflict: "证据足够但结论不足",
+        emotion: "接近真相、克制",
+        hook: "协议缺页"
+      },
+      {
+        index: 9,
+        title: "港口封锁",
+        status: "草案",
+        scenes: 5,
+        functionText: "让城市规则反过来限制主角团，使调查进入不可回避的公开压力。",
+        summary: "港口被封锁，所有阵营都必须表态。",
+        conflict: "行动自由与城市秩序",
+        emotion: "逼近、失控",
+        hook: "封锁命令来源"
+      },
+      {
+        index: 10,
+        title: "沉默审判",
+        status: "草案",
+        scenes: 5,
+        functionText: "把证据与角色选择集中到一次审判式场景中。",
+        summary: "主角团必须选择公布哪部分事实，以及隐瞒哪部分关系。",
+        conflict: "真相完整性与保护代价",
+        emotion: "沉重、决断",
+        hook: "被保护的人"
+      },
+      {
+        index: 11,
+        title: "协议真相",
+        status: "草案",
+        scenes: 6,
+        functionText: "揭示协议真实目的，并让此前线索完成回收。",
+        summary: "协议不是单纯的利益交换，而是为了维持城市低魔规则的脆弱平衡。",
+        conflict: "真相与秩序冲突",
+        emotion: "震动、理解",
+        hook: "最终选择"
+      },
+      {
+        index: 12,
+        title: "潮声之后",
+        status: "终章草案",
+        scenes: 5,
+        functionText: "完成主角团选择，给城市规则和角色关系留下结果。",
+        summary: "主角团决定公开真相的方式，城市进入新的不稳定平衡。",
+        conflict: "代价与未来",
+        emotion: "余韵、释然",
+        hook: "新规则"
+      }
+    ];
+
+    const routeScroll = document.getElementById("route-scroll");
+    const routeTrack = document.getElementById("route-track");
+    const routeThumb = document.getElementById("route-position-thumb");
+    const routePrev = document.getElementById("route-prev");
+    const routeNext = document.getElementById("route-next");
+    const detailEyebrow = document.getElementById("detail-eyebrow");
+    const detailTitle = document.getElementById("detail-title");
+    const detailStatus = document.getElementById("detail-status");
+    const detailFunction = document.getElementById("detail-function");
+    const detailSummary = document.getElementById("detail-summary");
+    const detailConflict = document.getElementById("detail-conflict");
+    const detailEmotion = document.getElementById("detail-emotion");
+    const detailScenes = document.getElementById("detail-scenes");
+    const detailSceneNote = document.getElementById("detail-scene-note");
+    const detailHook = document.getElementById("detail-hook");
+    let trackOffset = 0;
+      let isDragging = false;
+      let didDrag = false;
+      let dragStartX = 0;
+      let dragStartOffset = 0;
+      let pendingCardIndex = null;
+      let suppressNextClick = false;
+
+    function getMaxOffset() {
+      return Math.max(0, routeTrack.scrollWidth - routeScroll.clientWidth);
+    }
+
+    function setTrackOffset(nextOffset, animate = true) {
+      const maxOffset = getMaxOffset();
+      trackOffset = Math.max(0, Math.min(nextOffset, maxOffset));
+      routeTrack.style.transition = animate ? "" : "none";
+      routeTrack.style.transform = `translate3d(${-trackOffset}px, 0, 0)`;
+
+      const trackBar = routeThumb.parentElement;
+      const ratio = routeTrack.scrollWidth ? routeScroll.clientWidth / routeTrack.scrollWidth : 1;
+      const thumbWidth = Math.max(42, trackBar.clientWidth * Math.min(1, ratio));
+      const maxThumbTravel = Math.max(0, trackBar.clientWidth - thumbWidth);
+      const thumbOffset = maxOffset ? (trackOffset / maxOffset) * maxThumbTravel : 0;
+      routeThumb.style.width = `${thumbWidth}px`;
+      routeThumb.style.transform = `translateX(${thumbOffset}px)`;
+    }
+
+    function slideTrack(delta) {
+      setTrackOffset(trackOffset + delta);
+    }
+
+    function centerChapter(index) {
+      const activeCard = routeTrack.querySelector(`.route-card[data-index="${index}"]`);
+      if (!activeCard) return;
+      if (index <= 3) {
+        setTrackOffset(0);
+        return;
+      }
+      if (index >= chapters.length - 2) {
+        setTrackOffset(getMaxOffset());
+        return;
+      }
+      const target = activeCard.offsetLeft + (activeCard.offsetWidth / 2) - (routeScroll.clientWidth / 2);
+      setTrackOffset(target);
+    }
+
+    function renderCards() {
+      routeTrack.innerHTML = "";
+      chapters.forEach((chapter) => {
+        const button = document.createElement("button");
+        button.className = `route-card${chapter.index === 3 ? " active" : ""}${chapter.scenes ? "" : " missing"}`;
+        button.type = "button";
+        button.dataset.index = String(chapter.index);
+        button.innerHTML = `
+          <span class="number">${chapter.index}</span>
+          <strong>${chapter.title}</strong>
+          <span>${chapter.functionText}</span>
+          <div class="route-meta"><i></i>${chapter.scenes ? `${chapter.status} / ${chapter.scenes} 场景` : `${chapter.status} / 场景数待设置`}</div>
+        `;
+        routeTrack.appendChild(button);
+      });
+      window.requestAnimationFrame(() => centerChapter(3));
+    }
+
+    function selectChapter(index) {
+      const chapter = chapters.find((item) => item.index === index);
+      if (!chapter) return;
+
+      routeTrack.querySelectorAll(".route-card").forEach((card) => {
+        card.classList.toggle("active", Number(card.dataset.index) === index);
+      });
+
+      centerChapter(index);
+
+      detailEyebrow.textContent = `第 ${chapter.index} 章`;
+      detailTitle.textContent = chapter.title;
+      detailStatus.textContent = chapter.scenes ? `${chapter.status} / ${chapter.scenes} 场景` : `${chapter.status} / 场景数待设置`;
+      detailStatus.classList.toggle("warn", !chapter.scenes || chapter.status.includes("确认"));
+      detailFunction.textContent = chapter.functionText;
+      detailSummary.textContent = chapter.summary;
+      detailConflict.textContent = chapter.conflict;
+      detailEmotion.textContent = chapter.emotion;
+      detailScenes.textContent = chapter.scenes ? `${chapter.scenes} 场景` : "待设置";
+      detailSceneNote.textContent = chapter.scenes ? "场景数已准备，可以进入后续审阅。" : "该章缺少场景数，需要进入场景数设置流程。";
+      detailHook.textContent = chapter.hook;
+    }
+
+    routePrev.addEventListener("click", () => {
+      slideTrack(-420);
+    });
+
+    routeNext.addEventListener("click", () => {
+      slideTrack(420);
+    });
+
+      routeTrack.addEventListener("click", (event) => {
+        if (suppressNextClick) {
+          suppressNextClick = false;
+          return;
+        }
+        if (didDrag) return;
+        const card = event.target.closest(".route-card");
+        if (!card) return;
+        selectChapter(Number(card.dataset.index));
+      });
+
+    routeScroll.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      slideTrack(delta);
+    }, { passive: false });
+
+      routeScroll.addEventListener("pointerdown", (event) => {
+        if (event.button !== undefined && event.button !== 0) return;
+        const card = event.target.closest(".route-card");
+        pendingCardIndex = card ? Number(card.dataset.index) : null;
+        isDragging = true;
+        didDrag = false;
+        dragStartX = event.clientX;
+        dragStartOffset = trackOffset;
+        routeScroll.classList.add("dragging");
+      routeScroll.setPointerCapture?.(event.pointerId);
+    });
+
+    routeScroll.addEventListener("pointermove", (event) => {
+      if (!isDragging) return;
+      const distance = event.clientX - dragStartX;
+      if (Math.abs(distance) > 4) didDrag = true;
+      setTrackOffset(dragStartOffset - distance, false);
+    });
+
+      function stopDragging(event) {
+        if (!isDragging) return;
+        const shouldSelectCard = !didDrag && pendingCardIndex !== null;
+        const selectedCardIndex = pendingCardIndex;
+        isDragging = false;
+        pendingCardIndex = null;
+        routeScroll.classList.remove("dragging");
+        routeTrack.style.transition = "";
+        setTrackOffset(trackOffset);
+        if (routeScroll.hasPointerCapture?.(event.pointerId)) {
+          routeScroll.releasePointerCapture(event.pointerId);
+        }
+        if (shouldSelectCard) {
+          selectChapter(selectedCardIndex);
+          suppressNextClick = true;
+        }
+        window.setTimeout(() => {
+          didDrag = false;
+          suppressNextClick = false;
+        }, 0);
+      }
+
+    routeScroll.addEventListener("pointerup", stopDragging);
+    routeScroll.addEventListener("pointercancel", stopDragging);
+    routeScroll.addEventListener("pointerleave", stopDragging);
+    routeScroll.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        slideTrack(-420);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        slideTrack(420);
+      }
+    });
+    window.addEventListener("resize", () => setTrackOffset(trackOffset, false));
+
+    renderCards();
+  </script>
+</body>
+</html>

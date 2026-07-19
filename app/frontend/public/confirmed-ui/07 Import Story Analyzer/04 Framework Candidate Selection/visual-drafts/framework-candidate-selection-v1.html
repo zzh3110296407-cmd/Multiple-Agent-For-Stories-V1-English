@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Framework 候选选择 UI V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(250, 246, 235, 0.86);
+      --ink: #302d29;
+      --muted: #746c61;
+      --quiet: #9d9284;
+      --line: rgba(151, 125, 96, 0.24);
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --teal: #667d7b;
+      --teal-deep: #4f6664;
+      --sage: #858a79;
+      --shadow: 0 24px 70px rgba(82, 64, 45, 0.15);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255, 252, 244, 0.82), transparent 32%),
+        radial-gradient(circle at 88% 84%, rgba(180, 138, 120, 0.15), transparent 34%),
+        linear-gradient(135deg, #ece7dc 0%, #f0e8d8 46%, #e5dac7 100%);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .background-art {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sheet {
+      position: absolute;
+      width: 470px;
+      height: 620px;
+      border: 1px solid rgba(153, 128, 96, 0.19);
+      background:
+        linear-gradient(120deg, rgba(255, 252, 244, 0.46), rgba(222, 208, 184, 0.24)),
+        repeating-linear-gradient(180deg, transparent 0 34px, rgba(94, 71, 50, 0.035) 35px 36px);
+      box-shadow: 0 34px 100px rgba(91, 68, 44, 0.08);
+    }
+
+    .sheet.one { right: 10px; top: 40px; transform: rotate(7deg); opacity: 0.45; }
+    .sheet.two { left: -130px; bottom: -240px; transform: rotate(-10deg); opacity: 0.34; }
+
+    .network {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      width: 760px;
+      height: 760px;
+      border: 1px solid rgba(102, 125, 123, 0.12);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.8;
+    }
+
+    .network::before,
+    .network::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(180, 138, 120, 0.11);
+      border-radius: 50%;
+    }
+
+    .network::before { inset: 96px; }
+    .network::after { inset: 198px; border-color: rgba(102, 125, 123, 0.14); }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1296px, calc(100vw - 84px));
+      height: calc(100vh - 70px);
+      margin: 35px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px 1fr 138px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .ledger-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      color: var(--ink);
+      box-shadow: 0 10px 24px rgba(74, 55, 38, 0.06);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .ghost-button {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .ghost-button:hover,
+    .ledger-button:hover,
+    .candidate-card:hover,
+    .tab-button:hover,
+    .dock-button:hover,
+    .primary-action:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+      box-shadow: 0 14px 30px rgba(74, 55, 38, 0.1);
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ledger-button {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      color: #2f332f;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+
+    .route-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 430px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.48);
+      background: rgba(255, 252, 244, 0.28);
+      box-shadow: 0 12px 28px rgba(74, 55, 38, 0.06);
+    }
+
+    .route-step {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 11px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .route-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      box-shadow: 0 10px 24px rgba(79, 102, 100, 0.2);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 296px minmax(0, 1fr) 298px;
+      gap: 18px;
+    }
+
+    .panel,
+    .core-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.5);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.64), rgba(242, 234, 216, 0.7));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .panel,
+    .side-panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .section-title strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--teal);
+      box-shadow: 0 0 0 6px rgba(102, 125, 123, 0.12);
+    }
+
+    .candidate-list {
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .candidate-card {
+      width: 100%;
+      min-height: 110px;
+      padding: 14px;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      color: var(--ink);
+      text-align: left;
+      display: grid;
+      gap: 10px;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .candidate-card.active {
+      border-color: rgba(102, 125, 123, 0.42);
+      background: rgba(102, 125, 123, 0.12);
+    }
+
+    .candidate-card.blocked {
+      opacity: 0.74;
+    }
+
+    .candidate-card span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .candidate-card strong {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .candidate-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .candidate-meta b {
+      border-radius: 999px;
+      background: rgba(102, 125, 123, 0.12);
+      color: var(--teal-deep);
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+
+    .left-verdict {
+      margin-top: auto;
+      padding: 15px;
+      border: 1px solid rgba(102, 125, 123, 0.24);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .left-verdict span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .left-verdict strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 20px;
+      color: var(--teal-deep);
+    }
+
+    .left-verdict p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .core-panel {
+      padding: 20px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .core-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .core-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .core-head h2 {
+      margin: 8px 0 0;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .score-box {
+      min-width: 122px;
+      height: 58px;
+      border: 1px solid rgba(151, 125, 96, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+      display: grid;
+      place-items: center;
+      color: var(--teal-deep);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      border: 1px solid rgba(255, 252, 244, 0.45);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.3);
+    }
+
+    .tab-button {
+      flex: 1;
+      height: 38px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .tab-button.active {
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      color: #fffaf2;
+      box-shadow: 0 10px 24px rgba(79, 102, 100, 0.18);
+    }
+
+    .detail-panel {
+      min-height: 0;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(220px, 0.82fr);
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    .detail-copy {
+      min-width: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .detail-copy span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .detail-copy h3 {
+      margin: 8px 0 12px;
+      font-size: 28px;
+      line-height: 1.16;
+    }
+
+    .detail-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .detail-list {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 108px 1fr;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid rgba(151, 125, 96, 0.15);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .detail-row b {
+      color: var(--accent-deep);
+    }
+
+    .count-grid {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .count-item {
+      min-height: 72px;
+      padding: 13px 14px;
+      border: 1px solid rgba(151, 125, 96, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .count-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .count-item strong {
+      font-size: 22px;
+      color: var(--teal-deep);
+    }
+
+    .next-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .next-item {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 13px 0;
+      border-top: 1px solid rgba(151, 125, 96, 0.16);
+    }
+
+    .next-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .next-label {
+      color: var(--accent-deep);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .next-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .next-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .side-actions {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .dock-button,
+    .primary-action {
+      min-height: 50px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 900;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .dock-button {
+      border: 1px solid rgba(151, 125, 96, 0.22);
+      background: rgba(255, 252, 244, 0.5);
+      color: var(--ink);
+    }
+
+    .primary-action {
+      grid-column: 1 / -1;
+      border: 0;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      color: #fffaf2;
+      box-shadow: 0 16px 32px rgba(79, 102, 100, 0.22);
+    }
+
+    .primary-action.blocked {
+      background: linear-gradient(135deg, rgba(180, 138, 120, 0.82), var(--accent-deep));
+    }
+
+    .primary-action.session {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      justify-items: end;
+      background: rgba(48, 45, 41, 0.16);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .drawer-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .diff-drawer {
+      width: min(440px, calc(100vw - 34px));
+      height: calc(100vh - 34px);
+      margin: 17px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(250, 246, 235, 0.95), rgba(236, 226, 207, 0.95));
+      box-shadow: 0 28px 80px rgba(44, 37, 29, 0.22);
+      transform: translateX(24px);
+      transition: transform 220ms ease;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .drawer-backdrop.show .diff-drawer {
+      transform: translateX(0);
+    }
+
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .drawer-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .drawer-head strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+    }
+
+    .close-drawer {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(151, 125, 96, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .diff-list {
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .diff-item {
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      padding: 12px 13px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .diff-item strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 260px;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 13px 18px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(55, 49, 42, 0.88);
+      color: #fffaf2;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 18px 42px rgba(55, 49, 42, 0.24);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  </style>
+</head>
+<body>
+  <div class="background-art" aria-hidden="true">
+    <div class="sheet one"></div>
+    <div class="sheet two"></div>
+    <div class="network"></div>
+  </div>
+
+  <main class="workspace">
+    <nav class="topbar" aria-label="页面导航">
+      <a class="ghost-button" href="../../03 Analysis Result Overview/visual-drafts/analysis-result-overview-v1.html">返回结果</a>
+      <div class="breadcrumb">主页 / 当前项目 / Framework 编排 / Framework 候选</div>
+      <button class="ledger-button" id="diffButton" type="button">差异与提醒</button>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <h1>Framework 候选</h1>
+        <p>选择一个可审阅候选，再进入导入编辑会话；当前候选仍不会激活或回写。</p>
+      </div>
+      <div class="route-strip" aria-label="导入流程">
+        <button class="route-step" type="button" data-route="source">导入源</button>
+        <button class="route-step" type="button" data-route="analysis">分析</button>
+        <button class="route-step" type="button" data-route="result">结果</button>
+        <button class="route-step active" type="button" data-route="candidate">候选</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="section-title">
+          <div>
+            <span>候选</span>
+            <strong>选择版本</strong>
+          </div>
+          <i class="status-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="candidate-list" aria-label="候选列表">
+          <button class="candidate-card active" type="button" data-candidate="main">
+            <span>ready_for_workbench_review</span>
+            <strong>主骨架候选</strong>
+            <div class="candidate-meta">
+              <b>宏组件 8</b>
+              <b>章节 12</b>
+              <b>提醒 2</b>
+            </div>
+          </button>
+          <button class="candidate-card" type="button" data-candidate="compact">
+            <span>normalized_with_warnings</span>
+            <strong>压缩章节候选</strong>
+            <div class="candidate-meta">
+              <b>宏组件 5</b>
+              <b>章节 8</b>
+              <b>提醒 5</b>
+            </div>
+          </button>
+          <button class="candidate-card blocked" type="button" data-candidate="blocked">
+            <span>blocked</span>
+            <strong>冲突保留候选</strong>
+            <div class="candidate-meta">
+              <b>阻塞 2</b>
+              <b>不可编辑</b>
+            </div>
+          </button>
+        </div>
+
+        <div class="left-verdict">
+          <span>当前选择</span>
+          <strong id="leftVerdict">可进入编辑会话</strong>
+          <p id="leftVerdictCopy">此候选通过规范化，可作为 inactive copy 打开。</p>
+        </div>
+      </aside>
+
+      <section class="core-panel">
+        <div class="core-head">
+          <div>
+            <span id="candidateStatus">ready_for_workbench_review</span>
+            <h2 id="candidateTitle">主骨架候选</h2>
+          </div>
+          <div class="score-box" id="scoreBox">82%</div>
+        </div>
+
+        <div class="tabs" aria-label="候选详情分区">
+          <button class="tab-button active" type="button" data-tab="overview">总览</button>
+          <button class="tab-button" type="button" data-tab="components">组件</button>
+          <button class="tab-button" type="button" data-tab="diffs">差异</button>
+          <button class="tab-button" type="button" data-tab="source">来源</button>
+        </div>
+
+        <article class="detail-panel">
+          <div class="detail-copy">
+            <span id="detailEyebrow">总览</span>
+            <h3 id="detailTitle">候选可用于导入编辑</h3>
+            <p id="detailBody">主骨架候选保留了港口城记忆缺口、行会秩序、潮汐禁区和钟楼证词四条主要结构。候选仍处于未激活状态。</p>
+            <div class="detail-list" id="detailList">
+              <div class="detail-row"><b>candidate_id</b><span>fwcand_main_0427</span></div>
+              <div class="detail-row"><b>can_proceed</b><span>true</span></div>
+              <div class="detail-row"><b>confirmation</b><span>进入编辑会话后仍需用户确认</span></div>
+            </div>
+          </div>
+
+          <div class="count-grid" id="countGrid">
+            <div class="count-item"><span>宏组件</span><strong>8</strong></div>
+            <div class="count-item"><span>章节映射</span><strong>12</strong></div>
+            <div class="count-item"><span>规范化差异</span><strong>6</strong></div>
+            <div class="count-item"><span>阻塞</span><strong>0</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="side-panel">
+        <div class="section-title">
+          <div>
+            <span>会话</span>
+            <strong>下一步</strong>
+          </div>
+          <i class="status-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="next-list">
+          <div class="next-item">
+            <div class="next-label">选</div>
+            <div>
+              <strong id="selectedName">主骨架候选</strong>
+              <span id="selectedStatus">可创建 inactive edit session。</span>
+            </div>
+          </div>
+          <div class="next-item">
+            <div class="next-label">验</div>
+            <div>
+              <strong id="sideValidation">候选校验通过</strong>
+              <span id="sideValidationCopy">存在提醒，但不阻塞。</span>
+            </div>
+          </div>
+          <div class="next-item">
+            <div class="next-label">认</div>
+            <div>
+              <strong>需要用户确认</strong>
+              <span>回写前必须经过激活计划。</span>
+            </div>
+          </div>
+          <div class="next-item">
+            <div class="next-label">写</div>
+            <div>
+              <strong>不会自动激活</strong>
+              <span>本页只选择候选。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-actions">
+          <button class="dock-button" id="revalidateButton" type="button">重新验证</button>
+          <button class="dock-button" id="previewButton" type="button">预览 Workbench</button>
+          <button class="primary-action" id="primaryButton" type="button">选择此候选</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="drawer-backdrop" id="diffBackdrop" aria-hidden="true">
+    <aside class="diff-drawer" role="dialog" aria-modal="true" aria-labelledby="diffTitle">
+      <div class="drawer-head">
+        <div>
+          <span>差异与提醒</span>
+          <strong id="diffTitle">Normalization Notes</strong>
+        </div>
+        <button class="close-drawer" id="closeDiff" type="button" aria-label="关闭差异与提醒">x</button>
+      </div>
+      <div class="diff-list" id="diffList">
+        <div class="diff-item"><strong>normalized / framework.scope</strong>将报告层的解释性内容移出生成约束。</div>
+        <div class="diff-item"><strong>defaulted / chapter_count</strong>未明确章节数时使用 12 章候选。</div>
+        <div class="diff-item"><strong>warning / timeline</strong>港口晚宴时间线需要编辑会话中确认。</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const candidates = {
+      main: {
+        title: "主骨架候选",
+        status: "ready_for_workbench_review",
+        score: "82%",
+        verdict: "可进入编辑会话",
+        verdictCopy: "此候选通过规范化，可作为 inactive copy 打开。",
+        selectedStatus: "可创建 inactive edit session。",
+        validation: "候选校验通过",
+        validationCopy: "存在提醒，但不阻塞。",
+        proceed: true,
+        warningCount: 2,
+        counts: [["宏组件", "8"], ["章节映射", "12"], ["规范化差异", "6"], ["阻塞", "0"]],
+        tabs: {
+          overview: {
+            eyebrow: "总览",
+            title: "候选可用于导入编辑",
+            body: "主骨架候选保留了港口城记忆缺口、行会秩序、潮汐禁区和钟楼证词四条主要结构。候选仍处于未激活状态。",
+            rows: [["candidate_id", "fwcand_main_0427"], ["can_proceed", "true"], ["confirmation", "进入编辑会话后仍需用户确认"]]
+          },
+          components: {
+            eyebrow: "组件",
+            title: "宏组件与章节映射",
+            body: "候选包含主线推进、证词缺口、城市规则、禁区调查、结尾回收等宏组件，并已映射至 12 个章节位置。",
+            rows: [["macro_components", "8"], ["chapter_assignments", "12"], ["built_chapter_frameworks", "0"], ["chapter_indexes", "1-12"]]
+          },
+          diffs: {
+            eyebrow: "差异",
+            title: "规范化调整清晰",
+            body: "部分说明性文本被移动到报告层；章节数与字段命名已规范化。没有阻塞差异。",
+            rows: [["normalized", "3"], ["defaulted", "2"], ["moved_to_report_layer", "1"], ["blocking", "0"]]
+          },
+          source: {
+            eyebrow: "来源",
+            title: "来源链路完整",
+            body: "候选来源于 Analyze Stories 导入记录、artifact 与 story analysis report ref，可回溯到导入源。",
+            rows: [["import_id", "imp_local_0427"], ["artifact_id", "art_story_report_0427"], ["report_ref", "sar_ref_0427"], ["source", "analyze_stories"]]
+          }
+        },
+        diffs: [
+          ["normalized / framework.scope", "将报告层解释移出生成约束。"],
+          ["defaulted / chapter_count", "未明确章节数时使用 12 章候选。"],
+          ["warning / timeline", "港口晚宴时间线需要编辑会话中确认。"]
+        ]
+      },
+      compact: {
+        title: "压缩章节候选",
+        status: "normalized_with_warnings",
+        score: "69%",
+        verdict: "可继续但需确认",
+        verdictCopy: "此候选压缩章节结构，适合短篇续写，但提醒更多。",
+        selectedStatus: "可创建会话，需确认提醒。",
+        validation: "带提醒通过",
+        validationCopy: "进入编辑会话前建议查看差异。",
+        proceed: true,
+        warningCount: 5,
+        counts: [["宏组件", "5"], ["章节映射", "8"], ["规范化差异", "9"], ["阻塞", "0"]],
+        tabs: {
+          overview: {
+            eyebrow: "总览",
+            title: "压缩版候选可审阅",
+            body: "该候选将 12 章结构压缩为 8 章，保留主要冲突，但会弱化支线证词。",
+            rows: [["candidate_id", "fwcand_compact_0427"], ["can_proceed", "true"], ["warnings", "5"]]
+          },
+          components: {
+            eyebrow: "组件",
+            title: "章节结构更短",
+            body: "宏组件数量减少，适合快速进入续写，但世界规则和证据链需要人工复核。",
+            rows: [["macro_components", "5"], ["chapter_assignments", "8"], ["downscoped", "2"], ["chapter_indexes", "1-8"]]
+          },
+          diffs: {
+            eyebrow: "差异",
+            title: "存在降级与合并",
+            body: "部分支线被降级，两个章节被合并。建议在导入编辑会话中逐项审阅。",
+            rows: [["downgraded", "2"], ["normalized", "4"], ["defaulted", "3"], ["blocking", "0"]]
+          },
+          source: {
+            eyebrow: "来源",
+            title: "来源链路完整",
+            body: "来源与主骨架候选相同，但采用短章策略。",
+            rows: [["import_id", "imp_local_0427"], ["artifact_id", "art_story_report_0427"], ["report_ref", "sar_ref_0427"], ["strategy", "compact"]]
+          }
+        },
+        diffs: [
+          ["downgraded / subplot", "两条证词支线被降级为背景信息。"],
+          ["normalized / chapter_map", "章节映射被压缩为 8 章。"],
+          ["warning / pacing", "后半段节奏可能过快。"]
+        ]
+      },
+      blocked: {
+        title: "冲突保留候选",
+        status: "blocked",
+        score: "阻塞",
+        verdict: "不可进入编辑会话",
+        verdictCopy: "存在逻辑冲突，必须先回到问题处理层。",
+        selectedStatus: "阻塞候选不可创建会话。",
+        validation: "候选被阻塞",
+        validationCopy: "存在 2 条 blocking issues。",
+        proceed: false,
+        warningCount: 3,
+        counts: [["宏组件", "7"], ["章节映射", "10"], ["提醒", "3"], ["阻塞", "2"]],
+        tabs: {
+          overview: {
+            eyebrow: "总览",
+            title: "候选不可用",
+            body: "该候选保留了彼此冲突的时间线与证据解释，不能进入导入编辑会话。",
+            rows: [["candidate_id", "fwcand_blocked_0427"], ["can_proceed", "false"], ["blocking", "2"]]
+          },
+          components: {
+            eyebrow: "组件",
+            title: "组件存在冲突",
+            body: "钟楼证词与潮汐禁区规则在两个宏组件中互相抵触。",
+            rows: [["macro_components", "7"], ["conflicted", "2"], ["chapter_assignments", "10"], ["usable", "false"]]
+          },
+          diffs: {
+            eyebrow: "差异",
+            title: "阻塞差异需要处理",
+            body: "两个字段被标记为 blocked，必须先解决才能继续。",
+            rows: [["blocked", "2"], ["warning", "3"], ["normalized", "2"], ["can_proceed", "false"]]
+          },
+          source: {
+            eyebrow: "来源",
+            title: "来源可回溯",
+            body: "来源完整，但候选生成时冲突未被消解。",
+            rows: [["import_id", "imp_local_0427"], ["artifact_id", "art_story_report_0427"], ["report_ref", "sar_ref_0427"], ["status", "blocked"]]
+          }
+        },
+        diffs: [
+          ["blocked / timeline", "钟楼第十三声与晚宴开始时间冲突。"],
+          ["blocked / rule_scope", "潮汐禁区规则与公开证词不兼容。"],
+          ["warning / evidence", "证据来源缺少章节锚点。"]
+        ]
+      }
+    };
+
+    let activeCandidate = "main";
+    let activeTab = "overview";
+    let selected = false;
+
+    const candidateTitle = document.getElementById("candidateTitle");
+    const candidateStatus = document.getElementById("candidateStatus");
+    const scoreBox = document.getElementById("scoreBox");
+    const leftVerdict = document.getElementById("leftVerdict");
+    const leftVerdictCopy = document.getElementById("leftVerdictCopy");
+    const selectedName = document.getElementById("selectedName");
+    const selectedStatus = document.getElementById("selectedStatus");
+    const sideValidation = document.getElementById("sideValidation");
+    const sideValidationCopy = document.getElementById("sideValidationCopy");
+    const primaryButton = document.getElementById("primaryButton");
+    const detailEyebrow = document.getElementById("detailEyebrow");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailBody = document.getElementById("detailBody");
+    const detailList = document.getElementById("detailList");
+    const countGrid = document.getElementById("countGrid");
+    const diffList = document.getElementById("diffList");
+    const toast = document.getElementById("toast");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+    }
+
+    function render() {
+      const candidate = candidates[activeCandidate];
+      const tab = candidate.tabs[activeTab];
+      candidateTitle.textContent = candidate.title;
+      candidateStatus.textContent = candidate.status;
+      scoreBox.textContent = candidate.score;
+      leftVerdict.textContent = candidate.verdict;
+      leftVerdictCopy.textContent = candidate.verdictCopy;
+      selectedName.textContent = candidate.title;
+      selectedStatus.textContent = candidate.selectedStatus;
+      sideValidation.textContent = candidate.validation;
+      sideValidationCopy.textContent = candidate.validationCopy;
+
+      detailEyebrow.textContent = tab.eyebrow;
+      detailTitle.textContent = tab.title;
+      detailBody.textContent = tab.body;
+      detailList.innerHTML = tab.rows.map(([k, v]) => `<div class="detail-row"><b>${k}</b><span>${v}</span></div>`).join("");
+      countGrid.innerHTML = candidate.counts.map(([k, v]) => `<div class="count-item"><span>${k}</span><strong>${v}</strong></div>`).join("");
+      diffList.innerHTML = candidate.diffs.map(([title, body]) => `<div class="diff-item"><strong>${title}</strong>${body}</div>`).join("");
+
+      document.querySelectorAll(".candidate-card").forEach((card) => {
+        card.classList.toggle("active", card.dataset.candidate === activeCandidate);
+      });
+      document.querySelectorAll(".tab-button").forEach((tabButton) => {
+        tabButton.classList.toggle("active", tabButton.dataset.tab === activeTab);
+      });
+
+      primaryButton.classList.toggle("blocked", !candidate.proceed);
+      primaryButton.classList.toggle("session", selected && candidate.proceed);
+      primaryButton.textContent = !candidate.proceed
+        ? "查看阻塞问题"
+        : selected
+          ? "开始导入编辑会话"
+          : "选择此候选";
+    }
+
+    document.querySelectorAll(".candidate-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        activeCandidate = card.dataset.candidate;
+        activeTab = "overview";
+        selected = false;
+        render();
+      });
+    });
+
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        activeTab = button.dataset.tab;
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-route]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.route === "source") {
+          window.location.href = "../../01 Import Source/visual-drafts/import-source-v1.html";
+          return;
+        }
+        if (button.dataset.route === "analysis") {
+          window.location.href = "../../02 Analyzing/visual-drafts/analyzing-v1.html";
+          return;
+        }
+        if (button.dataset.route === "result") {
+          window.location.href = "../../03 Analysis Result Overview/visual-drafts/analysis-result-overview-v1.html";
+          return;
+        }
+        showToast("当前处于 Framework 候选");
+      });
+    });
+
+    document.getElementById("revalidateButton").addEventListener("click", () => {
+      showToast("候选重新验证完成");
+      sideValidation.textContent = candidates[activeCandidate].proceed ? "复验通过" : "复验仍阻塞";
+    });
+
+    document.getElementById("previewButton").addEventListener("click", () => {
+      showToast("Workbench 预览已打开");
+      activeTab = "components";
+      render();
+    });
+
+    primaryButton.addEventListener("click", () => {
+      const candidate = candidates[activeCandidate];
+      if (!candidate.proceed) {
+        document.getElementById("diffBackdrop").classList.add("show");
+        document.getElementById("diffBackdrop").setAttribute("aria-hidden", "false");
+        document.getElementById("closeDiff").focus();
+        showToast("需要先处理阻塞问题");
+        return;
+      }
+      if (!selected) {
+        selected = true;
+        showToast("候选已选择");
+        render();
+        return;
+      }
+      showToast("正在进入导入编辑会话");
+      window.setTimeout(() => {
+        window.location.href = "../../../06 Framework Composition/03 Imported Edit Session/visual-drafts/imported-edit-session-v1.html";
+      }, 520);
+    });
+
+    document.getElementById("diffButton").addEventListener("click", () => {
+      document.getElementById("diffBackdrop").classList.add("show");
+      document.getElementById("diffBackdrop").setAttribute("aria-hidden", "false");
+      document.getElementById("closeDiff").focus();
+    });
+
+    document.getElementById("closeDiff").addEventListener("click", () => {
+      document.getElementById("diffBackdrop").classList.remove("show");
+      document.getElementById("diffBackdrop").setAttribute("aria-hidden", "true");
+      document.getElementById("diffButton").focus();
+    });
+
+    document.getElementById("diffBackdrop").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) {
+        document.getElementById("diffBackdrop").classList.remove("show");
+        document.getElementById("diffBackdrop").setAttribute("aria-hidden", "true");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && document.getElementById("diffBackdrop").classList.contains("show")) {
+        document.getElementById("diffBackdrop").classList.remove("show");
+        document.getElementById("diffBackdrop").setAttribute("aria-hidden", "true");
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

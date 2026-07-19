@@ -1,0 +1,1183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>场景写作 / 修订场景正文 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.95);
+      --paper-soft: rgba(238, 227, 208, 0.68);
+      --ink: #2f312b;
+      --muted: #71685e;
+      --quiet: #9a8f83;
+      --line: rgba(110, 86, 61, 0.19);
+      --line-strong: rgba(110, 86, 61, 0.32);
+      --bronze: #b48a78;
+      --bronze-deep: #8f675b;
+      --sage: #71806f;
+      --sage-deep: #53624f;
+      --blue-gray: #6f8182;
+      --blue-gray-deep: #536869;
+      --gold: #c7a66a;
+      --gold-deep: #9b7d47;
+      --shadow: 0 26px 72px rgba(74, 53, 32, 0.18);
+      --soft-shadow: 0 14px 34px rgba(74, 53, 32, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.88), rgba(236, 231, 220, 0.62) 44%, rgba(236, 231, 220, 0.25)),
+        url("../../assets/scene-writing-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255, 248, 229, 0.5), transparent 30%),
+        radial-gradient(circle at 78% 24%, rgba(111, 129, 130, 0.14), transparent 32%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.24), rgba(180, 138, 120, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1376px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 210px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .option-chip,
+    .tab-button,
+    .check-card {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 12px 28px rgba(74, 53, 32, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .tab-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .option-chip:hover,
+    .tab-button:hover,
+    .check-card:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 16px 34px rgba(74, 53, 32, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(113, 128, 111, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 520px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30332d;
+      font-size: 54px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(47, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #373832;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 374px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(238, 227, 208, 0.72)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 22px 30px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #30332d;
+      font-size: 27px;
+      line-height: 1.16;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+
+    .revision-chip {
+      flex: 0 0 164px;
+      align-self: start;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.7);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .revision-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .revision-chip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .revision-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 318px minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 30px 14px;
+      overflow: hidden;
+    }
+
+    .control-column,
+    .compare-column {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .control-column {
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+    }
+
+    .control-card,
+    .compare-shell,
+    .impact-card {
+      border: 1px solid rgba(110, 86, 61, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+    }
+
+    .control-card {
+      padding: 14px;
+    }
+
+    .control-card h3,
+    .impact-card h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .control-card p,
+    .impact-card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.46;
+      font-weight: 520;
+    }
+
+    .select-block,
+    .input-block {
+      display: grid;
+      gap: 8px;
+      margin-top: 11px;
+    }
+
+    .select-block span,
+    .input-block span {
+      color: #4a443d;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(110, 86, 61, 0.22);
+      border-radius: var(--radius);
+      outline: none;
+      color: #3f3933;
+      background: rgba(255, 252, 244, 0.58);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+    }
+
+    select {
+      min-height: 42px;
+      padding: 0 12px;
+      color: #514943;
+      font-size: 13px;
+      font-weight: 720;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.58;
+    }
+
+    select:focus,
+    textarea:focus {
+      border-color: rgba(83, 104, 105, 0.48);
+      box-shadow: 0 0 0 3px rgba(111, 129, 130, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .option-chip {
+      min-height: 30px;
+      padding: 0 11px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 780;
+      box-shadow: none;
+    }
+
+    .option-chip.active {
+      color: #fffaf2;
+      border-color: rgba(83, 104, 105, 0.46);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 26px rgba(83, 104, 105, 0.18);
+    }
+
+    .boundary-list {
+      display: grid;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .boundary-title {
+      margin: 12px 0 0;
+      color: #3b3c35;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .boundary-item {
+      padding: 8px 10px;
+      border: 1px solid rgba(110, 86, 61, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.38;
+    }
+
+    .compare-shell {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .compare-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab-button {
+      min-height: 34px;
+      padding: 0 13px;
+      color: var(--muted);
+      background: rgba(255, 252, 244, 0.42);
+      box-shadow: none;
+    }
+
+    .tab-button.active {
+      color: #fffaf2;
+      border-color: rgba(83, 104, 105, 0.42);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 14px 30px rgba(83, 104, 105, 0.2);
+    }
+
+    .preview-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(199, 166, 106, 0.16);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .compare-area {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    .view {
+      display: none;
+      min-height: 100%;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .diff-grid {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .prose-card {
+      min-height: 0;
+      padding: 18px;
+      border: 1px solid rgba(110, 86, 61, 0.16);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255, 248, 229, 0.5), transparent 28%),
+        linear-gradient(180deg, rgba(255, 253, 246, 0.9), rgba(250, 243, 230, 0.82));
+    }
+
+    .prose-card.candidate {
+      border-color: rgba(113, 128, 111, 0.27);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(239, 244, 242, 0.55), transparent 28%),
+        linear-gradient(180deg, rgba(255, 253, 246, 0.92), rgba(239, 244, 242, 0.72));
+    }
+
+    .prose-card h3 {
+      margin: 0 0 12px;
+      color: #3b3c35;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .prose-card p {
+      margin: 0 0 12px;
+      color: #4c443d;
+      font-size: 13.5px;
+      line-height: 1.82;
+      font-weight: 520;
+    }
+
+    .mark-remove,
+    .mark-add,
+    .mark-keep {
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      border: 1px solid transparent;
+    }
+
+    .mark-remove {
+      background: rgba(180, 138, 120, 0.15);
+      border-color: rgba(180, 138, 120, 0.22);
+    }
+
+    .mark-add {
+      background: rgba(113, 128, 111, 0.14);
+      border-color: rgba(113, 128, 111, 0.23);
+    }
+
+    .mark-keep {
+      background: rgba(255, 249, 235, 0.42);
+      border-color: rgba(199, 166, 106, 0.2);
+    }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .impact-card {
+      padding: 15px;
+      min-height: 118px;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 30px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .soft-button {
+      min-width: 118px;
+    }
+
+    .primary-button {
+      min-width: 148px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 16px 36px rgba(83, 104, 105, 0.24);
+    }
+
+    .warning-button {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(143, 103, 91, 0.22);
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .side-head h2 {
+      font-size: 24px;
+    }
+
+    .ready-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: rgba(199, 166, 106, 0.16);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .check-list {
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 2px;
+    }
+
+    .check-card {
+      width: 100%;
+      padding: 13px;
+      text-align: left;
+      box-shadow: none;
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .check-card.active {
+      border-color: rgba(199, 166, 106, 0.44);
+      background: rgba(255, 249, 235, 0.78);
+      box-shadow: 0 14px 30px rgba(74, 53, 32, 0.1);
+    }
+
+    .check-card.safe {
+      border-color: rgba(113, 128, 111, 0.24);
+    }
+
+    .check-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c3d36;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .check-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .badge {
+      margin-left: auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.12);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .check-card p {
+      margin: 8px 0 0 32px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.52;
+      font-weight: 520;
+    }
+
+    .detail-panel {
+      border: 1px solid rgba(83, 104, 105, 0.19);
+      border-radius: var(--radius);
+      background: rgba(239, 244, 242, 0.52);
+      padding: 15px;
+    }
+
+    .detail-panel strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .detail-panel p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+
+    .decision-box {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(83, 104, 105, 0.16);
+    }
+
+    .decision-box span {
+      color: #4a443d;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .decision-box textarea {
+      min-height: 86px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: min(100% - 36px, 960px);
+        height: auto;
+        min-height: calc(100vh - 48px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .hero,
+      .layout,
+      .revision-body {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .summary-strip {
+        max-width: none;
+      }
+
+      .compare-shell {
+        min-height: 620px;
+      }
+
+      .side-panel {
+        min-height: 620px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+
+      .panel-head,
+      .revision-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .panel-head,
+      .action-row,
+      .compare-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .revision-chip {
+        flex-basis: auto;
+      }
+
+      .summary-strip,
+      .diff-grid,
+      .impact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-shell {
+        min-height: 760px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回草案审阅</button>
+      <div class="crumb">主页 / 工作台 / 场景写作 / 修订场景正文</div>
+      <div class="status-pill"><span class="dot"></span>模型已连接</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">修订场景正文</h1>
+        <p>在不破坏已确认事实和后续线索的前提下，调整当前场景正文，并查看修订对质量、连续性、记忆和后续场景的影响。</p>
+      </div>
+
+      <div class="summary-strip" aria-label="修订摘要">
+        <div class="summary-item">
+          <span>当前场景</span>
+          <strong>场景 1 / 4</strong>
+        </div>
+        <div class="summary-item">
+          <span>修订状态</span>
+          <strong id="summaryRevision">待生成</strong>
+        </div>
+        <div class="summary-item">
+          <span>影响预览</span>
+          <strong id="summaryImpact">未运行</strong>
+        </div>
+        <div class="summary-item">
+          <span>安全边界</span>
+          <strong id="summarySafety">不写入</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="修订场景正文">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">修订工作台</p>
+            <h2>钟楼证词的第一处裂缝</h2>
+            <p class="hint">当前页只生成修订候选和影响判断；正式采用后仍需要进入确认与记忆同步流程。</p>
+          </div>
+          <div class="revision-chip">
+            <strong id="chipTitle">候选</strong>
+            <span id="chipState">等待生成</span>
+          </div>
+        </div>
+
+        <div class="revision-body">
+          <aside class="control-column" aria-label="修订方向">
+            <section class="control-card">
+              <h3>修订方向</h3>
+              <p>告诉系统要改变什么，同时明确不能改变的事实边界。</p>
+              <label class="select-block">
+                <span>修订来源</span>
+                <select id="sourceSelect">
+                  <option>当前草案</option>
+                  <option>最近修订候选</option>
+                  <option>连续性问题</option>
+                  <option>用户补充说明</option>
+                </select>
+              </label>
+              <label class="input-block">
+                <span>修改意图</span>
+                <textarea id="revisionPrompt">请降低火漆印章对龙影线索的暗示强度，让它更像旧档案中的异常痕迹；保留证词缺口、第十三声钟和档案管理员的回避态度，不新增幕后身份信息。</textarea>
+              </label>
+              <div class="chip-group" aria-label="修订重点">
+                <button class="option-chip active" type="button">弱化暗示</button>
+                <button class="option-chip active" type="button">保留事实</button>
+                <button class="option-chip" type="button">增加氛围</button>
+                <button class="option-chip" type="button">压缩节奏</button>
+              </div>
+              <div class="boundary-title">不可越界</div>
+              <div class="boundary-list">
+                <div class="boundary-item">不揭露幕后身份或龙影真相。</div>
+                <div class="boundary-item">不删除证词缺口，不写入记忆或推进下一场景。</div>
+              </div>
+            </section>
+          </aside>
+
+          <div class="compare-column">
+            <section class="compare-shell">
+              <div class="compare-head">
+                <div class="tabs" aria-label="修订视图">
+                  <button class="tab-button active" data-view="diff" type="button">对照</button>
+                  <button class="tab-button" data-view="candidate" type="button">修订候选</button>
+                  <button class="tab-button" data-view="impact" type="button">影响预览</button>
+                </div>
+                <span class="preview-status" id="previewStatus">候选未生成</span>
+              </div>
+
+              <div class="compare-area">
+                <section class="view active" id="view-diff">
+                  <div class="diff-grid">
+                    <article class="prose-card">
+                      <h3>当前草案</h3>
+                      <p>林砚在最下方的蜡封残痕里看到半枚火漆印章，边缘是一截断开的龙翼。那不是贵族纹章，更像某种被刻意废弃的警示。</p>
+                      <p class="mark-remove">如果所有证词都避开同一个时间点，那么缺口本身就不是遗漏，而是一种被安排好的沉默。</p>
+                      <p>林砚合上档案，灯光在纸页之间短促地暗了一下。他没有追问管理员，也没有提起龙影传说。</p>
+                    </article>
+                    <article class="prose-card candidate">
+                      <h3>修订候选</h3>
+                      <p>林砚在蜡封残痕里看到半枚火漆印章。纹路被雨汽泡得模糊，只剩一截像翼骨般的断线，像是旧档案里被反复摩擦后留下的异常。</p>
+                      <p class="mark-add">如果所有证词都避开同一个时间点，那么缺口本身就不是遗漏，而是一种被安排好的沉默。</p>
+                      <p>林砚合上档案，灯光在纸页之间短促地暗了一下。他没有追问管理员，也没有把那个传闻说出口。</p>
+                    </article>
+                  </div>
+                </section>
+
+                <section class="view" id="view-candidate">
+                  <article class="prose-card candidate">
+                    <h3>修订候选正文</h3>
+                    <p>雨停在第十三声钟响之前。旧钟楼的窗格还挂着水痕，林砚把油灯推到档案桌中央，纸页边缘被烤出微微卷曲的阴影。</p>
+                    <p>档案管理员说，晚宴后的离席记录都在这里。他说这句话时没有看林砚，只把一串钥匙按在掌心里。</p>
+                    <p class="mark-add">薇拉先发现了空白。每份证词都从“第十二声钟响后”跳到了“巡灯人返回廊桥”，中间没有任何人提到那段短暂的沉默。</p>
+                    <p>林砚在蜡封残痕里看到半枚火漆印章。纹路被雨汽泡得模糊，只剩一截像翼骨般的断线，像是旧档案里被反复摩擦后留下的异常。</p>
+                    <p>他没有追问管理员，也没有把那个传闻说出口。现在更重要的是确认：谁让所有人同时避开了同一段时间。</p>
+                  </article>
+                </section>
+
+                <section class="view" id="view-impact">
+                  <div class="impact-grid">
+                    <article class="impact-card">
+                      <h3>正文变化</h3>
+                      <p>弱化“龙翼”直接描述，保留火漆印章异常和证词缺口。</p>
+                    </article>
+                    <article class="impact-card">
+                      <h3>质量状态</h3>
+                      <p>线索显眼程度下降，场景目标仍完整。</p>
+                    </article>
+                    <article class="impact-card">
+                      <h3>连续性</h3>
+                      <p>不改变已建立事实，不产生新的阻塞问题。</p>
+                    </article>
+                    <article class="impact-card">
+                      <h3>记忆同步</h3>
+                      <p>候选记忆仍保留“半枚火漆印章”，但不写入正式记忆。</p>
+                    </article>
+                  </div>
+                </section>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="actionNote">先生成影响预览，再生成修订候选。采用前不会改写正式正文或记忆。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button" id="previewButton">影响预览</button>
+            <button class="soft-button warning-button" type="button" id="generateButton">生成修订稿</button>
+            <button class="soft-button" type="button" id="discardButton">放弃修订</button>
+            <button class="primary-button" type="button" id="acceptButton">采用修订</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="影响与检查">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">影响与检查</p>
+            <h2>修订安全</h2>
+          </div>
+          <span class="ready-pill" id="safePill">待预览</span>
+        </div>
+
+        <div class="check-list">
+          <button class="check-card active" data-detail="impact" type="button">
+            <div class="check-top"><span class="check-icon">1</span>影响预览<span class="badge" id="impactBadge">未运行</span></div>
+            <p>先判断修订会影响哪些对象和后续场景。</p>
+          </button>
+          <button class="check-card safe" data-detail="quality" type="button">
+            <div class="check-top"><span class="check-icon">2</span>质量复核<span class="badge">通过</span></div>
+            <p>修订后线索强度更稳，场景目标不丢失。</p>
+          </button>
+          <button class="check-card safe" data-detail="continuity" type="button">
+            <div class="check-top"><span class="check-icon">3</span>连续性<span class="badge">无阻塞</span></div>
+            <p>不改变事实和角色状态，不触发连续性阻塞。</p>
+          </button>
+          <button class="check-card" data-detail="memory" type="button">
+            <div class="check-top"><span class="check-icon">4</span>记忆同步<span class="badge">待确认</span></div>
+            <p>采用修订后才进入记忆同步确认流程。</p>
+          </button>
+          <button class="check-card" data-detail="future" type="button">
+            <div class="check-top"><span class="check-icon">5</span>后续场景<span class="badge">低影响</span></div>
+            <p>不需要重建后续场景，只保留开放线索提醒。</p>
+          </button>
+        </div>
+
+        <div class="detail-panel">
+          <strong id="detailTitle">影响预览</strong>
+          <p id="detailText">当前尚未运行影响预览。真实接入时应先调用修改影响预览接口，确认不会误伤正式事实、记忆和后续场景。</p>
+          <label class="decision-box">
+            <span>采用说明</span>
+            <textarea id="decisionInput">采用修订候选，保留证词缺口和第十三声钟，弱化火漆印章对龙影线索的直接暗示。</textarea>
+          </label>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab-button");
+    const views = document.querySelectorAll(".view");
+    const chips = document.querySelectorAll(".option-chip");
+    const checkCards = document.querySelectorAll(".check-card");
+    const actionNote = document.getElementById("actionNote");
+    const previewStatus = document.getElementById("previewStatus");
+    const summaryRevision = document.getElementById("summaryRevision");
+    const summaryImpact = document.getElementById("summaryImpact");
+    const summarySafety = document.getElementById("summarySafety");
+    const chipTitle = document.getElementById("chipTitle");
+    const chipState = document.getElementById("chipState");
+    const safePill = document.getElementById("safePill");
+    const impactBadge = document.getElementById("impactBadge");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailText = document.getElementById("detailText");
+
+    const detailMap = {
+      impact: {
+        title: "影响预览",
+        text: "预览会列出受影响对象、警告、后续场景候选和记忆 dry-run。当前设计只展示用户需要判断的摘要。",
+      },
+      quality: {
+        title: "质量复核",
+        text: "修订候选降低了线索的直白程度，同时保留场景目标、节奏和禁止提前揭示的边界。",
+      },
+      continuity: {
+        title: "连续性",
+        text: "修订没有改变客观事实、角色状态和章节目标，因此不会触发新的连续性阻塞。",
+      },
+      memory: {
+        title: "记忆同步",
+        text: "采用修订后，记忆同步计划应基于修订候选生成；在本页不会自动写入正式记忆。",
+      },
+      future: {
+        title: "后续场景",
+        text: "由于核心事实未改变，后续场景不需要重建；只保留开放线索的承接提醒。",
+      },
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.view;
+        tabs.forEach((item) => item.classList.toggle("active", item === tab));
+        views.forEach((view) => view.classList.toggle("active", view.id === `view-${target}`));
+      });
+    });
+
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("active");
+      });
+    });
+
+    checkCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const detail = detailMap[card.dataset.detail];
+        checkCards.forEach((item) => item.classList.toggle("active", item === card));
+        detailTitle.textContent = detail.title;
+        detailText.textContent = detail.text;
+      });
+    });
+
+    document.getElementById("previewButton").addEventListener("click", () => {
+      actionNote.textContent = "影响预览已生成。当前修订为低影响，不会自动改写记忆或后续场景。";
+      previewStatus.textContent = "影响预览已生成";
+      summaryImpact.textContent = "低影响";
+      safePill.textContent = "低影响";
+      impactBadge.textContent = "低影响";
+      tabs.forEach((item) => item.classList.toggle("active", item.dataset.view === "impact"));
+      views.forEach((view) => view.classList.toggle("active", view.id === "view-impact"));
+    });
+
+    document.getElementById("generateButton").addEventListener("click", () => {
+      actionNote.textContent = "修订候选已生成。请对照当前草案后决定是否采用。";
+      previewStatus.textContent = "修订候选已生成";
+      summaryRevision.textContent = "候选已生成";
+      summarySafety.textContent = "等待采用";
+      chipTitle.textContent = "已生成";
+      chipState.textContent = "等待采用";
+      tabs.forEach((item) => item.classList.toggle("active", item.dataset.view === "diff"));
+      views.forEach((view) => view.classList.toggle("active", view.id === "view-diff"));
+    });
+
+    document.getElementById("discardButton").addEventListener("click", () => {
+      actionNote.textContent = "已放弃本次修订方向，当前草案保持不变。";
+      summaryRevision.textContent = "已放弃";
+      chipTitle.textContent = "草案";
+      chipState.textContent = "保持不变";
+    });
+
+    document.getElementById("acceptButton").addEventListener("click", () => {
+      actionNote.textContent = "已选择采用修订候选。接入后应进入修订确认和记忆同步流程。";
+      summaryRevision.textContent = "待确认";
+      summarySafety.textContent = "待同步";
+      chipTitle.textContent = "采用";
+      chipState.textContent = "等待确认";
+      safePill.textContent = "待确认";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 修订章节计划 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --ink: #28312b;
+      --muted: #756b60;
+      --quiet: #9b8d7f;
+      --line: rgba(116, 92, 66, 0.2);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92), rgba(236, 231, 220, 0.62) 47%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.36), rgba(176, 138, 107, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1400px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr) 172px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .scope-card,
+    .chip-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .scope-card:hover,
+    .chip-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .status-dot.ready {
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 123, 104, 0.16);
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 14px;
+      line-height: 1.62;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 640px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 354px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 20px 28px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .summary-grid {
+      min-width: 470px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-height: 58px;
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 8px;
+      color: #3c4039;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .revision-body {
+      min-height: 0;
+      padding: 14px 28px 12px;
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .scope-panel,
+    .compose-panel {
+      min-height: 0;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 84% 12%, rgba(200, 168, 104, 0.1), transparent 34%),
+        rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      overflow: hidden;
+    }
+
+    .scope-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .panel-subhead {
+      padding: 12px 14px 9px;
+      border-bottom: 1px solid rgba(116, 92, 66, 0.14);
+    }
+
+    .panel-subhead h3 {
+      margin: 0;
+      color: #343932;
+      font-size: 18px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .panel-subhead p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .scope-list {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .scope-card {
+      width: 100%;
+      min-height: 74px;
+      padding: 10px 12px;
+      text-align: left;
+      border-color: rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 8px 18px rgba(75, 55, 34, 0.06);
+    }
+
+    .scope-card.active {
+      transform: translateY(-1px);
+      border-color: rgba(180, 138, 120, 0.42);
+      background: rgba(255, 249, 235, 0.88);
+      box-shadow: 0 16px 32px rgba(142, 103, 91, 0.14);
+    }
+
+    .scope-card strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #363a34;
+      font-size: 13px;
+      line-height: 1.34;
+      font-weight: 900;
+    }
+
+    .scope-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 540;
+    }
+
+    .tag {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--bronze-deep);
+      font-size: 11px;
+      font-weight: 860;
+    }
+
+    .compose-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .compose-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 11px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .revision-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .info-block,
+    .prompt-box,
+    .preview-box {
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.54);
+    }
+
+    .info-block.wide,
+    .prompt-box,
+    .preview-box {
+      grid-column: 1 / -1;
+    }
+
+    .info-block span,
+    .prompt-box span,
+    .preview-box span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 840;
+    }
+
+    .info-block strong,
+    .prompt-box strong,
+    .preview-box strong {
+      display: block;
+      margin-top: 5px;
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.42;
+      font-weight: 900;
+    }
+
+    .info-block p,
+    .prompt-box p,
+    .preview-box p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .chip-button {
+      min-height: 32px;
+      padding: 0 12px;
+      border-color: rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.56);
+      box-shadow: none;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .chip-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 118px;
+      resize: none;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.2);
+      background: rgba(255, 252, 244, 0.62);
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.5;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 126, 131, 0.42);
+      box-shadow: 0 0 0 4px rgba(111, 126, 131, 0.12);
+    }
+
+    .prompt-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .preview-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .preview-item {
+      min-height: 66px;
+      padding: 9px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .preview-item strong {
+      margin-top: 0;
+      font-size: 12px;
+    }
+
+    .preview-item p {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .result-box {
+      display: none;
+      border-color: rgba(111, 123, 104, 0.24);
+      background: rgba(241, 246, 240, 0.58);
+    }
+
+    .result-box.show {
+      display: block;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 28px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button:disabled {
+      color: rgba(255, 252, 244, 0.78);
+      border-color: rgba(255, 252, 244, 0.38);
+      background: rgba(180, 138, 120, 0.32);
+      box-shadow: none;
+    }
+
+    .primary-button.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 16px 36px rgba(86, 98, 79, 0.22);
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .state-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.14);
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .state-pill.ready {
+      background: rgba(111, 123, 104, 0.14);
+      color: var(--sage-deep);
+    }
+
+    .health-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .health-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .health-item.active {
+      border-color: rgba(180, 138, 120, 0.28);
+      background: rgba(255, 246, 236, 0.58);
+    }
+
+    .health-item.ready {
+      border-color: rgba(111, 123, 104, 0.22);
+      background: rgba(241, 246, 240, 0.56);
+    }
+
+    .health-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .health-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(116, 92, 66, 0.12);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .health-item.ready .mini-dot {
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+    }
+
+    .handoff-card {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .handoff-card strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .handoff-card p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .revision-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 112px;
+      }
+
+      .summary-grid {
+        min-width: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .revision-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .summary-grid,
+      .revision-grid,
+      .preview-list {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回问题处理</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 修订章节计划</div>
+      <div class="model-pill"><span class="status-dot" id="top-dot"></span><span id="top-state">待提交</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>把问题处理里的决策整理成一次明确修订，提交后回到章节路线审阅，确认修订后的章节计划是否可用。</p>
+      </div>
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">章节路线</button>
+        <button class="stage-button" type="button">场景数与修复</button>
+        <button class="stage-button" type="button">问题处理</button>
+        <button class="stage-button active" type="button">修订计划</button>
+        <button class="stage-button" type="button">再次审阅</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <header class="panel-head">
+          <div>
+            <p class="eyebrow">修订章节计划</p>
+            <h2>准备修订请求</h2>
+            <p class="hint">选择修订范围，写清楚需要改变的章节路线、揭示节奏或当前章 brief。</p>
+          </div>
+          <div class="summary-grid" aria-label="修订摘要">
+            <div class="summary-item">
+              <span>修订范围</span>
+              <strong id="summary-scope">第 8 章</strong>
+            </div>
+            <div class="summary-item">
+              <span>来源问题</span>
+              <strong id="summary-source">协议揭示过早</strong>
+            </div>
+            <div class="summary-item">
+              <span>说明字数</span>
+              <strong id="summary-count">0 字</strong>
+            </div>
+            <div class="summary-item">
+              <span>修订状态</span>
+              <strong id="summary-state">未提交</strong>
+            </div>
+          </div>
+        </header>
+
+        <div class="revision-body">
+          <section class="scope-panel" aria-label="修订范围">
+            <div class="panel-subhead">
+              <h3>修订范围</h3>
+              <p>先限定修订范围，避免一次改动过大。</p>
+            </div>
+            <div class="scope-list" id="scope-list"></div>
+          </section>
+
+          <section class="compose-panel" aria-label="修订内容">
+            <div class="panel-subhead">
+              <h3 id="compose-title">第 8 章揭示节奏</h3>
+              <p id="compose-subtitle">当前修订聚焦协议线索是否过早显露。</p>
+            </div>
+            <div class="compose-scroll">
+              <div class="revision-grid">
+                <div class="info-block">
+                  <span>当前状态</span>
+                  <strong id="current-state">第 8 章出现协议轮廓</strong>
+                </div>
+                <div class="info-block">
+                  <span>目标状态</span>
+                  <strong id="target-state">保留悬念，推迟明确证据</strong>
+                </div>
+                <div class="info-block wide">
+                  <span>来源判断</span>
+                  <p id="source-copy">用户确认项指出，第 8 章可能过早展示旧贵族与商会协议，需要降低证据强度或推迟揭示。</p>
+                </div>
+
+                <div class="prompt-box">
+                  <span>修订说明</span>
+                  <strong>写给系统的修订请求</strong>
+                  <div class="chip-row" id="chip-row"></div>
+                  <textarea id="revision-prompt" placeholder="例如：将第 8 章的协议揭示改为间接线索，只保留缺页和目击误差，把明确证据推迟到第 10 章以后。"></textarea>
+                  <div class="prompt-meta">
+                    <span id="prompt-count">0 字</span>
+                    <span>提交后会重新生成章节计划草案。</span>
+                  </div>
+                </div>
+
+                <div class="preview-box">
+                  <span>预计影响</span>
+                  <strong id="impact-title">修订会集中影响第 8 章与后续回收节奏</strong>
+                  <div class="preview-list">
+                    <div class="preview-item">
+                      <strong>章节路线</strong>
+                      <p id="impact-route">第 8 章从明确揭示改为间接线索。</p>
+                    </div>
+                    <div class="preview-item">
+                      <strong>当前章 brief</strong>
+                      <p id="impact-brief">不改变第 3 章当前 brief。</p>
+                    </div>
+                    <div class="preview-item">
+                      <strong>验证状态</strong>
+                      <p id="impact-validation">修订后需要重新检查警告和确认项。</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="preview-box result-box" id="result-box">
+                  <span>修订结果</span>
+                  <strong>修订草案已返回</strong>
+                  <p id="result-copy">第 8 章揭示强度已降低，明确证据转移到第 10 章审判段落，等待再次审阅。</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="action-note">填写修订说明后提交。提交完成后进入再次审阅，检查修订后的路线是否解决问题。</p>
+          <div class="button-group">
+            <button class="soft-button" id="template-button" type="button">套用建议</button>
+            <button class="soft-button" id="clear-button" type="button">清空说明</button>
+            <button class="primary-button" id="submit-button" type="button" disabled>提交修订</button>
+            <button class="primary-button" id="review-button" type="button" disabled>查看修订结果</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="修订状态">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">修订状态</p>
+            <h2 id="side-title">等待说明</h2>
+          </div>
+          <span class="state-pill" id="state-pill">未提交</span>
+        </div>
+
+        <div class="health-list">
+          <div class="health-item active" id="step-scope">
+            <strong><span class="mini-dot">1</span>选择范围</strong>
+            <p id="step-scope-copy">已选择第 8 章揭示节奏。</p>
+          </div>
+          <div class="health-item" id="step-prompt">
+            <strong><span class="mini-dot">2</span>填写说明</strong>
+            <p id="step-prompt-copy">需要写清楚希望如何修订。</p>
+          </div>
+          <div class="health-item" id="step-submit">
+            <strong><span class="mini-dot">3</span>提交修订</strong>
+            <p id="step-submit-copy">提交后生成新的章节计划草案。</p>
+          </div>
+          <div class="health-item" id="step-review">
+            <strong><span class="mini-dot">4</span>再次审阅</strong>
+            <p id="step-review-copy">修订完成后回到审阅页比较变化。</p>
+          </div>
+        </div>
+
+        <div class="handoff-card">
+          <strong>后续动作</strong>
+          <p>修订完成后应回到章节路线审阅页。如果仍存在阻塞或确认项，再进入问题处理。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const scopes = [
+      {
+        id: "chapter-8-reveal",
+        title: "第 8 章揭示节奏",
+        tag: "需确认",
+        summary: "降低协议线索的明确程度。",
+        composeTitle: "第 8 章揭示节奏",
+        composeSubtitle: "当前修订聚焦协议线索是否过早显露。",
+        current: "第 8 章出现协议轮廓",
+        target: "保留悬念，推迟明确证据",
+        source: "用户确认项指出，第 8 章可能过早展示旧贵族与商会协议，需要降低证据强度或推迟揭示。",
+        route: "第 8 章从明确揭示改为间接线索。",
+        brief: "不改变第 3 章当前 brief。",
+        validation: "修订后需要重新检查警告和确认项。",
+        template: "将第 8 章的协议揭示改为间接线索，只保留缺页和目击误差，把明确证据推迟到第 10 章以后。"
+      },
+      {
+        id: "chapter-route-goal",
+        title: "路线目标覆盖",
+        tag: "警告",
+        summary: "让章节路线更贴合用户目标。",
+        composeTitle: "章节路线目标覆盖",
+        composeSubtitle: "修订全局路线中目标覆盖偏弱的部分。",
+        current: "部分章节只承接线索，没有强化目标",
+        target: "让每个关键章节都回应主目标",
+        source: "系统验证提示章节路线覆盖了主目标，但部分章节目标表达偏弱。",
+        route: "调整第 5、8、10 章的叙事功能说明。",
+        brief: "不改变当前章核心结构。",
+        validation: "修订后重新检查目标覆盖。",
+        template: "请强化第 5、8、10 章对主目标的回应，让每章的叙事功能更明确地服务港口真相调查，同时不要提前揭示最终答案。"
+      },
+      {
+        id: "current-brief",
+        title: "当前章 brief",
+        tag: "当前章",
+        summary: "修订当前章目标与场景摘要。",
+        composeTitle: "当前章 brief 修订",
+        composeSubtitle: "只修订当前章 brief，不重写全局路线。",
+        current: "第 3 章推动钟楼证词",
+        target: "让证据与角色选择更紧密",
+        source: "当前章 brief 已可用，但可增强主角团选择压力。",
+        route: "不改动其他章节路线。",
+        brief: "增强第 3 章的冲突和场景生成摘要。",
+        validation: "修订后检查当前章 Framework 关联。",
+        template: "请只修订第 3 章 brief，强化主角团是否公开证据的选择压力，并让场景生成摘要更明确地服务后续场景写作。"
+      },
+      {
+        id: "full-route",
+        title: "整条路线",
+        tag: "大范围",
+        summary: "重新平衡 12 章节奏。",
+        composeTitle: "整条章节路线修订",
+        composeSubtitle: "大范围修订会影响多个章节，建议谨慎使用。",
+        current: "12 章路线已生成",
+        target: "重新平衡中后段节奏",
+        source: "当多个章节同时需要调整时，可以选择整条路线修订。",
+        route: "可能影响多个章节的标题、功能和线索位置。",
+        brief: "当前章 brief 可能被重新生成。",
+        validation: "修订后必须重新审阅全部路线。",
+        template: "请重新平衡 12 章章节路线，保持港口真相调查主线不变，但调整中后段揭示节奏，让第 8 章保留悬念，第 10 章承担明确证据转折。"
+      }
+    ];
+
+    const scopeList = document.getElementById("scope-list");
+    const summaryScope = document.getElementById("summary-scope");
+    const summarySource = document.getElementById("summary-source");
+    const summaryCount = document.getElementById("summary-count");
+    const summaryState = document.getElementById("summary-state");
+    const composeTitle = document.getElementById("compose-title");
+    const composeSubtitle = document.getElementById("compose-subtitle");
+    const currentState = document.getElementById("current-state");
+    const targetState = document.getElementById("target-state");
+    const sourceCopy = document.getElementById("source-copy");
+    const impactTitle = document.getElementById("impact-title");
+    const impactRoute = document.getElementById("impact-route");
+    const impactBrief = document.getElementById("impact-brief");
+    const impactValidation = document.getElementById("impact-validation");
+    const chipRow = document.getElementById("chip-row");
+    const revisionPrompt = document.getElementById("revision-prompt");
+    const promptCount = document.getElementById("prompt-count");
+    const submitButton = document.getElementById("submit-button");
+    const reviewButton = document.getElementById("review-button");
+    const templateButton = document.getElementById("template-button");
+    const clearButton = document.getElementById("clear-button");
+    const resultBox = document.getElementById("result-box");
+    const resultCopy = document.getElementById("result-copy");
+    const actionNote = document.getElementById("action-note");
+    const topState = document.getElementById("top-state");
+    const topDot = document.getElementById("top-dot");
+    const sideTitle = document.getElementById("side-title");
+    const statePill = document.getElementById("state-pill");
+    const stepPrompt = document.getElementById("step-prompt");
+    const stepSubmit = document.getElementById("step-submit");
+    const stepReview = document.getElementById("step-review");
+    const stepPromptCopy = document.getElementById("step-prompt-copy");
+    const stepSubmitCopy = document.getElementById("step-submit-copy");
+    const stepReviewCopy = document.getElementById("step-review-copy");
+
+    let activeScopeId = scopes[0].id;
+    let submitted = false;
+    let submitting = false;
+
+    function activeScope() {
+      return scopes.find((scope) => scope.id === activeScopeId) || scopes[0];
+    }
+
+    function renderScopes() {
+      scopeList.innerHTML = "";
+      scopes.forEach((scope) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `scope-card${scope.id === activeScopeId ? " active" : ""}`;
+        card.dataset.id = scope.id;
+        card.innerHTML = `
+          <strong>${scope.title}<span class="tag">${scope.tag}</span></strong>
+          <span>${scope.summary}</span>
+        `;
+        scopeList.appendChild(card);
+      });
+    }
+
+    function renderChips(scope) {
+      chipRow.innerHTML = "";
+      ["降低揭示强度", "推迟证据", "保留悬念", "不改当前章"].forEach((label) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip-button";
+        chip.textContent = label;
+        chip.addEventListener("click", () => {
+          const addition = label === "不改当前章"
+            ? "保持当前章 brief 不变。"
+            : `${label}，并保证后续章节仍能回收该线索。`;
+          revisionPrompt.value = revisionPrompt.value.trim()
+            ? `${revisionPrompt.value.trim()} ${addition}`
+            : addition;
+          updateState();
+        });
+        chipRow.appendChild(chip);
+      });
+    }
+
+    function updateScopeContent() {
+      const scope = activeScope();
+      composeTitle.textContent = scope.composeTitle;
+      composeSubtitle.textContent = scope.composeSubtitle;
+      currentState.textContent = scope.current;
+      targetState.textContent = scope.target;
+      sourceCopy.textContent = scope.source;
+      impactTitle.textContent = `${scope.title}的预计影响`;
+      impactRoute.textContent = scope.route;
+      impactBrief.textContent = scope.brief;
+      impactValidation.textContent = scope.validation;
+      summaryScope.textContent = scope.title;
+      summarySource.textContent = scope.tag;
+      renderChips(scope);
+      renderScopes();
+    }
+
+    function setStepState(element, ready) {
+      element.classList.toggle("ready", ready);
+      element.classList.toggle("active", !ready);
+    }
+
+    function updateState() {
+      const count = revisionPrompt.value.trim().length;
+      const hasPrompt = count > 0;
+      summaryCount.textContent = `${count} 字`;
+      promptCount.textContent = `${count} 字`;
+      submitButton.disabled = !hasPrompt || submitting || submitted;
+
+      if (submitted) {
+        summaryState.textContent = "已返回";
+        topState.textContent = "已修订";
+        sideTitle.textContent = "等待审阅";
+        statePill.textContent = "已返回";
+        topDot.classList.add("ready");
+        statePill.classList.add("ready");
+        reviewButton.disabled = false;
+        reviewButton.classList.add("ready");
+        actionNote.textContent = "修订草案已返回，可以进入再次审阅。";
+      } else if (submitting) {
+        summaryState.textContent = "修订中";
+        topState.textContent = "修订中";
+        sideTitle.textContent = "正在修订";
+        statePill.textContent = "处理中";
+        actionNote.textContent = "系统正在根据修订说明生成新的章节计划草案。";
+      } else {
+        summaryState.textContent = hasPrompt ? "可提交" : "未提交";
+        topState.textContent = hasPrompt ? "可提交" : "待提交";
+        sideTitle.textContent = hasPrompt ? "可以提交" : "等待说明";
+        statePill.textContent = hasPrompt ? "可提交" : "未提交";
+        topDot.classList.remove("ready");
+        statePill.classList.remove("ready");
+        reviewButton.disabled = true;
+        reviewButton.classList.remove("ready");
+        actionNote.textContent = hasPrompt
+          ? "确认修订说明无误后提交。"
+          : "填写修订说明后提交。提交完成后进入再次审阅，检查修订后的路线是否解决问题。";
+      }
+
+      setStepState(stepPrompt, hasPrompt);
+      setStepState(stepSubmit, submitted);
+      setStepState(stepReview, submitted);
+      stepPromptCopy.textContent = hasPrompt ? "修订说明已填写。" : "需要写清楚希望如何修订。";
+      stepSubmitCopy.textContent = submitted ? "新的章节计划草案已返回。" : "提交后生成新的章节计划草案。";
+      stepReviewCopy.textContent = submitted ? "可以进入再次审阅。" : "修订完成后回到审阅页比较变化。";
+    }
+
+    scopeList.addEventListener("click", (event) => {
+      const card = event.target.closest(".scope-card");
+      if (!card) return;
+      activeScopeId = card.dataset.id;
+      submitted = false;
+      submitting = false;
+      resultBox.classList.remove("show");
+      updateScopeContent();
+      updateState();
+    });
+
+    revisionPrompt.addEventListener("input", () => {
+      submitted = false;
+      resultBox.classList.remove("show");
+      updateState();
+    });
+
+    templateButton.addEventListener("click", () => {
+      revisionPrompt.value = activeScope().template;
+      submitted = false;
+      resultBox.classList.remove("show");
+      updateState();
+    });
+
+    clearButton.addEventListener("click", () => {
+      revisionPrompt.value = "";
+      submitted = false;
+      resultBox.classList.remove("show");
+      updateState();
+    });
+
+    submitButton.addEventListener("click", () => {
+      if (!revisionPrompt.value.trim()) return;
+      submitting = true;
+      updateState();
+      window.setTimeout(() => {
+        submitting = false;
+        submitted = true;
+        const scope = activeScope();
+        resultCopy.textContent = scope.id === "full-route"
+          ? "整条章节路线已按修订说明重新平衡，等待再次审阅。"
+          : `${scope.title}已按修订说明生成新草案，等待再次审阅。`;
+        resultBox.classList.add("show");
+        updateState();
+      }, 650);
+    });
+
+    reviewButton.addEventListener("click", () => {
+      actionNote.textContent = "这里将进入再次审阅页，比较修订前后的章节路线。";
+    });
+
+    updateScopeContent();
+    updateState();
+  </script>
+</body>
+</html>

@@ -755,6 +755,7 @@ export function patchModelProviderProfile(profileId, payload = {}) {
 export function runModelProviderHealthCheck(profileId) {
   return request(`/api/settings/model/profiles/${profileId}/health-check`, {
     method: "POST",
+    timeoutMs: 30000,
   });
 }
 
@@ -1552,8 +1553,16 @@ export function confirmChapterPlan(userInput = "") {
   });
 }
 
-export function getCurrentScene() {
-  return request("/api/scenes/current");
+export function getCurrentScene(chapterId = null, sceneIndex = null) {
+  const query = new URLSearchParams();
+  if (chapterId) {
+    query.set("chapter_id", chapterId);
+  }
+  if (sceneIndex !== undefined && sceneIndex !== null && Number(sceneIndex) > 0) {
+    query.set("scene_index", String(Number(sceneIndex)));
+  }
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return request(`/api/scenes/current${suffix}`);
 }
 
 export function getSceneGateReadiness(sceneId) {
@@ -1699,10 +1708,20 @@ export function generateNextScene(
   });
 }
 
-export function regenerateFirstScene(regenerationHint = "") {
+export function regenerateFirstScene(
+  regenerationHint = "",
+  sceneId = "",
+  chapterId = "",
+  sceneIndex = null,
+) {
   return request("/api/scenes/regenerate-first", {
     method: "POST",
-    body: JSON.stringify({ regeneration_hint: regenerationHint }),
+    body: JSON.stringify({
+      regeneration_hint: regenerationHint,
+      scene_id: sceneId || null,
+      chapter_id: chapterId || null,
+      scene_index: Number(sceneIndex) || null,
+    }),
   });
 }
 
@@ -1710,6 +1729,41 @@ export function confirmSceneDraft(userInput = "") {
   return request("/api/scenes/confirm-draft", {
     method: "POST",
     body: JSON.stringify({ user_input: userInput }),
+  });
+}
+
+export function getSceneRevisionCandidate(sceneId) {
+  return request(`/api/scenes/${encodeURIComponent(sceneId)}/revision-candidate`);
+}
+
+export function reviseScene(sceneId, revisionPrompt, forceHardRuleOverride = false) {
+  return request(`/api/scenes/${encodeURIComponent(sceneId)}/revise`, {
+    method: "POST",
+    body: JSON.stringify({
+      revision_prompt: revisionPrompt,
+      force_hard_rule_override: Boolean(forceHardRuleOverride),
+    }),
+  });
+}
+
+export function confirmSceneRevision(sceneId, revisionId, userInput = "") {
+  return request(`/api/scenes/${encodeURIComponent(sceneId)}/confirm-revision`, {
+    method: "POST",
+    body: JSON.stringify({
+      revision_id: revisionId,
+      user_input: userInput,
+      accepted_abcd_runtime_issue_ids: [],
+    }),
+  });
+}
+
+export function rejectSceneRevision(sceneId, revisionId, userInput = "") {
+  return request(`/api/scenes/${encodeURIComponent(sceneId)}/reject-revision`, {
+    method: "POST",
+    body: JSON.stringify({
+      revision_id: revisionId,
+      user_input: userInput,
+    }),
   });
 }
 

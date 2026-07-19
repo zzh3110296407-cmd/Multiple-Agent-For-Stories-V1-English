@@ -3,6 +3,9 @@ import re
 
 from app.backend.models.model_gateway import ModelGatewayRequest
 from app.backend.services.model_adapters.base import ModelAdapter
+from app.backend.services.prompt_anchor_classification_service import (
+    classify_prompt_anchor_values,
+)
 
 
 class LocalMockModelAdapter(ModelAdapter):
@@ -93,28 +96,433 @@ def dump_mock_json(payload: dict, schema_hint: dict | None) -> str:
     return json.dumps(payload, ensure_ascii=False)
 
 
+PROMPT_ANCHOR_GENERIC_TERMS = {
+    "一个",
+    "一部",
+    "一篇",
+    "故事",
+    "小说",
+    "角色",
+    "人物",
+    "主角",
+    "主人公",
+    "世界",
+    "背景",
+    "题材",
+    "章节",
+    "每章",
+    "每幕",
+    "中文",
+    "目标",
+    "秘密",
+    "核心",
+    "当前",
+    "线索",
+    "规则",
+    "边界",
+    "要求",
+    "生成",
+    "创作",
+    "写作",
+}
+
+
+PROMPT_ANCHOR_SUFFIXES = [
+    "AI治理",
+    "AI副本",
+    "人工智能治理",
+    "科技治理",
+    "治理边界",
+    "责任链",
+    "责任边界",
+    "人工复核",
+    "算法审计",
+    "审计日志",
+    "追溯日志",
+    "数据中台",
+    "记忆备份",
+    "记忆审计",
+    "公共服务",
+    "实验区",
+    "治理区",
+    "机器人",
+    "副本",
+    "人工智能",
+    "AI",
+    "算法",
+    "中台",
+    "平台",
+    "系统",
+    "日志",
+    "档案",
+    "记录",
+    "报告",
+    "文书",
+    "证据",
+    "证词",
+    "案卷",
+    "遗书",
+    "手稿",
+    "名单",
+    "信号",
+    "通讯事故",
+    "通信事故",
+    "深空通讯",
+    "深空通信",
+    "量子通信",
+    "通讯",
+    "通信",
+    "代码",
+    "航行记录",
+    "飞船",
+    "星球",
+    "殖民地",
+    "太空站",
+    "基地",
+    "城市",
+    "小镇",
+    "村庄",
+    "学院",
+    "学校",
+    "社区",
+    "港口",
+    "码头",
+    "灯塔",
+    "图书馆",
+    "档案馆",
+    "剧院",
+    "道观",
+    "驿馆",
+    "坊市",
+    "长安",
+    "洛阳",
+    "西市",
+    "东市",
+    "玉佩",
+    "古镜",
+    "异象",
+    "奇遇",
+    "诅咒",
+    "梦境",
+    "契约",
+    "案件",
+    "事故",
+    "危机",
+    "冲突",
+    "异常",
+    "谜团",
+    "秘密",
+    "申诉",
+    "误判",
+    "封存",
+    "触发",
+    "变化",
+    "回声",
+    "裂缝",
+    "警报",
+]
+
+
+def _prompt_term_key(value: str) -> str:
+    return re.sub(
+        r"[\s\u3000,.;:!?\uff0c\u3002\uff1b\uff1a\uff01\uff1f\u3001\"'`()\[\]{}<>\u300a\u300b\-_\/]+",
+        "",
+        str(value or "").casefold(),
+    )
+
+
+def _flatten_prompt_values(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        text = " ".join(value.split()).strip()
+        return [text] if text else []
+    if isinstance(value, dict):
+        noisy_keys = {
+            "raw_prompt",
+            "raw_response",
+            "hidden_reasoning",
+            "provider_payload",
+            "provider_response",
+            "debug",
+            "trace",
+            "prose_text",
+            "revised_prose_text",
+            "complete_story_text",
+        }
+        priority_keys = [
+            "user_story_premise",
+            "safe_user_story_summary",
+            "story_idea",
+            "story_goal",
+            "user_prompt",
+            "controlled_prompt_text",
+            "source_prompt",
+            "required_story_elements",
+            "prompt_markers_detected",
+            "required_markers",
+            "core_terms",
+            "setting_terms",
+            "conflict_terms",
+            "role_terms",
+            "story_direction",
+            "chapter_goal",
+            "main_conflict",
+            "summary_for_scene_generation",
+            "revision_prompt",
+            "project_story_premise",
+            "prompt_fidelity_contract",
+        ]
+        result: list[str] = []
+        for key in priority_keys:
+            if key in value:
+                result.extend(_flatten_prompt_values(value.get(key)))
+        for key, child in value.items():
+            if key in noisy_keys or key in priority_keys:
+                continue
+            if len(result) >= 96:
+                break
+            result.extend(_flatten_prompt_values(child))
+        return result
+    if isinstance(value, (list, tuple, set)):
+        result: list[str] = []
+        for item in value:
+            if len(result) >= 96:
+                break
+            result.extend(_flatten_prompt_values(item))
+        return result
+    text = " ".join(str(value or "").split()).strip()
+    return [text] if text else []
+
+
+def _suffix_prompt_terms_from_text(text: str) -> list[str]:
+    source = re.sub(r"\s+", "", text or "")
+    if not source:
+        return []
+    terms: list[str] = []
+    terms.extend(match.group(1) for match in re.finditer(r"《([^》]{1,24})》", text or ""))
+    terms.extend(match.group(1) for match in re.finditer(r"[\"“]([^\"”]{2,24})[\"”]", text or ""))
+    if re.search(r"(?<![A-Za-z])AI(?![A-Za-z])", text or ""):
+        terms.append("AI")
+    for suffix in PROMPT_ANCHOR_SUFFIXES:
+        pattern = rf"[\u4e00-\u9fffA-Za-z0-9·]{{1,16}}{re.escape(suffix)}"
+        for match in re.finditer(pattern, source):
+            terms.append(_trim_focus_phrase(match.group(0), suffix))
+    return terms
+
+
+def _clean_prompt_anchor_term(value: str) -> str:
+    clean = _clean_focus_phrase(value)
+    clean = re.sub(
+        r"^(?:我想|我要|希望|请|用户|需要|必须|应该|故事|主线|剧情|世界|角色|一个|一部|一篇|一名|一位|一次|暂定名)",
+        "",
+        clean,
+    )
+    for marker in ["围绕", "关于", "有关", "追查", "调查", "判断", "收到", "发生在", "位于", "拯救", "保护", "接管"]:
+        if marker in clean and len(clean) >= len(marker) + 2:
+            clean = clean.split(marker)[-1]
+    for connector in ["和", "与", "以及", "还是", "或"]:
+        if connector in clean:
+            parts = [part for part in clean.split(connector) if part]
+            matching_parts = [
+                part
+                for part in parts
+                if any(suffix in part for suffix in PROMPT_ANCHOR_SUFFIXES)
+            ]
+            if matching_parts:
+                clean = matching_parts[-1]
+    clean = clean.strip(" 的了着过中里内外上下前后，。,.、；;：:（）()[]【】《》\"“”")
+    if not clean:
+        return ""
+    if clean.upper() == "AI":
+        return "AI"
+    if clean in PROMPT_ANCHOR_GENERIC_TERMS:
+        return ""
+    if len(clean) < 2:
+        return ""
+    if len(clean) > 24 and not re.fullmatch(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+){2,}\b", clean):
+        return ""
+    return clean
+
+
+def _dedupe_prompt_terms(values: list[str], *, limit: int = 32) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        clean = _clean_prompt_anchor_term(value)
+        key = _prompt_term_key(clean)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        result.append(clean)
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _prompt_terms_from_values(values: list[str], *, limit: int = 32) -> list[str]:
+    bounded_values = [value[:1200] for value in values if str(value or "").strip()][:96]
+    classification = classify_prompt_anchor_values(bounded_values, limit=max(limit * 2, 32))
+    candidates: list[str] = []
+    for value in bounded_values:
+        candidates.extend(_suffix_prompt_terms_from_text(value))
+    candidates.extend(classification.positive_required_anchors)
+    return _dedupe_prompt_terms(candidates, limit=limit)
+
+
+def _prompt_terms_from_context(value, text: str = "", *, limit: int = 32) -> list[str]:
+    values = _flatten_prompt_values(value)
+    if text:
+        values.insert(0, text)
+    return _prompt_terms_from_values(values, limit=limit)
+
+
+def _first_prompt_term_matching(
+    terms: list[str],
+    suffixes: list[str],
+    fallback: str,
+    *,
+    allow_first: bool = False,
+    exclude_suffixes: list[str] | None = None,
+    suffix_priority: bool = False,
+    prefer_longest: bool = False,
+) -> str:
+    exclude_suffixes = exclude_suffixes or []
+
+    def usable(term: str) -> bool:
+        return not any(suffix in term for suffix in exclude_suffixes)
+
+    if suffix_priority:
+        for suffix in suffixes:
+            matches = [term for term in terms if suffix in term and usable(term)]
+            if matches:
+                if prefer_longest:
+                    return max(matches, key=len)
+                return matches[0]
+    else:
+        for term in terms:
+            if usable(term) and any(suffix in term for suffix in suffixes):
+                return term
+    if allow_first and terms:
+        for term in terms:
+            if usable(term):
+                return term
+    return fallback
+
+
+def _authoritative_premise_text(schema_hint: dict) -> str:
+    candidates = [
+        schema_hint.get("project_story_premise"),
+        (schema_hint.get("context") or {}).get("project_story_premise"),
+        (schema_hint.get("approved_context") or {}).get("project_story_premise"),
+        ((schema_hint.get("approved_context") or {}).get("scene_writing_context") or {}).get(
+            "project_story_premise"
+        ),
+    ]
+    values: list[str] = []
+    premise_keys = [
+        "user_story_premise",
+        "safe_user_story_summary",
+        "story_idea",
+        "story_goal",
+        "user_prompt",
+        "controlled_prompt_text",
+        "source_prompt",
+    ]
+    for candidate in candidates:
+        if isinstance(candidate, str):
+            values.extend(_flatten_prompt_values(candidate))
+        elif isinstance(candidate, dict):
+            for key in premise_keys:
+                values.extend(_flatten_prompt_values(candidate.get(key)))
+    return " ".join(dict.fromkeys(value for value in values if value)).strip()
+
+
 def project_story_context(schema_hint: dict | None) -> dict:
     schema_hint = schema_hint or {}
     text = _collect_context_text(schema_hint)
-    style = _detect_story_style(text)
-    core = _extract_focus_phrase(
-        text,
-        suffixes=["异常", "谜团", "案件", "事故", "危机", "秘密", "记录", "档案", "线索", "灯塔"],
+    premise_text = _authoritative_premise_text(schema_hint)
+    story_text = premise_text or text
+    style = _story_style_with_defaults(_detect_story_style(story_text))
+    prompt_terms = _prompt_terms_from_context(story_text, story_text, limit=32)
+    core_fallback = _extract_focus_phrase(
+        story_text,
+        suffixes=[
+            "治理",
+            "审计",
+            "机器人",
+            "人工智能",
+            "算法",
+            "中台",
+            "平台",
+            "系统",
+            "代码",
+            "信号",
+            "飞船",
+            "殖民地",
+            "古镜",
+            "玉佩",
+            "异象",
+            "异常",
+            "谜团",
+            "案件",
+            "事故",
+            "危机",
+            "秘密",
+            "记录",
+            "档案",
+            "线索",
+            "灯塔",
+        ],
         fallback=style["core_fallback"],
     )
-    record_object = _extract_focus_phrase(
-        text,
-        suffixes=["记录", "档案", "案卷", "地图", "线索", "证词", "手稿", "名单"],
-        fallback="关键记录",
+    core = _first_prompt_term_matching(
+        prompt_terms,
+        ["治理", "审计", "机器人", "人工智能", "算法", "中台", "系统", "代码", "信号", "飞船", "殖民地", "古镜", "玉佩", "异常", "谜团", "案件", "事故", "危机", "冲突", "秘密"],
+        core_fallback,
+        allow_first=True,
     )
-    main_location = _extract_focus_phrase(
-        text,
+    record_fallback = _extract_focus_phrase(
+        story_text,
+        suffixes=[
+            "审计日志",
+            "追溯日志",
+            "记忆备份",
+            "算法报告",
+            "数据档案",
+            "数据中台",
+            "中台",
+            "系统",
+            "平台",
+            "记录",
+            "档案",
+            "案卷",
+            "地图",
+            "线索",
+            "证词",
+            "手稿",
+            "名单",
+        ],
+        fallback=style["record_fallback"],
+    )
+    record_object = _first_prompt_term_matching(
+        prompt_terms,
+        ["日志", "备份", "报告", "档案", "中台", "系统", "平台", "记录", "案卷", "地图", "线索", "证词", "手稿", "名单", "文书", "证据"],
+        record_fallback,
+    )
+    location_fallback = _extract_focus_phrase(
+        story_text,
         suffixes=[
             "图书馆",
             "观测站",
             "灯塔",
             "港口",
             "城市",
+            "杭州",
+            "实验区",
+            "治理区",
+            "社区",
+            "校区",
             "小镇",
             "学院",
             "剧院",
@@ -132,29 +540,215 @@ def project_story_context(schema_hint: dict | None) -> dict:
             "塔",
             "区",
         ],
-        fallback="核心调查区",
+        fallback=style["location_fallback"],
     )
-    protagonist_role = _extract_character_role(schema_hint, text)
+    main_location = _first_prompt_term_matching(
+        prompt_terms,
+        ["实验区", "治理区", "公共服务", "城市", "社区", "校区", "学校", "学院", "小镇", "村庄", "港口", "码头", "图书馆", "档案馆", "剧院", "长安", "洛阳", "西市", "东市", "道观", "驿馆", "坊市", "星球", "殖民地", "基地", "太空站", "飞船", "世界"],
+        location_fallback,
+        exclude_suffixes=["中台", "责任链", "数据", "算法", "审计", "日志", "报告", "记录", "证据", "证词", "机器人", "治理边界", "科幻", "题材"],
+        suffix_priority=True,
+        prefer_longest=True,
+    )
+    protagonist_role = _extract_character_role(schema_hint, story_text)
+    if protagonist_role == "主角":
+        protagonist_role = style["protagonist_identity"]
     investigation_object = record_object if record_object != "关键记录" else core
-    signal_or_trigger = _extract_focus_phrase(
-        text,
-        suffixes=["信号", "变化", "回声", "裂缝", "警报", "触发", "鸣响"],
+    signal_fallback = _extract_focus_phrase(
+        story_text,
+        suffixes=["误判", "事故", "通讯", "通信", "申诉", "封存", "审计", "复核", "信号", "变化", "回声", "裂缝", "警报", "触发", "鸣响"],
         fallback=f"{record_object}变化" if record_object != "关键记录" else "触发信号",
+    )
+    signal_or_trigger = _first_prompt_term_matching(
+        prompt_terms,
+        ["误判", "事故", "通讯", "通信", "申诉", "封存", "审计", "复核", "信号", "变化", "回声", "裂缝", "警报", "触发", "鸣响"],
+        signal_fallback,
+        exclude_suffixes=["主角", "主人公"],
+        suffix_priority=True,
     )
     return {
         "core_phenomenon": core,
-        "mystery_origin": f"{core}真正来源",
+        "mystery_origin": f"{core}{style['unknown_suffix']}",
+        "unknown_focus": f"{core}{style['unknown_suffix']}",
         "investigation_object": investigation_object,
         "signal_or_trigger": signal_or_trigger,
         "main_location": main_location,
         "record_object": record_object,
         "protagonist_role": protagonist_role,
+        "prompt_terms": prompt_terms,
         "style": style,
     }
 
 
 def _contains_any(text: str, terms: list[str]) -> bool:
     return any(term in text for term in terms)
+
+
+def _is_technology_governance_text(text: str) -> bool:
+    source = text or ""
+    lowered = source.lower()
+    return _contains_any(
+        source,
+        [
+            "科技",
+            "AI治理",
+            "人工智能治理",
+            "人工智能",
+            "算法",
+            "算法审计",
+            "数据中台",
+            "教育机器人",
+            "记忆备份",
+            "公共服务",
+            "自动化",
+            "可追溯",
+            "审计日志",
+            "治理实验区",
+        ],
+    ) or any(term in lowered for term in ["ai governance", "algorithm audit", "data platform"])
+
+
+def _story_style_with_defaults(style: dict) -> dict:
+    label = str((style or {}).get("genre_label") or "中文故事")
+    base = {
+        "location_fallback": "核心舞台",
+        "record_fallback": "关键记录",
+        "unknown_suffix": "的关键原因",
+        "protagonist_identity": "核心行动者",
+        "institution_label": "相关组织",
+        "world_structure_type": "story_stage",
+        "world_structure_summary": "目标、阻力、人物选择和世界边界共同构成主要舞台。",
+        "location_summary": "主要事件发生地，保存当前故事最关键的行动压力。",
+        "history_summary": "关键旧事必须从项目前提和后续用户确认中展开，不能替换为模板故事。",
+        "geography_summary": "故事范围以项目前提中的地点和后续确认信息为准。",
+        "culture_summary": "社会关系、组织压力和日常秩序需要服务项目前提中的核心冲突。",
+        "special_rules_summary": "关键规则必须有触发条件、边界和可追踪后果，不能作为万能解释。",
+        "continuity_rule": "已发生的故事事实不能无代价撤销，只能通过新的行动、证据或用户确认修正。",
+        "reversal_rule": "已经造成影响的事件不能无痕重置，只能通过后续行动和版本化记录处理。",
+        "chapter_story_goal": "讲述核心事件如何把人物目标、外部阻力和选择代价连接起来。",
+        "chapter_conflict": "人物目标、外部阻力和选择代价发生冲突。",
+        "chapter_goal": "让主角在当前世界边界内获得第一条可执行行动线，并承担继续推进的压力。",
+        "chapter_summary": "围绕当前核心对象展开第一轮行动，必须在目标推进和代价控制之间做出选择。",
+        "route_templates": [
+            ("起点显形", "建立核心事件、人物目标和初始压力。", "建立世界规则与行动入口。"),
+            ("阻力推进", "让第一条可靠推进路径把主角推向更具体的目标。", "触发主线行动。"),
+            ("关系承压", "扩大外部阻力，并让关系中的选择开始产生代价。", "升级冲突和信息缺口。"),
+            ("边界选择", "让主角面对是否继续推进的阶段性选择。", "形成局部高潮。"),
+            ("余波未息", "收束阶段性结果，同时保留关键原因的未知缺口。", "形成新状态和后续悬念。"),
+        ],
+        "character_background": "曾接触过当前核心事件的边缘信息，因此必须在目标、关系和代价之间做选择。",
+        "character_goal": "确认当前事件背后的行动边界，并保护受影响的人。",
+        "character_fear": "错误选择会让无辜者承担代价。",
+        "character_secret": "曾隐瞒过一次关键判断。",
+        "character_values": ["责任", "证据", "不让无辜者承担代价"],
+        "character_bottom_line": "不会牺牲无关者来换取轻松推进。",
+        "character_current_arc": "从旁观者转向主动承担选择代价",
+        "character_starting_point": "只愿保持距离，不愿亲自卷入核心冲突",
+        "character_pressure": "越接近核心事件，越必须承担自己的判断后果",
+        "character_inner_conflict": "想继续推进目标，但害怕代价落到无辜者身上",
+        "character_possible_direction": "逐渐学会把个人能力转化为可被他人信任的行动",
+        "speech_style_hint": "表达清楚，先确认事实再说明选择。",
+        "generic_traits": ["审慎", "敏锐", "不轻易交出判断"],
+    }
+    profiles = {
+        "唐代传奇": {
+            "location_fallback": "长安西市",
+            "record_fallback": "夜禁文书",
+            "unknown_suffix": "背后的旧事",
+            "protagonist_identity": "女史",
+            "institution_label": "坊市文书署",
+            "world_structure_type": "historical_city_district",
+            "world_structure_summary": "唐代坊市秩序、夜禁文书、胡商往来与奇遇异象共同构成舞台。",
+            "chapter_conflict": "礼法、人情、奇遇代价和人物选择发生冲突。",
+            "character_goal": "查清关键旧事与异象之间的联系，避免文书被误用。",
+            "character_fear": "礼法和传闻压过真正的人情选择。",
+            "character_values": ["礼法", "侠义", "人情"],
+            "character_current_arc": "从旁观记录者转向主动承担奇遇代价",
+        },
+        "科技治理": {
+            "location_fallback": "城市技术治理区",
+            "record_fallback": "审计日志",
+            "unknown_suffix": "的责任边界",
+            "protagonist_identity": "技术治理审计员",
+            "institution_label": "城市数据治理中心",
+            "world_structure_type": "speculative_system",
+            "world_structure_summary": "算法系统、公共服务机构、家庭诉求和审计日志共同构成冲突边界。",
+            "location_summary": "AI 治理、教育机器人、记忆备份和公共服务复核交会的核心场域。",
+            "history_summary": "城市长期把教育、公共服务和家庭档案接入自动化治理系统，近期误判暴露出责任链缺口。",
+            "geography_summary": "故事范围收束在学校、家庭、社区服务站和数据治理接口，便于控制审计路径与行动成本。",
+            "culture_summary": "公共效率、家庭尊严、技术透明和基层执行压力共同约束角色选择。",
+            "special_rules_summary": "技术、备份和机器人机制必须有责任边界、权限来源和可追踪后果。",
+            "continuity_rule": "日志、备份和相关判断不能被系统无来源改写；任何修正都必须保留原始记录、责任主体和用户可复核路径。",
+            "reversal_rule": "已经进入公共服务流程的算法判断不能无痕撤销，只能通过人工复核、补充证据和版本化记录更正。",
+            "chapter_story_goal": "讲述技术系统、公共责任和具体个体处境如何互相拉扯。",
+            "chapter_conflict": "技术效率、责任归属和个体尊严发生冲突。",
+            "chapter_goal": "让主角在技术治理边界内获得第一条可复核行动线，并承担责任链压力。",
+            "chapter_summary": "围绕审计日志和责任链展开第一轮复核，必须在系统效率和具体人的处境之间做出选择。",
+            "route_templates": [
+                ("责任链浮现", "建立技术系统、具体受影响者和主角的初始压力。", "建立世界规则与复核入口。"),
+                ("复核路径", "让第一条可靠日志把主角推向具体责任边界。", "触发主线行动。"),
+                ("家庭申诉", "扩大公共服务压力，并让个体处境开始产生代价。", "升级冲突和信息缺口。"),
+                ("公开边界", "让主角面对是否公开审计结果的阶段性选择。", "形成局部高潮。"),
+                ("版本余波", "收束阶段性修正，同时保留责任链深处的未知缺口。", "形成新状态和后续悬念。"),
+            ],
+            "character_background": "曾参与或复核相关流程，因此必须在系统效率、家庭权益和可解释责任之间做选择。",
+            "character_goal": "核验日志、复核路径和责任主体，保护被系统误判影响的人。",
+            "character_fear": "效率优先的系统结论掩盖具体家庭和孩子的真实处境。",
+            "character_secret": "曾经签署过一份快速上线复核意见。",
+            "character_values": ["公共责任", "个人尊严", "可解释的技术治理"],
+            "character_bottom_line": "不会为了提高系统效率而隐去人的申诉、日志缺口或人工复核意见。",
+            "character_current_arc": "从系统执行者转向主动承担公共责任",
+            "character_starting_point": "相信流程足够可靠，却开始看见流程外的人",
+            "character_pressure": "越接近责任链，越必须承认自己也曾参与系统默认选择",
+            "character_inner_conflict": "既相信技术能改善公共服务，又必须质疑技术被谁用来省略人的处境",
+            "character_possible_direction": "逐渐学会把专业能力转化为可被公众理解的责任说明",
+            "speech_style_hint": "表达清晰，先拆分数据来源、责任主体和人所承受的后果。",
+            "generic_traits": ["理性", "审慎", "重视可追溯证据"],
+        },
+        "科幻": {
+            "location_fallback": "核心航行区",
+            "record_fallback": "系统记录",
+            "unknown_suffix": "的技术边界",
+            "protagonist_identity": "技术行动者",
+            "institution_label": "任务控制中心",
+            "chapter_conflict": "技术边界、认知风险和生存选择发生冲突。",
+            "character_goal": "验证未知技术事件的边界，保护团队和关键目标。",
+            "character_fear": "错误判断会扩大技术风险并伤害同伴。",
+            "character_current_arc": "从执行任务转向主动承担未知风险",
+        },
+        "情感故事": {
+            "location_fallback": "关系核心空间",
+            "record_fallback": "旧约定",
+            "unknown_suffix": "的真正原因",
+            "protagonist_identity": "关系中的行动者",
+            "institution_label": "家庭或社交关系网",
+            "chapter_conflict": "关系误解、价值选择和靠近代价发生冲突。",
+            "character_goal": "修复或确认关键关系，并承担靠近后的选择代价。",
+            "character_fear": "再次伤害重要的人或失去表达机会。",
+            "character_values": ["真诚", "边界", "承担"],
+            "character_current_arc": "从回避关系转向主动表达选择",
+        },
+        "轻喜剧": {
+            "location_fallback": "日常行动空间",
+            "record_fallback": "误会记录",
+            "unknown_suffix": "的误会来源",
+            "protagonist_identity": "反差行动者",
+            "institution_label": "日常关系网",
+            "chapter_conflict": "误会、反差和小规模选择发生冲突。",
+            "character_goal": "把误会推进到可修正的位置，并承担反差行动的后果。",
+            "character_fear": "小误会升级成不可收拾的关系后果。",
+            "character_current_arc": "从被动卷入转向主动修正误会",
+        },
+        "悬疑": {
+            "location_fallback": "核心调查区",
+            "record_fallback": "关键证据",
+            "unknown_suffix": "真正来源",
+            "protagonist_identity": "调查者",
+            "institution_label": "城市记录署",
+            "chapter_conflict": "调查需求、信息遮蔽和外部压力发生冲突。",
+        },
+    }
+    return {**base, **profiles.get(label, {}), **(style or {})}
 
 
 def _detect_story_style(text: str) -> dict:
@@ -195,6 +789,15 @@ def _detect_story_style(text: str) -> dict:
             "story_pressure": "关系误解、选择和靠近",
             "core_fallback": "关系转折",
             "time_label": "一次重逢之后",
+        }
+    if _is_technology_governance_text(source):
+        return {
+            "genre_label": "科技治理",
+            "tone": "理性、温暖、带社会议题张力",
+            "scene_atmosphere": "清晰理性、保留人情温度",
+            "story_pressure": "技术治理、公共责任与个人尊严的选择",
+            "core_fallback": "技术治理事件",
+            "time_label": "系统审计日志刷新后",
         }
     if _contains_any(source, ["科幻", "星际", "飞船", "机器人", "AI", "人工智能", "太空", "星球"]) or any(
         term in lowered for term in ["science fiction", "sci-fi", "spaceship", "robot"]
@@ -259,20 +862,18 @@ def _premise_terms_from_payload(payload: dict) -> list[str]:
         "setting_terms",
         "conflict_terms",
         "role_terms",
+        "user_story_premise",
+        "safe_user_story_summary",
     ]:
-        raw = payload.get(key) or []
-        if isinstance(raw, list):
-            values.extend(str(item) for item in raw if str(item or "").strip())
-    if payload.get("safe_user_story_summary"):
-        values.append(str(payload.get("safe_user_story_summary")))
-    seen: set[str] = set()
-    terms: list[str] = []
-    for value in values:
-        clean = re.sub(r"\s+", " ", value).strip()
-        if clean and clean not in seen:
-            seen.add(clean)
-            terms.append(clean)
-    return terms[:16]
+        values.extend(_flatten_prompt_values(payload.get(key)))
+    contract = payload.get("prompt_fidelity_contract") or {}
+    if isinstance(contract, dict):
+        values.extend(_flatten_prompt_values(contract.get("required_markers")))
+        required_present = contract.get("required_terms_present") or {}
+        if isinstance(required_present, dict):
+            values.extend(str(key) for key, present in required_present.items() if present)
+        values.extend(_flatten_prompt_values(contract.get("marker_counts")))
+    return _prompt_terms_from_values(values, limit=16)
 
 
 def _premise_phrase(schema_hint: dict, fallback: str = "") -> str:
@@ -281,6 +882,12 @@ def _premise_phrase(schema_hint: dict, fallback: str = "") -> str:
         context = schema_hint.get("context") or {}
         premise = context.get("project_story_premise") or {}
     terms = _premise_terms_from_payload(premise)
+    if not terms:
+        terms = _prompt_terms_from_context(
+            schema_hint,
+            _collect_context_text(schema_hint),
+            limit=16,
+        )
     if terms:
         return " / ".join(terms[:5])
     return fallback
@@ -389,7 +996,37 @@ def _clean_focus_phrase(text: str) -> str:
     cleaned = (text or "").strip()
     if "真相必须被记录" in cleaned or "必须被记录" in cleaned:
         return "关键记录"
+    prompt_markers = (
+        "我想写一个",
+        "我要写一个",
+        "希望写一个",
+        "我想创作一个",
+        "我要创作一个",
+        "写一个",
+        "创作一个",
+    )
+    for marker in prompt_markers:
+        index = cleaned.rfind(marker)
+        if 0 <= index <= 6 and len(cleaned) > index + len(marker) + 2:
+            cleaned = cleaned[index + len(marker) :]
+            break
     for prefix in (
+        "我想写一个",
+        "我要写一个",
+        "希望写一个",
+        "我想创作一个",
+        "我要创作一个",
+        "写一个",
+        "创作一个",
+        "背景是",
+        "背景设定为",
+        "主角是",
+        "主人公是",
+        "一部",
+        "一篇",
+        "一名",
+        "一位",
+        "一次",
         "中存在",
         "中出现",
         "里存在",
@@ -410,6 +1047,7 @@ def _clean_focus_phrase(text: str) -> str:
         if cleaned.startswith(prefix) and len(cleaned) > len(prefix) + 2:
             cleaned = cleaned[len(prefix) :]
     cleaned = re.sub(r"^[\u4e00-\u9fff]{2,4}在(?=[\u4e00-\u9fffA-Za-z0-9]{3,})", "", cleaned)
+    cleaned = re.sub(r"^(?:一名|一位|一个|一部|一次|背景是|主角是|主人公是)", "", cleaned)
     return cleaned.strip("的之与和、，。；：,.!?！？;:") or text
 
 
@@ -428,9 +1066,31 @@ def _extract_character_role(schema_hint: dict, text: str) -> str:
         identity = str(profile.get("identity") or "").strip()
         if identity:
             return identity
+    if re.search(
+        r"(?:主角|主人公)(?:名叫|叫作|叫|名为|是)?[\u4e00-\u9fff]{2,6}(?:追查|调查|寻找|必须|想要|在|和|与|，|。|,|\.|\s|$)",
+        text or "",
+    ):
+        return "主角"
     return _extract_focus_phrase(
         text,
-        suffixes=["调查员", "档案员", "记录员", "制图师", "学徒", "守夜人", "主角"],
+        suffixes=[
+            "治理审计员",
+            "算法审计员",
+            "审计员",
+            "工程师",
+            "教师",
+            "老师",
+            "医生",
+            "职员",
+            "机器人",
+            "调查员",
+            "档案员",
+            "记录员",
+            "制图师",
+            "学徒",
+            "守夜人",
+            "主角",
+        ],
         fallback="主角",
     )
 
@@ -453,11 +1113,18 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
         scope = "多世界结构"
 
     is_tang_legend = style.get("genre_label") == "唐代传奇"
+    is_tech_governance = style.get("genre_label") == "科技治理"
     structure_type = "dimension_stack" if is_multi_world else "historical_city_district" if is_tang_legend else "single_city"
     structure_name = "镜面维度群" if is_multi_world else story_context["main_location"]
     if is_tang_legend and structure_name == "核心调查区":
         structure_name = "长安西市"
         scope = "长安西市"
+    if is_tech_governance and structure_name == "核心调查区":
+        structure_name = "城市技术治理区"
+        scope = "城市技术治理区"
+    if structure_name == "核心调查区" and style.get("location_fallback"):
+        structure_name = style["location_fallback"]
+        scope = style["location_fallback"]
     story_direction = (
         current_canvas.get("story_direction")
         if is_revision and current_canvas.get("story_direction")
@@ -472,35 +1139,47 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
     hard_rules = [
         {
             "rule_id": "rule_trigger_condition_001",
-            "statement": f"{story_context['core_phenomenon']}只会在明确触发条件下出现，并且每次触发都会留下可追溯的现实代价。",
-            "category": "magic",
+            "statement": (
+                f"{story_context['core_phenomenon']}只能在明确的数据来源、模型调用或人工复核条件下发生，并且每次影响都必须留下可追溯记录。"
+                if is_tech_governance
+                else f"{story_context['core_phenomenon']}只会在明确触发条件下出现，并且每次触发都会留下可追溯的现实代价。"
+            ),
+            "category": "technology" if is_tech_governance else "magic",
             "firmness": "hard",
             "source": "agent_generated",
             "applies_to": ["world"],
-            "rationale": "固定触发条件可以稳定后续事件因果。",
-            "risk_if_changed": "改变触发条件会影响事件因果和时间结构。",
+            "rationale": "明确触发条件可以稳定后续事件因果。",
+            "risk_if_changed": "改变触发条件会影响事件因果、责任链和时间结构。",
             "version_id": "version_world_canvas_m4_mock",
         },
         {
             "rule_id": "rule_memory_cost_001",
-            "statement": f"被{story_context['core_phenomenon']}影响的人可能短暂遗失一段最想隐藏的记忆，但不会凭空获得新记忆。",
-            "category": "limitation",
+            "statement": (
+                f"{story_context['record_object']}和相关判断不能被系统无来源改写；任何修正都必须保留原始日志、责任主体和用户可复核路径。"
+                if is_tech_governance
+                else style["continuity_rule"]
+            ),
+            "category": "governance" if is_tech_governance else "limitation",
             "firmness": "hard",
             "source": "agent_generated",
-            "applies_to": ["character", "memory"],
-            "rationale": "限制异常能力，避免它成为万能解释。",
-            "risk_if_changed": "如果允许凭空创造记忆，后续证词和人物动机会变得不可靠。",
+            "applies_to": ["world", "character", "memory"],
+            "rationale": "限制技术系统的越权能力，避免它成为万能解释。",
+            "risk_if_changed": "如果允许无来源改写，后续证据、人物动机和治理责任都会变得不可靠。",
             "version_id": "version_world_canvas_m4_mock",
         },
         {
             "rule_id": "rule_no_free_reversal_001",
-            "statement": "已经发生的记忆遗失不能无代价撤销，只能通过新的线索重新拼合。",
+            "statement": (
+                "已经进入公共服务流程的算法判断不能无痕撤销，只能通过人工复核、补充证据和版本化记录更正。"
+                if is_tech_governance
+                else style["reversal_rule"]
+            ),
             "category": "limitation",
             "firmness": "hard",
             "source": "agent_generated",
             "applies_to": ["world", "memory"],
-            "rationale": "确保调查过程有代价和持续张力。",
-            "risk_if_changed": "无代价恢复会削弱冲突强度。",
+            "rationale": "确保修正过程有责任成本和持续张力。",
+            "risk_if_changed": "无代价恢复会削弱冲突强度和治理可信度。",
             "version_id": "version_world_canvas_m4_mock",
         },
     ]
@@ -518,7 +1197,11 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
         },
         {
             "rule_id": "rule_authority_records_001",
-            "statement": "城市管理者保存着异常事件记录，但记录经过删改，不一定完整可信。",
+            "statement": (
+                "城市数据治理机构保存算法日志和人工复核记录，但公开口径、内部指标和家庭感受可能并不一致。"
+                if is_tech_governance
+                else "城市管理者保存着异常事件记录，但记录经过删改，不一定完整可信。"
+            ),
             "category": "society",
             "firmness": "soft",
             "source": "agent_generated",
@@ -559,7 +1242,9 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
                 if is_multi_world
                 else f"以{scope}为主要舞台，唐代坊市秩序、夜禁文书、胡商往来与道观古镜共同构成奇遇边界。"
                 if is_tang_legend
-                else f"以{story_context['main_location']}为主要舞台，异常规则集中在核心调查地带。"
+                else f"以{scope}为主要舞台，{story_context['core_phenomenon']}、{story_context['record_object']}、相关组织和受影响者共同构成冲突边界。"
+                if is_tech_governance
+                else f"以{scope}为主要舞台，{style['world_structure_summary']}"
             ),
             "children": [
                 {
@@ -569,7 +1254,9 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
                     "summary": (
                         "青玉佩、胡商证词、女史文书与古镜异象交会的唐代传奇舞台。"
                         if is_tang_legend
-                        else "主要事件发生地，保存着最密集的异常痕迹。"
+                        else f"{story_context['core_phenomenon']}、{story_context['record_object']}和{story_context['signal_or_trigger']}交会的核心场域。"
+                        if is_tech_governance
+                        else style["location_summary"]
                     ),
                     "relationship_to_parent": "main_stage",
                 }
@@ -578,22 +1265,30 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
         "history_summary": (
             "唐代长安的坊市、夜禁与官私文书留下多层传闻；青玉佩和古镜异象把旧案、胡商往来与女史记录牵连在一起。"
             if is_tang_legend
-            else "十三年前发生过一次被官方抹去记录的异常事件，成为当前故事的深层伤口。"
+            else f"相关组织长期依赖{story_context['record_object']}推进公共决策，近期的{story_context['signal_or_trigger']}暴露出责任链缺口。"
+            if is_tech_governance
+            else style["history_summary"]
         ),
         "geography_summary": (
             f"故事范围收束在{scope}，向道观、驿馆和夜禁边界延伸，便于控制奇遇线索、证词与行动成本。"
             if is_tang_legend
-            else f"故事范围收束在{scope}，便于控制线索、证词和异常传播边界。"
+            else f"故事范围收束在{scope}及其相关接口、执行现场和申诉路径，便于控制复核路径与行动成本。"
+            if is_tech_governance
+            else style["geography_summary"]
         ),
         "culture_summary": (
             "礼法、侠义、人情与坊市秩序共同约束角色选择；公开传闻和私下证词可能互相矛盾。"
             if is_tang_legend
-            else "居民习惯用传闻解释异常，但公开讨论会受到城市权力结构压制。"
+            else f"效率指标、个体尊严、技术透明和执行压力共同约束角色选择；{story_context['record_object']}与人的真实感受可能互相矛盾。"
+            if is_tech_governance
+            else style["culture_summary"]
         ),
         "special_rules_summary": (
             f"{story_context['core_phenomenon']}必须服务于唐代传奇的奇遇与抉择，不能把古镜、玉佩或异象写成无代价万能法器。"
             if is_tang_legend
-            else f"{story_context['core_phenomenon']}与记忆、证词和触发条件有关，不能作为万能魔法使用。"
+            else f"{story_context['core_phenomenon']}必须服务于技术治理与人本选择，不能把{story_context['record_object']}写成无责任边界的万能装置。"
+            if is_tech_governance
+            else style["special_rules_summary"]
         ),
         "hard_rules": hard_rules,
         "soft_rules": soft_rules,
@@ -633,15 +1328,21 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
                 "summary": (
                     f"{scope}是青玉佩、胡商证词、女史裴明珰与道观古镜线索最密集的地点，适合作为第一阶段奇遇中心。"
                     if is_tang_legend
-                    else f"{story_context['core_phenomenon']}痕迹最集中的地点，适合作为第一阶段调查中心。"
+                    else f"{scope}是{story_context['core_phenomenon']}、{story_context['record_object']}和{story_context['signal_or_trigger']}争议最集中的地点，适合作为第一阶段技术治理冲突中心。"
+                    if is_tech_governance
+                    else style["location_summary"]
                 ),
             }
         ],
         "factions": [
             {
                 "faction_id": "faction_city_records_001",
-                "name": "城市记录署",
-                "summary": "掌握异常记录的机构，公开说法和内部档案并不一致。",
+                "name": "城市数据治理中心" if is_tech_governance else style["institution_label"],
+                "summary": (
+                    "掌握模型日志、复核流程和公共服务指标的机构，公开说明和内部责任链并不总是一致。"
+                    if is_tech_governance
+                    else "与当前核心事件相关的组织或关系网络，公开说法和真实压力可能并不一致。"
+                ),
             }
         ],
         "species": [],
@@ -654,6 +1355,7 @@ def build_mock_world_canvas(schema_hint: dict) -> dict:
 
 def build_mock_character_draft(schema_hint: dict) -> dict:
     story_context = project_story_context(schema_hint)
+    style = story_context["style"]
     operation = schema_hint.get("operation") or "generate"
     revision_prompt = schema_hint.get("revision_prompt") or ""
     current_draft = schema_hint.get("current_draft") or {}
@@ -750,12 +1452,21 @@ def build_mock_character_draft(schema_hint: dict) -> dict:
     name = name_pool[(max(1, index) - tier_start_index) % len(name_pool)]
     name = f"{name}_{uniqueness_suffix}"
     is_tang_legend = story_context["style"].get("genre_label") == "唐代传奇"
+    is_tech_governance = story_context["style"].get("genre_label") == "科技治理"
     if "裴明珰" in marker_source_text or is_tang_legend:
         name = "裴明珰"
     identity = (
         story_context["protagonist_role"]
         if story_context["protagonist_role"] != "主角"
-        else ("女史" if is_tang_legend else "守灯人学徒" if is_guardian or is_student else "关键记录整理员")
+        else (
+            "女史"
+            if is_tang_legend
+            else "技术治理审计员"
+            if is_tech_governance
+            else "守灯人学徒"
+            if is_guardian or is_student
+            else style["protagonist_identity"]
+        )
     )
     story_function = (
         f"{story_function_hint} {uniqueness_suffix}".strip()
@@ -773,34 +1484,74 @@ def build_mock_character_draft(schema_hint: dict) -> dict:
         "tier": target_tier,
         "role": role_hint or ("protagonist" if target_tier == "A" else "supporting_npc"),
         "profile": {
-            "description": f"{identity}，被{story_context['core_phenomenon']}牵入当前调查。M3 evidence: {prompt_evidence[:220]}",
+            "description": (
+                f"{identity}，被{story_context['core_phenomenon']}中的责任链缺口牵入当前审计。M3 evidence: {prompt_evidence[:220]}"
+                if is_tech_governance
+                else f"{identity}，被{story_context['core_phenomenon']}牵入当前主线。M3 evidence: {prompt_evidence[:220]}"
+            ),
             "identity": identity,
             "story_function": story_function,
             "background_summary": (
                 f"曾在长安西市追查青玉佩、胡商证词与道观古镜异象，必须在礼法、侠义、人情和异象之间做选择。"
                 if is_tang_legend
-                else f"曾目击{story_context['signal_or_trigger']}后的线索缺口，因此主动接近核心调查。User prompt evidence: {user_prompt[:240]} Premise evidence: {premise_evidence[:240]}"
+                else f"曾参与或复核{story_context['record_object']}相关流程，因此必须在系统效率、家庭权益和可解释责任之间做选择。User prompt evidence: {user_prompt[:240]} Premise evidence: {premise_evidence[:240]}"
+                if is_tech_governance
+                else f"{style['character_background']} User prompt evidence: {user_prompt[:240]} Premise evidence: {premise_evidence[:240]}"
             ),
             "species_or_group": "",
-            "faction_or_origin": "城市记录署" if not is_guardian else "港口灯塔",
+            "faction_or_origin": (
+                "城市数据治理中心"
+                if is_tech_governance
+                else style["institution_label"]
+                if not is_guardian
+                else "港口灯塔"
+            ),
             "appearance_summary": (
                 "衣饰素雅，随身带有夜禁文书副本与青玉佩拓纹，常在古镜异象前保持克制判断。"
                 if is_tang_legend
-                else "外表克制朴素，常携带记录本和一盏旧灯。"
+                else "外表简洁克制，随身携带审计终端和纸质复核清单，习惯把系统结论拆成可验证步骤。"
+                if is_tech_governance
+                else "外表贴合当前题材，习惯把观察、行动和风险拆成可判断的步骤。"
             ),
-            "traits": ["克制", "敏锐", "不轻易交出判断"],
+            "traits": (
+                ["理性", "审慎", "重视可追溯证据"]
+                if is_tech_governance
+                else style["generic_traits"]
+            ),
             "goals": [
                 "查清青玉佩、胡商证词和道观古镜之间的联系，避免长安夜禁文书被误用。"
                 if is_tang_legend
-                else f"查清{story_context['core_phenomenon']}与自己记忆缺口之间的关系 {uniqueness_suffix}"
+                else f"核验{story_context['record_object']}与{story_context['signal_or_trigger']}之间的责任链，保护被系统误判影响的人。"
+                if is_tech_governance
+                else f"{style['character_goal']} {uniqueness_suffix}"
             ],
-            "fears": ["失去证明真相所需的关键记忆"],
-            "secrets": [f"曾在{story_context['signal_or_trigger']}出现后短暂忘记最重要的证词"],
+            "fears": (
+                ["效率优先的系统结论掩盖具体家庭和孩子的真实处境"]
+                if is_tech_governance
+                else [style["character_fear"]]
+            ),
+            "secrets": (
+                [f"曾经签署过一份与{story_context['record_object']}有关的快速上线复核意见"]
+                if is_tech_governance
+                else [style["character_secret"]]
+            ),
             "personality_baseline": {
-                "traits": ["先观察再行动", "对权威保持距离"],
-                "values": ["真相", "证据", "不让无辜者承担代价"],
-                "bottom_line": "不会主动伪造证词或牺牲无关者换取答案。",
-                "speech_style_hint": "短句、克制，先确认事实再表达情绪。",
+                "traits": ["先观察再行动", "对权威保持距离"] if not is_tech_governance else ["先核验证据链", "对系统结论保持复核意识"],
+                "values": (
+                    ["公共责任", "个人尊严", "可解释的技术治理"]
+                    if is_tech_governance
+                    else style["character_values"]
+                ),
+                "bottom_line": (
+                    "不会为了提高系统效率而隐去人的申诉、日志缺口或人工复核意见。"
+                    if is_tech_governance
+                    else style["character_bottom_line"]
+                ),
+                "speech_style_hint": (
+                    "表达清晰，先拆分数据来源、责任主体和人所承受的后果。"
+                    if is_tech_governance
+                    else style["speech_style_hint"]
+                ),
             },
             "hard_limits": [
                 {
@@ -810,31 +1561,47 @@ def build_mock_character_draft(schema_hint: dict) -> dict:
                     "source": "agent_generated",
                 }
             ],
-            "knowledge_scope": [f"知道{story_context['core_phenomenon']}与若干失忆证词有关"],
+            "knowledge_scope": (
+                [f"知道{story_context['core_phenomenon']}与模型日志、人工复核和家庭申诉有关"]
+                if is_tech_governance
+                else [f"知道{story_context['core_phenomenon']}与当前目标、阻力和行动代价有关"]
+            ),
             "forbidden_knowledge": [
                 f"不知道{story_context['mystery_origin']}",
-                "不知道城市记录署最高层的真实动机",
+                "不知道城市数据治理中心最高层的真实责任分配" if is_tech_governance else f"不知道{style['institution_label']}背后的最终责任或原因",
             ],
         },
         "current_state": {
             "location_id": location_id,
             "faction_id": faction_id,
             "species_id": "",
-            "emotional_state": "警惕但被真相吸引",
-            "knowledge": [f"{story_context['core_phenomenon']}会在触发条件附近影响证词记忆"],
-            "active_goal": f"确认下一次{story_context['signal_or_trigger']}会改变哪一段记忆 {uniqueness_suffix}",
-            "current_desire": "查清自己遗失证词的原因",
-            "current_fear": "再次失去关键记忆并误导同伴",
+            "emotional_state": "冷静但承压，正在确认系统结论是否伤害具体的人" if is_tech_governance else "承压但保持判断，正在确认下一步行动边界",
+            "knowledge": (
+                [f"{story_context['core_phenomenon']}会通过模型日志和人工复核路径影响公共服务判断"]
+                if is_tech_governance
+                else [f"{story_context['core_phenomenon']}会在明确触发条件附近改变人物选择或行动成本"]
+            ),
+            "active_goal": (
+                f"确认{story_context['signal_or_trigger']}背后的数据来源、责任主体和人工复核路径 {uniqueness_suffix}"
+                if is_tech_governance
+                else f"确认下一次{story_context['signal_or_trigger']}会如何改变行动边界 {uniqueness_suffix}"
+            ),
+            "current_desire": "让受影响者得到可解释、可申诉的修正结果" if is_tech_governance else style["character_goal"],
+            "current_fear": "系统以效率为名继续扩大误判并抹平个体差异" if is_tech_governance else style["character_fear"],
             "resources": [story_context["record_object"]],
-            "secrets": [f"曾隐瞒一次{story_context['signal_or_trigger']}后的失忆"],
+            "secrets": (
+                [f"曾经低估{story_context['signal_or_trigger']}对家庭申诉路径的影响"]
+                if is_tech_governance
+                else [style["character_secret"]]
+            ),
         },
         "arc_state": {
-            "current_arc": "从旁观证词者转向主动承担真相代价",
-            "starting_point": "只愿提供记录，不愿亲自卷入调查",
-            "pressure": "越接近真相，越可能失去证明真相所需的记忆",
-            "inner_conflict": "想要真相，但害怕真相必须用记忆交换",
-            "next_possible_change": "愿意与另一名主角建立有条件合作",
-            "possible_direction": "逐渐学会把个人恐惧转化为调查边界",
+            "current_arc": "从系统执行者转向主动承担公共责任" if is_tech_governance else style["character_current_arc"],
+            "starting_point": "相信流程足够可靠，却开始看见流程外的人" if is_tech_governance else style["character_starting_point"],
+            "pressure": "越接近责任链，越必须承认自己也曾参与系统默认选择" if is_tech_governance else style["character_pressure"],
+            "inner_conflict": "既相信技术能改善公共服务，又必须质疑技术被谁用来省略人的处境" if is_tech_governance else style["character_inner_conflict"],
+            "next_possible_change": "愿意把内部审计结果交给受影响者共同复核" if is_tech_governance else "愿意与另一名主角建立有条件合作",
+            "possible_direction": "逐渐学会把专业能力转化为可被公众理解的责任说明" if is_tech_governance else style["character_possible_direction"],
             "locked_future_events": [],
         },
         "relationship_refs": [],
@@ -948,8 +1715,62 @@ def _mock_cd_role_function_needs(
     ]
 
 
+def _preferred_chapter_component_ids(module_id: str, style_label: str, premise_phrase: str) -> list[str]:
+    text = f"{style_label} {premise_phrase}"
+    if style_label == "科技治理" or _is_technology_governance_text(text):
+        return {
+            "chapter_function": ["chapter_world_setup", "chapter_inciting_push"],
+            "reader_emotion": ["emotion_curiosity", "emotion_expectation"],
+            "character_desire": ["desire_confirm_responsibility_boundary", "desire_seek_truth"],
+            "character_arc": ["arc_observer_to_actor"],
+            "conflict": [
+                "conflict_person_vs_algorithmic_system",
+                "conflict_public_efficiency_vs_individual_dignity",
+                "conflict_pressure_growth",
+            ],
+            "information_release": ["info_audit_chain", "info_partial_truth"],
+            "style_pacing": ["style_rational_warm", "style_social_issue_tension"],
+        }.get(module_id, [])
+    if style_label == "唐代传奇":
+        return {
+            "chapter_function": ["chapter_world_setup", "chapter_inciting_push"],
+            "reader_emotion": ["emotion_curiosity", "emotion_expectation"],
+            "character_desire": ["desire_seek_truth"],
+            "character_arc": ["arc_observer_to_actor"],
+            "conflict": ["conflict_pressure_growth", "conflict_person_vs_institution"],
+            "information_release": ["info_partial_truth"],
+            "style_pacing": ["style_social_issue_tension", "style_slow_suspense"],
+        }.get(module_id, [])
+    return {
+        "chapter_function": ["chapter_world_setup", "chapter_character_establish"],
+        "reader_emotion": ["emotion_curiosity", "emotion_tension"],
+        "character_desire": ["desire_seek_truth"],
+        "character_arc": ["arc_observer_to_actor"],
+        "conflict": ["conflict_person_vs_institution", "conflict_person_vs_unknown"],
+        "information_release": ["info_partial_truth"],
+        "style_pacing": ["style_slow_suspense"],
+    }.get(module_id, [])
+
+
+def _select_chapter_component_ids(module_id: str, allowed_components: list, style_label: str, premise_phrase: str) -> list[str]:
+    allowed_ids = [
+        component.get("component_id")
+        for component in allowed_components
+        if isinstance(component, dict) and component.get("component_id")
+    ]
+    preferred = [
+        component_id
+        for component_id in _preferred_chapter_component_ids(module_id, style_label, premise_phrase)
+        if component_id in allowed_ids
+    ]
+    fallback = [component_id for component_id in allowed_ids if component_id not in preferred]
+    return (preferred + fallback)[:2]
+
+
 def build_mock_chapter_framework(schema_hint: dict) -> dict:
     context = schema_hint.get("context") or {}
+    story_context = project_story_context(context)
+    style_label = story_context["style"].get("genre_label") or ""
     vocabulary = context.get("component_vocabulary") or {}
     chapter_modules = vocabulary.get("chapter_modules") or []
     premise_phrase = _premise_phrase(
@@ -962,11 +1783,7 @@ def build_mock_chapter_framework(schema_hint: dict) -> dict:
             continue
         module_id = module.get("module_id") or ""
         allowed_components = module.get("allowed_components") or []
-        component_ids = [
-            component.get("component_id")
-            for component in allowed_components
-            if isinstance(component, dict) and component.get("component_id")
-        ][:2]
+        component_ids = _select_chapter_component_ids(module_id, allowed_components, style_label, premise_phrase)
         if not module_id or not component_ids:
             continue
         selected_modules.append(
@@ -974,7 +1791,7 @@ def build_mock_chapter_framework(schema_hint: dict) -> dict:
                 "module_id": module_id,
                 "component_ids": component_ids,
                 "reason_summary": (
-                    f"Local mock selects vocabulary-valid components for {premise_phrase} "
+                    f"Local mock selects vocabulary-valid {style_label or 'story'} components for {premise_phrase} "
                     "and confirmed macro mapping."
                 ),
                 "confidence": 0.82,
@@ -982,11 +1799,11 @@ def build_mock_chapter_framework(schema_hint: dict) -> dict:
         )
     return {
         "chapter_function": "current_chapter_framework",
-        "chapter_goal": f"Shape the current chapter around {premise_phrase}.",
-        "reader_emotion_goal": ["curiosity", "pressure", "clarity"],
+        "chapter_goal": f"Shape the current chapter around {premise_phrase} with {style_label or 'current story'} logic.",
+        "reader_emotion_goal": ["curiosity", "responsibility", "clarity"] if style_label == "科技治理" else ["curiosity", "pressure", "clarity"],
         "main_conflict": (
             f"The current chapter must preserve {premise_phrase} while moving only "
-            "confirmed evidence into executable scene planning."
+            "confirmed evidence and topic-specific pressure into executable scene planning."
         ),
         "participating_character_ids": [],
         "relationship_focus": [],
@@ -1000,6 +1817,7 @@ def build_mock_chapter_framework(schema_hint: dict) -> dict:
 
 def build_mock_chapter_plan(schema_hint: dict) -> dict:
     story_context = project_story_context(schema_hint)
+    style = story_context["style"]
     premise_phrase = _premise_phrase(
         schema_hint,
         fallback=story_context["core_phenomenon"],
@@ -1020,7 +1838,7 @@ def build_mock_chapter_plan(schema_hint: dict) -> dict:
     story_goal = (
         schema_hint.get("story_goal")
         or current_draft.get("story_goal")
-        or f"讲述{story_context['core_phenomenon']}如何把线索、记忆和权力压力连接起来。"
+        or f"{style['chapter_story_goal']} ProjectStoryPremise: {premise_phrase}."
     )
     main_cast = schema_hint.get("confirmed_main_cast") or []
     supporting_roles = schema_hint.get("confirmed_supporting_roles") or []
@@ -1093,13 +1911,7 @@ def build_mock_chapter_plan(schema_hint: dict) -> dict:
         rotated = clean[start:] + clean[:start]
         return rotated[: max(1, int(width or 1))]
 
-    route_templates = [
-        (f"{story_context['core_phenomenon']}回声", f"建立{story_context['core_phenomenon']}、线索缺口和主角的初始压力。", "建立世界规则与调查入口。"),
-        ("线索裂缝", f"让第一条可靠线索把主角推向{story_context['investigation_object']}。", "触发主线行动。"),
-        ("记录背面", "扩大制度阻力，并让关系中的隐瞒开始产生代价。", "升级冲突和信息缺口。"),
-        ("边界选择", "让主角面对是否继续追查的阶段性选择。", "形成局部高潮。"),
-        ("余波未息", f"收束阶段性结果，同时保留{story_context['mystery_origin']}的未知缺口。", "形成新状态和后续悬念。"),
-    ]
+    route_templates = style["route_templates"]
     routes = []
     for chapter_index in range(1, chapter_count + 1):
         existing_route = route_by_index.get(chapter_index) or {}
@@ -1138,7 +1950,7 @@ def build_mock_chapter_plan(schema_hint: dict) -> dict:
                 "cd_role_function_need_hints": existing_route.get("cd_role_function_need_hints")
                 or _mock_cd_role_function_needs(cd_policy, chapter_index),
                 "expected_conflict_hint": existing_route.get("expected_conflict_hint")
-                or "调查真相的需要与记忆代价、城市权力压力发生冲突。",
+                or style["chapter_conflict"],
                 "detail_level": "light",
                 "future_lock_level": "low",
             }
@@ -1173,7 +1985,7 @@ def build_mock_chapter_plan(schema_hint: dict) -> dict:
         "chapter_framework_id": current_framework.get("chapter_framework_id")
         or f"chapter_fw_{current_chapter_index:03d}",
         "chapter_goal": current_brief.get("chapter_goal")
-        or f"让主角在{story_context['core_phenomenon']}规则边界内获得第一条可执行线索，并付出继续调查的心理压力。",
+        or style["chapter_goal"],
         "reader_emotion_goal": current_brief.get("reader_emotion_goal")
         or ["好奇", "不安", "期待"],
         "participating_character_ids": current_brief.get("participating_character_ids")
@@ -1200,25 +2012,25 @@ def build_mock_chapter_plan(schema_hint: dict) -> dict:
             {
                 "character_id": character_id,
                 "function_focus": "给主角提供可验证线索和关系压力。",
-                "relationship_pressure": "迫使主角在信任与记忆代价之间做出选择。",
-                "expected_chapter_effect": "增强本章调查的具体阻力。",
+                "relationship_pressure": "迫使主角在信任、目标推进和代价之间做出选择。",
+                "expected_chapter_effect": "增强本章主线推进的具体阻力。",
             }
             for character_id in current_supporting_ids
         ],
         "cd_role_function_needs": current_brief.get("cd_role_function_needs")
         or _mock_cd_role_function_needs(cd_policy, current_chapter_index),
         "main_conflict": current_brief.get("main_conflict")
-        or f"主角需要验证{story_context['investigation_object']}，但越接近证据越可能失去关键记忆。",
+        or style["chapter_conflict"],
         "character_desire_or_arc_focus": current_brief.get("character_desire_or_arc_focus")
         or [
             {
                 "character_id": character_id,
                 "desire": current_state.get("current_desire")
                 or current_state.get("active_goal")
-                or f"查清{story_context['core_phenomenon']}和线索缺口的关系",
+                or style["character_goal"],
                 "arc_focus": arc_state.get("current_arc")
                 or arc_state.get("next_possible_change")
-                or "从旁观记录者转向主动承担真相代价",
+                or style["character_current_arc"],
             }
             for character_id in current_main_cast_ids
         ],
@@ -1226,16 +2038,16 @@ def build_mock_chapter_plan(schema_hint: dict) -> dict:
         or hard_rule_statements[:3],
         "forbidden_moves": current_brief.get("forbidden_moves")
         or [
-            f"不要让角色提前知道{story_context['mystery_origin']}。",
-            "不要无代价恢复已失去的记忆。",
+            f"不要让角色提前知道{story_context['unknown_focus']}。",
+            "不要无代价撤销已发生的故事事实或人物选择。",
             "不要锁死未来章节的死亡、背叛、觉醒或结局。",
         ],
         "recommended_scene_count": current_brief.get("recommended_scene_count") or 3,
         "user_selected_scene_count": selected_scene_count,
         "summary_for_scene_generation": current_brief.get("summary_for_scene_generation")
         or (
-            f"{profile.get('identity') or story_context['protagonist_role']}围绕{story_context['investigation_object']}展开第一轮调查，"
-            "必须在确认线索和保护记忆之间做出当前章选择。"
+            f"{profile.get('identity') or story_context['protagonist_role']}围绕{story_context['investigation_object']}展开第一轮行动，"
+            f"{style['chapter_summary']}"
         ),
     }
     for key in ["chapter_goal", "main_conflict", "summary_for_scene_generation"]:
@@ -1286,12 +2098,12 @@ def build_mock_authorial_intent(schema_hint: dict) -> dict:
         "should_create_intent": True,
         "skip_reason": "",
         "intent_type": "delayed_reveal",
-        "summary": f"第 {scene_index} 幕保留{story_context['mystery_origin']}的延迟揭示，只让角色接触可追查线索，不提前解释全部真相。",
+        "summary": f"第 {scene_index} 幕保留{story_context['unknown_focus']}的延迟解释，只让角色接触当前可行动的信息，不提前锁死最终原因。",
         "constraint_strength": "soft_intent",
         "allowed_apparent_contradictions": [
             {
                 "contradiction_type": "delayed_explanation",
-                "summary": f"线索看似指向{story_context['core_phenomenon']}，但真实来源暂时延后解释。",
+                "summary": f"当前信息看似指向{story_context['core_phenomenon']}，但关键原因暂时延后解释。",
                 "scope": "scene",
                 "expected_gate_action": "warn",
                 "requires_narrative_debt": False,
@@ -1325,8 +2137,8 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
     regeneration_hint = schema_hint.get("regeneration_hint") or ""
     premise_phrase = _premise_phrase({"context": context}, story_context["core_phenomenon"])
 
-    chapter_goal = chapter.get("chapter_goal") or "建立当前章的调查入口。"
-    main_conflict = chapter.get("main_conflict") or "角色需要在真相和代价之间行动。"
+    chapter_goal = chapter.get("chapter_goal") or style["chapter_goal"]
+    main_conflict = chapter.get("main_conflict") or style["chapter_conflict"]
     location = _mock_scene_location(world_canvas)
     time_label = style["time_label"]
     modules = framework.get("modules") or []
@@ -1345,11 +2157,11 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
     ) or "主角"
 
     scene_goal = {
-        "summary": f"第 {scene_index} 幕让{first_character_name}进入当前章核心调查入口，并看见继续追查的代价。",
+        "summary": f"第 {scene_index} 幕让{first_character_name}进入当前章核心行动入口，并看见继续推进的代价。",
         "chapter_goal_alignment": chapter_goal,
         "main_conflict_alignment": main_conflict,
         "macro_component_alignment": framework.get("linked_macro_component_ids") or chapter.get("linked_macro_component_ids") or [],
-        "ending_position": "以一个可继续追查但不能立刻解释全部真相的线索收束。",
+        "ending_position": "以一个可继续推进但不能立刻解释最终原因的行动线收束。",
     }
     if regeneration_hint:
         scene_goal["regeneration_hint"] = regeneration_hint
@@ -1359,17 +2171,17 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
         "location_id": location.get("location_id") or "",
         "time_label": time_label,
         "constraints": [
-            "异常只能遵守已确认的世界硬规则。",
-            f"第一幕只打开调查入口，不解释{story_context['mystery_origin']}。",
+            "关键事件只能遵守已确认的世界硬规则。",
+            f"第一幕只打开行动入口，不解释{story_context['unknown_focus']}。",
         ],
         "available_objects": [
             story_context["record_object"],
-            "潮湿石阶",
+            "当前场景中的可行动物件",
             f"被遮盖的{story_context['signal_or_trigger']}记录",
         ],
         "forbidden_environment_moves": [
-            "不要让异常在未确认条件下随机触发。",
-            "不要凭空恢复或创造关键记忆。",
+            "不要让关键规则在未确认条件下随机触发。",
+            "不要凭空撤销或创造关键事实。",
         ],
     }
 
@@ -1383,9 +2195,9 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
             {
                 "character_id": character.get("character_id"),
                 "name": character.get("name") or f"角色{index}",
-                "action": current_state.get("active_goal") or "确认线索是否可信。",
+                "action": current_state.get("active_goal") or "确认当前推进点是否可信。",
                 "reaction": current_state.get("emotional_state") or "克制但紧张。",
-                "dialogue_focus": current_state.get("current_desire") or "把证据和代价说清楚。",
+                "dialogue_focus": current_state.get("current_desire") or "把行动依据和代价说清楚。",
                 "possible_state_change": arc_state.get("next_possible_change") or "从旁观转向有限行动。",
             }
         )
@@ -1394,10 +2206,10 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
             {
                 "character_id": first_character_id,
                 "name": first_character_name,
-                "action": "接近核心线索。",
+                "action": "接近核心推进点。",
                 "reaction": "警惕但愿意继续。",
-                "dialogue_focus": "确认线索来源。",
-                "possible_state_change": "接受调查代价。",
+                "dialogue_focus": "确认行动依据。",
+                "possible_state_change": "接受继续推进的代价。",
             }
         )
 
@@ -1450,8 +2262,8 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
             "item_id": "info_required_reveal_001",
             "type": "reveal",
             "content": (
-                f"只释放一条可执行线索：{story_context['record_object']}与"
-                f"{story_context['signal_or_trigger']}有关，但{story_context['mystery_origin']}仍保持未知。"
+                f"只释放一条可执行信息：{story_context['record_object']}与"
+                f"{story_context['signal_or_trigger']}有关，但{story_context['unknown_focus']}仍保持未知。"
             ),
             "source_node": "StoryInformationAssembler",
             "priority": "must_use",
@@ -1463,7 +2275,7 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
         {
             "item_id": "info_ending_beat_001",
             "type": "ending",
-            "content": "第一幕以角色决定暂时保留线索并继续调查收束。",
+            "content": "第一幕以角色决定暂时保留可执行信息并继续推进收束。",
             "source_node": "StoryTodoOrdering",
             "priority": "must_use",
             "related_character_ids": character_ids,
@@ -1479,7 +2291,7 @@ def build_mock_scene_information(schema_hint: dict) -> dict:
             "本幕把核心前提落到一次公开核验里，角色需要在旁人质疑前给出可见行动。",
             "核心前提不再只是解释，而变成一项会改变人物关系的现场选择。",
             "本幕让核心前提通过新的空间痕迹出现，角色必须承担错误判断的代价。",
-            "核心前提在本幕被压缩成一个具体问题：谁愿意把证据带到下一处现场。",
+            "核心前提在本幕被压缩成一个具体问题：谁愿意把可执行信息带到下一处现场。",
         ]
         items.append(
             {
@@ -1585,18 +2397,41 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
     style = story_context["style"]
     package = schema_hint.get("ordered_story_information_package") or {}
     approved_context = schema_hint.get("approved_context") or {}
+
+    def finalize_scene_payload(synopsis_value: str, prose_value: str) -> dict:
+        synopsis_text = _mock_normalize_scene_index_text(synopsis_value, scene_index)
+        prose = _mock_normalize_scene_index_text(prose_value, scene_index)
+        blocked_texts = [
+            str(item or "").strip()
+            for item in package.get("do_not_include") or []
+            if str(item or "").strip()
+        ]
+        for blocked in blocked_texts:
+            synopsis_text = synopsis_text.replace(blocked, "受保护的未知信息")
+            prose = prose.replace(blocked, "受保护的未知信息")
+        for reveal_text in package.get("required_reveals") or []:
+            reveal = str(reveal_text or "").strip()
+            if reveal and reveal not in prose:
+                prose = f"{prose}\n\n{reveal}"
+        return {
+            "synopsis": synopsis_text,
+            "prose_text": prose,
+        }
+
     writing_context = approved_context.get("scene_writing_context") or {}
     progression = approved_context.get("scene_progression_statement") or {}
-    required_terms = (
-        progression.get("required_prompt_terms")
-        or _premise_terms_from_payload(approved_context.get("project_story_premise") or {})
-        or _premise_terms_from_payload(writing_context.get("project_story_premise") or {})
-    )
+    premise_terms = _premise_terms_from_payload(approved_context.get("project_story_premise") or {})
+    if not premise_terms:
+        premise_terms = _premise_terms_from_payload(writing_context.get("project_story_premise") or {})
     required_terms = [
-        str(term or "").strip()
-        for term in required_terms
-        if str(term or "").strip()
+        *premise_terms,
+        *(story_context.get("prompt_terms") or []),
+        *(progression.get("required_prompt_terms") or []),
     ]
+    required_terms = _dedupe_prompt_terms(
+        [str(term or "").strip() for term in required_terms if str(term or "").strip()],
+        limit=24,
+    )
     premise_marker = (
         " / ".join(required_terms[:4])
         if required_terms
@@ -1641,13 +2476,21 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
                 f"乐工残谱暗合「{first_term}」，一纸夜禁文书却把「{second_term}」推到众人面前。",
                 f"古镜背面的细纹指向「{first_term}」，同伴带回的香囊又藏着「{second_term}」的线索。",
             ]
-        else:
+        elif style["genre_label"] == "悬疑":
             prompt_evidence_templates = [
                 f"缺页边缘留下「{first_term}」的残痕，另一份旁录把它和「{second_term}」并排放在同一时刻。",
                 f"复查表先露出「{first_term}」，随后的口供却把注意力推向「{second_term}」。",
                 f"现场留下的编号对上「{first_term}」，墙上新贴的纸条则提醒他们不能忽略「{second_term}」。",
                 f"一段被划掉的记录提到「{first_term}」，而保管员的补注把它转向「{second_term}」。",
                 f"旧档的折痕指向「{first_term}」，同伴带回的实物证据又把「{second_term}」放到桌面上。",
+            ]
+        else:
+            prompt_evidence_templates = [
+                f"当前行动先触及「{first_term}」，随后又把问题推向「{second_term}」。",
+                f"新的记录显示「{first_term}」并非孤立信息，它正在影响「{second_term}」。",
+                f"现场变化先落在「{first_term}」上，下一步必须确认它与「{second_term}」的关系。",
+                f"参与者先确认「{first_term}」的边界，再决定如何处理「{second_term}」。",
+                f"一次具体选择把「{first_term}」和「{second_term}」放到同一个后果链里。",
             ]
         prompt_evidence_sentence = prompt_evidence_templates[
             phrase_seed % len(prompt_evidence_templates)
@@ -1662,7 +2505,7 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
                 f"道观题壁提到「{term}」。",
                 f"古镜背光处浮出「{term}」。",
             ]
-        else:
+        elif style["genre_label"] == "悬疑":
             prompt_evidence_templates = [
                 f"缺页边缘留下「{term}」的残痕。",
                 f"复查表先露出「{term}」。",
@@ -1670,18 +2513,35 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
                 f"一段被划掉的记录提到「{term}」。",
                 f"旧档的折痕指向「{term}」。",
             ]
+        else:
+            prompt_evidence_templates = [
+                f"当前行动第一次明确触及「{term}」。",
+                f"新的上下文让「{term}」成为必须处理的现实问题。",
+                f"参与者把「{term}」从背景信息推进到行动边界。",
+                f"现场变化迫使众人重新确认「{term}」的影响范围。",
+                f"本幕把「{term}」转化为下一步可执行判断。",
+            ]
         prompt_evidence_sentence = prompt_evidence_templates[
             phrase_seed % len(prompt_evidence_templates)
         ]
     else:
         phenomenon = story_context["core_phenomenon"]
-        prompt_evidence_templates = [
-            f"缺页边缘把线索连回「{phenomenon}」。",
-            f"复查表让「{phenomenon}」第一次有了可核对的位置。",
-            f"现场编号把他们带回「{phenomenon}」的源头。",
-            f"被划掉的记录仍保留着「{phenomenon}」的轮廓。",
-            f"旧档折痕把新的问题推回「{phenomenon}」。",
-        ]
+        if style["genre_label"] == "悬疑":
+            prompt_evidence_templates = [
+                f"缺页边缘把线索连回「{phenomenon}」。",
+                f"复查表让「{phenomenon}」第一次有了可核对的位置。",
+                f"现场编号把他们带回「{phenomenon}」的源头。",
+                f"被划掉的记录仍保留着「{phenomenon}」的轮廓。",
+                f"旧档折痕把新的问题推回「{phenomenon}」。",
+            ]
+        else:
+            prompt_evidence_templates = [
+                f"当前行动把问题重新连回「{phenomenon}」。",
+                f"新的上下文让「{phenomenon}」第一次有了可推进的位置。",
+                f"现场变化把他们带回「{phenomenon}」的核心边界。",
+                f"既有记录仍保留着「{phenomenon}」的关键轮廓。",
+                f"本幕把新的问题推回「{phenomenon}」的后果链。",
+            ]
         prompt_evidence_sentence = prompt_evidence_templates[
             phrase_seed % len(prompt_evidence_templates)
         ]
@@ -1705,15 +2565,46 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
         if supporting_names
         else primary_name
     )
-    chapter_focuses = [
-        "源头发现",
-        "现场核验",
-        "关系代价",
-        "权力压力",
-        "移交后果",
-        "公开风险",
-        "私人记忆边界",
-    ]
+    if style["genre_label"] == "科技治理":
+        chapter_focuses = [
+            "责任链浮现",
+            "人工复核",
+            "家庭申诉",
+            "公共效率压力",
+            "审计版本移交",
+            "公开边界",
+            "个体尊严保护",
+        ]
+    elif style["genre_label"] == "科幻":
+        chapter_focuses = [
+            "未知信号出现",
+            "系统边界测试",
+            "团队风险分担",
+            "技术失控压力",
+            "任务路线调整",
+            "公开风险",
+            "认知边界",
+        ]
+    elif style["genre_label"] == "情感故事":
+        chapter_focuses = [
+            "关系裂缝",
+            "误解核验",
+            "靠近代价",
+            "旧承诺压力",
+            "情感移交",
+            "公开选择",
+            "自我边界",
+        ]
+    else:
+        chapter_focuses = [
+            "源头发现",
+            "现场核验",
+            "关系代价",
+            "权力压力",
+            "移交后果",
+            "公开风险",
+            "私人记忆边界",
+        ]
     chapter_focus = chapter_focuses[(max(1, chapter_index) - 1) % len(chapter_focuses)]
     opening = (
         package.get("opening_context")
@@ -1789,6 +2680,12 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
                 "reveal a structural change",
                 "add consequence information",
                 "add final chapter-level",
+                "resolve the whole-story central movement",
+                "deliver the promised ending",
+                "show the final consequence",
+                "show the final payoff",
+                "settle the principal character arc",
+                "resolve the core conflict",
                 "shift at least one",
                 "force at least one",
                 "make at least one",
@@ -1814,7 +2711,7 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
 
         scene_objective = story_safe(
             progression.get("scene_objective"),
-            f"{primary_name}用{chapter_focus}方式追踪第{chapter_index}章第{scene_index}幕的具体线索。",
+            f"{primary_name}用{chapter_focus}方式推进第{chapter_index}章第{scene_index}幕的具体行动。",
         )
         new_information = story_safe(
             progression.get("new_information"),
@@ -1833,8 +2730,32 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
         )
         difference = story_safe(
             progression.get("difference_from_previous_scene"),
-            f"{scene_label}通过新的{chapter_focus}后果改变调查路线。",
+            f"{scene_label}通过新的{chapter_focus}后果改变推进路线。",
         )
+        if style["genre_label"] not in {"悬疑", "唐代传奇"}:
+            synopsis = (
+                f"{chapter_title}的{scene_label}让{participant_line}，"
+                f"在{story_context['main_location']}围绕{story_context['record_object']}推进{chapter_focus}。"
+                f"{prompt_evidence_sentence}"
+            )
+            prose_text = "\n\n".join(
+                [
+                    (
+                        f"{scene_label}从{story_context['main_location']}的一次具体变化开始。"
+                        f"{participant_line}先确认{scene_objective}，没有把推断直接当作结论。"
+                        f"{prompt_evidence_sentence}"
+                    ),
+                    (
+                        f"{new_information} 这让{style['chapter_conflict']}从背景概念变成当场必须处理的问题。"
+                        f"{primary_name}把可立刻执行的部分、需要复核的部分和暂时不能公开的部分分开。"
+                    ),
+                    (
+                        f"{difference} {character_delta} 幕尾不宣布最终原因，只留下下一步可执行行动，"
+                        f"以及继续推进{story_context['core_phenomenon']}所必须承担的代价。"
+                    ),
+                ]
+            )
+            return finalize_scene_payload(synopsis, prose_text)
         chapter_movements = [
             {
                 "entry": "案桌上的缺页被重新排开，墨迹、折痕和缺口第一次连成可验证的顺序",
@@ -2135,11 +3056,7 @@ def build_mock_scene_write(schema_hint: dict) -> dict:
                 f"{difference}。{movement['pressure']}。幕尾留下的不是同一个问题，"
                 f"而是一项必须在下一幕承担的新后果。"
             )
-    payload = {
-        "synopsis": _mock_normalize_scene_index_text(synopsis, scene_index),
-        "prose_text": _mock_normalize_scene_index_text(prose_text, scene_index),
-    }
-    return payload
+    return finalize_scene_payload(synopsis, prose_text)
 
 
 def build_mock_scene_revision(schema_hint: dict) -> dict:

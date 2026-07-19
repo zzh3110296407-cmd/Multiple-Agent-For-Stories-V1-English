@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>后台检查修复与参与角色候选</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/scene-writing-background-v1.png")'>
+    <header class="topbar">
+      <div>
+        <p class="crumb">主页 / 工作台 / 场景写作 / 后台检查</p>
+        <h1>后台检查修复与参与角色候选</h1>
+      </div>
+      <div class="top-actions">
+        <span class="badge warning">需要处理</span>
+        <span class="badge">Scene Gate</span>
+        <span class="badge sage">普通模式</span>
+      </div>
+    </header>
+
+    <section class="workspace-grid">
+      <section class="panel tall">
+        <p class="eyebrow">SCENE GATE</p>
+        <h2>检查结果</h2>
+        <div class="stats-grid">
+          <div class="stat"><span>质量门</span><strong>需处理</strong></div>
+          <div class="stat"><span>连续性门</span><strong>通过</strong></div>
+          <div class="stat"><span>参与角色</span><strong>2 待确认</strong></div>
+          <div class="stat"><span>修复轮次</span><strong>1 / 3</strong></div>
+        </div>
+
+        <div class="split" style="margin-top: 16px;">
+          <article class="soft-panel">
+            <h3>后台修复摘要</h3>
+            <p class="muted">当前场景草稿可以保留，但需要确认两名临时参与角色，并接受一个非阻塞质量提醒。确认不会改写正文，只解除生成门控。</p>
+            <div class="timeline">
+              <div class="step current"><span class="step-dot">1</span><div><h4>接受提醒</h4><p class="muted">钟楼证词的时间点略模糊，可作为悬疑留白。</p></div></div>
+              <div class="step"><span class="step-dot">2</span><div><h4>确认候选</h4><p class="muted">确认是否把临时人物登记为 C/D 级角色。</p></div></div>
+              <div class="step"><span class="step-dot">3</span><div><h4>刷新门控</h4><p class="muted">处理完成后刷新后台检查状态。</p></div></div>
+            </div>
+          </article>
+          <article class="soft-panel">
+            <h3>修复操作</h3>
+            <div class="button-row">
+              <button class="button primary" id="acceptWarning" type="button">接受非阻塞提醒</button>
+              <button class="button" id="runRepair" type="button">运行安全修复</button>
+              <button class="button" id="refreshGate" type="button">刷新检查</button>
+            </div>
+            <p class="muted" id="repairNote" style="margin-top: 14px;">等待用户处理后台检查事项。</p>
+          </article>
+        </div>
+
+        <article class="soft-panel" style="margin-top: 14px;">
+          <h3>参与角色候选</h3>
+          <div class="table">
+            <div class="table-row"><strong>钟楼记录员</strong><span class="badge warning">C 候选</span><button class="button" data-candidate="钟楼记录员">确认</button></div>
+            <div class="table-row"><strong>码头送信人</strong><span class="badge">D 候选</span><button class="button" data-candidate="码头送信人">确认</button></div>
+            <div class="table-row"><strong>无名巡夜者</strong><span class="badge danger">低可信</span><button class="button danger" data-reject="无名巡夜者">拒绝</button></div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="panel tall">
+        <p class="eyebrow">BOUNDARY</p>
+        <h2>用户可见边界</h2>
+        <div class="item selected"><strong>不展示内部证据</strong><p>普通模式只展示可读摘要，不展示原始运行记录、隐藏推理或调试 payload。</p></div>
+        <div class="item"><strong>不自动创建角色</strong><p>参与候选必须确认后才进入角色系统。</p></div>
+        <div class="item"><strong>不直接改写正文</strong><p>修复只解除门控或生成建议，不静默修改场景正文。</p></div>
+        <details class="item">
+          <summary><strong>专家证据折叠</strong></summary>
+          <p class="muted">如启用专家模式，可在此查看 repair_run_signature、source_refs 和轮次摘要。</p>
+        </details>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const note = document.getElementById("repairNote");
+    document.getElementById("acceptWarning").addEventListener("click", () => note.textContent = "已接受非阻塞提醒，等待参与角色候选处理。");
+    document.getElementById("runRepair").addEventListener("click", () => note.textContent = "将调用 runSceneGateRepair，运行后台检查与安全修复。");
+    document.getElementById("refreshGate").addEventListener("click", () => note.textContent = "将刷新 getSceneGateReadiness 与参与角色选择状态。");
+    document.querySelectorAll("[data-candidate]").forEach((button) => button.addEventListener("click", () => note.textContent = `将确认参与角色候选：${button.dataset.candidate}`));
+    document.querySelectorAll("[data-reject]").forEach((button) => button.addEventListener("click", () => note.textContent = `将拒绝参与角色候选：${button.dataset.reject}`));
+  </script>
+</body>
+</html>

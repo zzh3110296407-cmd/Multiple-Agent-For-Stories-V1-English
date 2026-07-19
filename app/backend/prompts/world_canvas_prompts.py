@@ -23,6 +23,39 @@ special_rules_summary, hard_rules, soft_rules, unknown_rules, logic_conflicts,
 user_confirmation_needed, locations, factions, species, source_story_idea,
 latest_user_prompt, version_id.
 
+Return one complete top-level object. Never return world_structure, a rule object,
+or any other nested object by itself. Use this exact top-level shape:
+{
+  "world_canvas_id": "world_canvas_draft",
+  "project_id": "active_project",
+  "status": "draft",
+  "story_direction": "Chinese story direction grounded in the user premise",
+  "scope": "Chinese world scope",
+  "tone": "Chinese tone",
+  "world_structure": {
+    "structure_id": "structure_root_001",
+    "name": "Chinese world name",
+    "structure_type": "single_region",
+    "summary": "Chinese structural summary",
+    "children": []
+  },
+  "history_summary": "Chinese history summary",
+  "geography_summary": "Chinese geography summary",
+  "culture_summary": "Chinese culture summary",
+  "special_rules_summary": "Chinese special-rule summary",
+  "hard_rules": [],
+  "soft_rules": [],
+  "unknown_rules": [],
+  "logic_conflicts": [],
+  "user_confirmation_needed": [],
+  "locations": [],
+  "factions": [],
+  "species": [],
+  "source_story_idea": "",
+  "latest_user_prompt": "",
+  "version_id": "version_world_canvas_001"
+}
+
 world_structure must be an object:
 {
   "structure_id": "structure_root_001",
@@ -85,6 +118,8 @@ Do not use demo, template, or previous example story content unless it appears i
 Preserve explicit premise markers and distinctive premise terms in story-facing fields.
 Keep the canvas compact. Prefer 3-5 hard rules, 2-5 soft rules, 1-3 unknown rule gaps, and only real logic conflicts.
 The returned JSON must be usable as the confirmed world fact base after user review.
+Do not output only a nested object. Fill scope, tone, world structure, history,
+geography, culture, special rules, and concrete hard/soft rules from this premise.
 """
 
 

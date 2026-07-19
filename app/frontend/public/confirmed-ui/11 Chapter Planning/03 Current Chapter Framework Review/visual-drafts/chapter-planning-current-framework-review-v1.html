@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 当前章 Framework 审阅 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(252, 247, 236, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(238, 228, 210, 0.72);
+      --ink: #27312b;
+      --muted: #746a60;
+      --quiet: #9a8c7d;
+      --line: rgba(116, 92, 66, 0.2);
+      --line-strong: rgba(116, 92, 66, 0.32);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.91), rgba(236, 231, 220, 0.58) 47%, rgba(236, 231, 220, 0.15)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.34), rgba(176, 138, 107, 0.11));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 192px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .module-button,
+    .tab-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .module-button:hover,
+    .tab-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 123, 104, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 520px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 344px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 26px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .summary-grid {
+      min-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-height: 62px;
+      padding: 10px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 8px;
+      color: #3c4039;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .review-body {
+      min-height: 0;
+      padding: 22px 28px 18px;
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 22px;
+      overflow: hidden;
+    }
+
+    .module-list {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .module-button {
+      width: 100%;
+      min-height: auto;
+      padding: 14px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: none;
+    }
+
+    .module-button.active {
+      border-color: rgba(111, 126, 131, 0.42);
+      background: rgba(239, 244, 242, 0.82);
+      color: var(--blue-gray-deep);
+      box-shadow: 0 14px 30px rgba(75, 55, 34, 0.1);
+    }
+
+    .module-button strong {
+      display: block;
+      color: inherit;
+      font-size: 14px;
+      line-height: 1.3;
+      font-weight: 900;
+    }
+
+    .module-button span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+      font-weight: 520;
+    }
+
+    .review-canvas {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .tab-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.14);
+      background: rgba(255, 252, 244, 0.38);
+    }
+
+    .tab-button {
+      flex: 1;
+      min-height: 38px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+    }
+
+    .tab-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 12px 26px rgba(86, 98, 79, 0.18);
+    }
+
+    .detail-panel {
+      min-height: 0;
+      overflow: auto;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 86% 12%, rgba(200, 168, 104, 0.1), transparent 34%),
+        rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      padding: 18px;
+    }
+
+    .panel-section {
+      display: none;
+    }
+
+    .panel-section.active {
+      display: block;
+    }
+
+    .skeleton-card {
+      padding: 18px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(250, 244, 230, 0.54);
+    }
+
+    .skeleton-card h3 {
+      margin: 0;
+      color: #343932;
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .skeleton-card p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 520;
+    }
+
+    .beat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .beat {
+      min-height: 132px;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .beat span {
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .beat strong {
+      display: block;
+      margin-top: 8px;
+      color: #3d4039;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .beat p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .reason-card {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.2);
+      background: rgba(239, 244, 242, 0.58);
+    }
+
+    .reason-card strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .reason-card p {
+      margin: 8px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .component-card,
+    .reference-card,
+    .warning-card {
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .component-card strong,
+    .reference-card strong,
+    .warning-card strong {
+      display: block;
+      color: #3d4039;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .component-card span,
+    .reference-card span,
+    .warning-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .reference-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .warning-card {
+      border-color: rgba(180, 138, 120, 0.28);
+      background: rgba(255, 246, 236, 0.62);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(142, 103, 91, 0.31);
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .ready-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(111, 123, 104, 0.13);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .context-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .context-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .context-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .context-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .side-note {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(200, 168, 104, 0.28);
+      background:
+        radial-gradient(circle at 85% 20%, rgba(200, 168, 104, 0.14), transparent 40%),
+        rgba(255, 249, 235, 0.58);
+    }
+
+    .side-note strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .side-note p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .review-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 94px;
+      }
+
+      .summary-grid,
+      .beat-grid,
+      .reference-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .review-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .summary-grid,
+      .beat-grid,
+      .component-grid,
+      .reference-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回总览</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 当前章框架</div>
+      <div class="model-pill"><span class="status-dot"></span>框架已准备</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>审阅当前章的主骨架、模块、构建理由和素材引用，确认它能承接上一章并进入章节路线生成。</p>
+      </div>
+
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">前提</button>
+        <button class="stage-button active" type="button">框架</button>
+        <button class="stage-button" type="button">路线</button>
+        <button class="stage-button" type="button">场景数</button>
+        <button class="stage-button" type="button">确认</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">当前章 Framework</p>
+            <h2>第 3 章 · 钟楼证词</h2>
+            <p class="hint">构建结果已生成，当前页只审阅结构和引用，不写正文。</p>
+          </div>
+          <div class="summary-grid" aria-label="框架摘要">
+            <div class="summary-item"><span>构建模式</span><strong>承接优先</strong></div>
+            <div class="summary-item"><span>章节</span><strong>3 / 12</strong></div>
+            <div class="summary-item"><span>宏观结构</span><strong>线索加压</strong></div>
+            <div class="summary-item"><span>上下文</span><strong>已生成</strong></div>
+            <div class="summary-item"><span>记忆包</span><strong>可用</strong></div>
+          </div>
+        </div>
+
+        <div class="review-body">
+          <nav class="module-list" aria-label="当前章模块">
+            <button class="module-button active" type="button" data-module="clue">
+              <strong>线索回收</strong>
+              <span>火漆印章、晚宴证词、港口旧账。</span>
+            </button>
+            <button class="module-button" type="button" data-module="pressure">
+              <strong>阵营压力</strong>
+              <span>旧贵族与商会互相试探。</span>
+            </button>
+            <button class="module-button" type="button" data-module="cast">
+              <strong>角色分歧</strong>
+              <span>主角团对公开证据产生分裂。</span>
+            </button>
+            <button class="module-button" type="button" data-module="turn">
+              <strong>章节转折</strong>
+              <span>钟楼证词指向一个错误见证人。</span>
+            </button>
+          </nav>
+
+          <section class="review-canvas">
+            <div class="tab-row" aria-label="审阅内容">
+              <button class="tab-button active" type="button" data-tab="skeleton">主骨架</button>
+              <button class="tab-button" type="button" data-tab="modules">模块</button>
+              <button class="tab-button" type="button" data-tab="references">引用</button>
+              <button class="tab-button" type="button" data-tab="warnings">提示</button>
+            </div>
+
+            <div class="detail-panel">
+              <section class="panel-section active" id="tab-skeleton">
+                <div class="skeleton-card">
+                  <h3 id="module-title">线索回收</h3>
+                  <p id="module-summary">本章让火漆印章与钟楼证词首次发生交叉，但不直接揭示幕后人物，重点制造“证据足够诱人但不够安全”的推进感。</p>
+                </div>
+                <div class="beat-grid">
+                  <article class="beat">
+                    <span>起点</span>
+                    <strong>晚宴后的半枚印章</strong>
+                    <p>主角团决定从印章来源入手，不公开证据。</p>
+                  </article>
+                  <article class="beat">
+                    <span>推进</span>
+                    <strong>钟楼证词出现矛盾</strong>
+                    <p>证词时间与港口巡逻记录无法完全吻合。</p>
+                  </article>
+                  <article class="beat">
+                    <span>压力</span>
+                    <strong>商会主动递出线索</strong>
+                    <p>线索看似有用，但会把调查方向推向旧贵族。</p>
+                  </article>
+                  <article class="beat">
+                    <span>收束</span>
+                    <strong>错误见证人浮出</strong>
+                    <p>章节末尾留下可进入下一章的反向疑点。</p>
+                  </article>
+                </div>
+                <div class="reason-card">
+                  <strong>构建理由</strong>
+                  <p id="module-reason">该模块被选中，是因为上一章留下了火漆印章但没有解释其归属；当前章需要让线索产生行动价值，同时保留足够的不确定性。</p>
+                </div>
+              </section>
+
+              <section class="panel-section" id="tab-modules">
+                <div class="skeleton-card">
+                  <h3>选中模块</h3>
+                  <p>当前章 Framework 由四个模块组成，模块之间按“线索出现 -> 阵营施压 -> 团队分歧 -> 反向转折”推进。</p>
+                </div>
+                <div class="component-grid">
+                  <article class="component-card"><strong>线索回收</strong><span>火漆印章 / 钟楼证词 / 港口旧账</span></article>
+                  <article class="component-card"><strong>阵营压力</strong><span>旧贵族试探 / 商会诱导 / 城市流言</span></article>
+                  <article class="component-card"><strong>角色分歧</strong><span>公开证据 / 暂缓行动 / 私下跟踪</span></article>
+                  <article class="component-card"><strong>章节转折</strong><span>错误见证人 / 反向疑点 / 下一章钩子</span></article>
+                </div>
+              </section>
+
+              <section class="panel-section" id="tab-references">
+                <div class="reference-grid">
+                  <article class="reference-card"><strong>世界事实</strong><span>港口城市存在低魔规则、潮汐禁区和钟楼巡夜制度。</span></article>
+                  <article class="reference-card"><strong>章节记忆</strong><span>上一章晚宴后取得半枚火漆印章，队伍没有公开。</span></article>
+                  <article class="reference-card"><strong>角色引用</strong><span>侦探型主角、贵族继承人、港口向导。</span></article>
+                  <article class="reference-card"><strong>关系引用</strong><span>主角团内部信任不足，贵族线与商会线互相牵制。</span></article>
+                </div>
+              </section>
+
+              <section class="panel-section" id="tab-warnings">
+                <article class="warning-card">
+                  <strong>证词来源需要保持模糊</strong>
+                  <span>当前章可以暴露证词矛盾，但不宜直接确认幕后人物。</span>
+                </article>
+                <article class="warning-card" style="margin-top: 12px;">
+                  <strong>角色分歧不能替代主线推进</strong>
+                  <span>内部冲突应服务于调查选择，而不是让章节停在争论中。</span>
+                </article>
+              </section>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note">当前章 Framework 已可用于生成章节路线。若结构不合适，可以刷新或重新构建。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button">刷新框架</button>
+            <button class="soft-button" type="button">重新构建</button>
+            <button class="primary-button" type="button">进入章节路线</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="上下文来源">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">上下文来源</p>
+            <h2>可用素材</h2>
+          </div>
+          <span class="ready-pill">已准备</span>
+        </div>
+
+        <div class="context-list">
+          <div class="context-item">
+            <strong><span class="mini-dot">✓</span>世界画布</strong>
+            <p>港口规则、钟楼制度、贵族与商会边界可引用。</p>
+          </div>
+          <div class="context-item">
+            <strong><span class="mini-dot">✓</span>章节记忆</strong>
+            <p>上一章结果与未解决线索已接入。</p>
+          </div>
+          <div class="context-item">
+            <strong><span class="mini-dot">✓</span>角色状态</strong>
+            <p>主角团动机、冲突倾向和可行动边界可用。</p>
+          </div>
+          <div class="context-item">
+            <strong><span class="mini-dot">✓</span>关系状态</strong>
+            <p>团队信任、阵营压力和利益牵制已整理。</p>
+          </div>
+        </div>
+
+        <div class="side-note">
+          <strong>审阅结论</strong>
+          <p>当前章框架可以承接上一章并支持后续路线生成；需要在章节路线中继续控制证词揭示速度。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const moduleData = {
+      clue: {
+        title: "线索回收",
+        summary: "本章让火漆印章与钟楼证词首次发生交叉，但不直接揭示幕后人物，重点制造“证据足够诱人但不够安全”的推进感。",
+        reason: "该模块被选中，是因为上一章留下了火漆印章但没有解释其归属；当前章需要让线索产生行动价值，同时保留足够的不确定性。"
+      },
+      pressure: {
+        title: "阵营压力",
+        summary: "旧贵族与港口商会都不直接下场，而是通过证人、流言和账本影响主角团的选择。",
+        reason: "该模块能把调查从单纯找线索推进到阵营博弈，避免章节只停留在信息收集。"
+      },
+      cast: {
+        title: "角色分歧",
+        summary: "主角团围绕是否公开证据产生不同判断，但分歧必须反过来推动调查路径选择。",
+        reason: "上一章已经种下信任问题，本章需要让角色关系承担真实后果，同时不压过主线。"
+      },
+      turn: {
+        title: "章节转折",
+        summary: "钟楼证词最终指向一个错误见证人，形成下一章继续追查的反向疑点。",
+        reason: "该转折能保留悬疑张力，使本章有推进但不提前揭开核心答案。"
+      }
+    };
+
+    document.querySelectorAll(".module-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".module-button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        const data = moduleData[button.dataset.module];
+        document.getElementById("module-title").textContent = data.title;
+        document.getElementById("module-summary").textContent = data.summary;
+        document.getElementById("module-reason").textContent = data.reason;
+      });
+    });
+
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".panel-section").forEach((section) => section.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(`tab-${button.dataset.tab}`).classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

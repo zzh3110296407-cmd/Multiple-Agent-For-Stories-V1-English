@@ -8,8 +8,10 @@ The open-source package contains the current runnable product surface:
 
 - FastAPI backend with JSON-first storage and optional PostgreSQL primary storage.
 - Vite/React product workbench with ordinary/expert operating modes.
+- The complete `confirmed-ui` page and static-asset set used by ordinary mode.
 - Model gateway and model runtime observability for Qwen/DeepSeek-compatible LLM calls.
 - Story setup, world canvas, character spine, chapter planning, scene writing, quality/continuity gates, final output, and plugin-output entry points.
+- Current runtime constraints for prompt-first setup, character visibility, world-rule timing, chapter archival, and next-chapter progression.
 - Story Analyzer module for long-form story analysis and framework extraction.
 - PostgreSQL schema prototypes, storage contracts, and database migration foundations.
 
@@ -68,11 +70,21 @@ copy .env.example .env
 docker compose up --build
 ```
 
+On Linux or macOS:
+
+```bash
+cd "<your clone path>"
+cp .env.example .env
+docker compose up --build
+```
+
 Then open:
 
 - Frontend: <http://localhost:3000>
 - Backend health through frontend proxy: <http://localhost:3000/health>
 - Backend health directly: <http://localhost:8000/health>
+
+Docker binds both services to local `127.0.0.1` by default, so they are not directly exposed to the LAN or public Internet. Set `MAS_FRONTEND_PORT` and `MAS_BACKEND_PORT` in `.env` to change the local ports. For remote deployment, place an authenticated HTTPS reverse proxy in front of the application and never publish backend port `8000` directly.
 
 ## Configure The Model
 
@@ -86,7 +98,21 @@ QWEN_MODEL_NAME=your-model-name
 DEEPSEEK_API_KEY=
 ```
 
+The model gateway uses a server-side allowlist:
+
+- `QWEN_BASE_URL` automatically becomes the trusted Qwen model host; remote endpoints must use HTTPS.
+- Add any other trusted model hosts to the comma-separated `MULTIPLE_AGENT_STORIES_MODEL_ENDPOINT_ALLOWLIST`.
+- Only `QWEN_API_KEY`, `DASHSCOPE_API_KEY`, and `DEEPSEEK_API_KEY` are accepted for their corresponding providers by default. Add any extra environment variable names explicitly to `MULTIPLE_AGENT_STORIES_MODEL_KEY_ENV_ALLOWLIST`.
+- Web requests cannot select an unapproved host or read an arbitrary environment variable, and model response redirects are not followed.
+
 The release template disables LangSmith tracing by default. If external tracing is enabled during development, do not publish private prompts, raw model responses, or API keys.
+
+## Security Boundaries
+
+- `POST /api/analyze-stories/imports` accepts at most 16 MiB by default. Adjust or lower it with `MULTIPLE_AGENT_STORIES_MAX_ANALYZE_STORIES_BODY_BYTES`.
+- Analyzer handoff files can only be imported from roots declared in `MULTIPLE_AGENT_STORIES_ANALYZER_OUTPUT_ROOTS`; separate multiple roots with semicolons. Relative paths are resolved under the first allowed root.
+- Docker allows `/workspace/app/data/analyzer_outputs` and `/workspace/app/Story Analyzer/data/handoff_exports` by default.
+- The current release is designed as a local single-user workbench. Multi-user or public deployments require authentication, authorization, rate limiting, and HTTPS.
 
 ## Docker Hub Image Names
 
@@ -188,5 +214,4 @@ Open <http://127.0.0.1:5173>.
 - Backend not connected: check `docker compose ps`, `.env`, and <http://localhost:8000/health>.
 - Model calls fail: verify the model key, base URL, model name, and network access.
 - Port conflict: stop the process using ports `3000` or `8000`, or edit `docker-compose.yml`.
-- Ordinary-mode iframe pages are missing: regenerate the package with design assets if those visual draft pages are needed.
 - Reset local Docker data: remove the Docker volumes only if you intentionally want to delete local story projects.

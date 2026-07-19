@@ -1,0 +1,1534 @@
+[
+  {
+    "step": "01",
+    "name": "设定入口",
+    "file": "<source-workspace>/UI Design/05 Page Records/08 Story Setup/01 Setup Entry/visual-drafts/story-setup-entry-v1.html",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "actions": [
+      {
+        "label": "切换交接目标到角色主轴",
+        "ok": true
+      },
+      {
+        "label": "点击生成设定草案",
+        "ok": true
+      }
+    ],
+    "desktop": {
+      "title": "故事设定入口 UI V1",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 934,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回项目",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "载入项目提示词",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "整理中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界画布",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "角色主轴",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "Framework",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "章节计划",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "草案审阅",
+        "补充信息",
+        "交接"
+      ]
+    },
+    "mid": {
+      "title": "故事设定入口 UI V1",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 802,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回项目",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "载入项目提示词",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成设定草案",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界画布",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "角色主轴",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "Framework",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "章节计划",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "草案审阅",
+        "补充信息",
+        "交接"
+      ]
+    },
+    "mobile": {
+      "title": "故事设定入口 UI V1",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 1844,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回项目",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "载入项目提示词",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成设定草案",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界画布",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "角色主轴",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "Framework",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "章节计划",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "草案审阅",
+        "补充信息",
+        "交接"
+      ]
+    }
+  },
+  {
+    "step": "02",
+    "name": "生成中",
+    "file": "<source-workspace>/UI Design/05 Page Records/08 Story Setup/02 Generating/visual-drafts/story-setup-generating-v1.html",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "actions": [
+      {
+        "label": "点击查看草案",
+        "ok": true
+      }
+    ],
+    "desktop": {
+      "title": "故事设定生成中 UI V1",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 934,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回设定",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "后台继续",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "查看草案",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "草案审阅",
+        "交接"
+      ]
+    },
+    "mid": {
+      "title": "故事设定生成中 UI V1",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 802,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回设定",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "后台继续",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "查看草案",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "草案审阅",
+        "交接"
+      ]
+    },
+    "mobile": {
+      "title": "故事设定生成中 UI V1",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 2434,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回设定",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "后台继续",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "查看草案",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "草案审阅",
+        "交接"
+      ]
+    }
+  },
+  {
+    "step": "03",
+    "name": "草案审阅",
+    "file": "<source-workspace>/UI Design/05 Page Records/08 Story Setup/03 Draft Review/visual-drafts/story-setup-draft-review-v1.html",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "actions": [
+      {
+        "label": "选择 Framework 草案",
+        "ok": false,
+        "reason": "selector_missing"
+      },
+      {
+        "label": "选择确认为交接草案",
+        "ok": false,
+        "reason": "selector_missing"
+      }
+    ],
+    "desktop": {
+      "title": "故事设定草案审阅 UI V1",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 1079,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回生成",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界画布\n世界画布建议\n港口城、潮汐禁区、行会秩序与旧贵族秘密。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "角色方向\n角色方向\n调查者、证词持有者、旧贵族压力与行会阻力。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "Framework\nFramework 建议\n从失踪线索进入规则裂缝，再推进真相暴露。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "章节路线\n章节路线建议\n晚宴缺口、钟楼证词、禁区调查与回收真相。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "请求修订",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "延后",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "拒绝",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "确认为交接草案",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界范围是否只限港口城？\n未回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是否已经有明确身份？\n待确认",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "草案审阅",
+        "交接"
+      ]
+    },
+    "mid": {
+      "title": "故事设定草案审阅 UI V1",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 1075,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回生成",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界画布\n世界画布建议\n港口城、潮汐禁区、行会秩序与旧贵族秘密。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "角色方向\n角色方向\n调查者、证词持有者、旧贵族压力与行会阻力。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "Framework\nFramework 建议\n从失踪线索进入规则裂缝，再推进真相暴露。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "章节路线\n章节路线建议\n晚宴缺口、钟楼证词、禁区调查与回收真相。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "请求修订",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "延后",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "拒绝",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "确认为交接草案",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界范围是否只限港口城？\n未回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是否已经有明确身份？\n待确认",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "草案审阅",
+        "交接"
+      ]
+    },
+    "mobile": {
+      "title": "故事设定草案审阅 UI V1",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 3513,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回生成",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界画布\n世界画布建议\n港口城、潮汐禁区、行会秩序与旧贵族秘密。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "角色方向\n角色方向\n调查者、证词持有者、旧贵族压力与行会阻力。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "Framework\nFramework 建议\n从失踪线索进入规则裂缝，再推进真相暴露。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "章节路线\n章节路线建议\n晚宴缺口、钟楼证词、禁区调查与回收真相。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "请求修订",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "延后",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "拒绝",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "确认为交接草案",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界范围是否只限港口城？\n未回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是否已经有明确身份？\n待确认",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "草案审阅",
+        "交接"
+      ]
+    }
+  },
+  {
+    "step": "04",
+    "name": "缺失信息处理",
+    "file": "<source-workspace>/UI Design/05 Page Records/08 Story Setup/04 Missing Information Handling/visual-drafts/story-setup-missing-info-v1.html",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "actions": [
+      {
+        "label": "填写问题回答",
+        "ok": true,
+        "details": {
+          "inputs": 1,
+          "optionButtons": 3
+        }
+      }
+    ],
+    "desktop": {
+      "title": "故事设定缺失信息处理 UI V1",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "horizontalOverflow": false,
+      "verticalOverflow": false,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界范围\n已保存\n故事范围是否只限港口城？\n影响世界画布范围、地理边界和章节路线。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角身份\n未回答\n主角是否已经有明确身份？\n影响角色方向、主角团初始化和调查动机。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "故事基调\n未回答\n整体基调更偏温暖还是冷峻？\n影响 Framework 节奏、场景密度和叙事压迫感。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂时只保留调查者方向",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是钟楼档案员",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是失忆晚宴幸存者",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂时跳过",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "回到草案审阅",
+          "disabled": true,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "补充信息",
+        "草案审阅"
+      ]
+    },
+    "mid": {
+      "title": "故事设定缺失信息处理 UI V1",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 768,
+      "horizontalOverflow": false,
+      "verticalOverflow": false,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界范围\n已保存\n故事范围是否只限港口城？\n影响世界画布范围、地理边界和章节路线。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角身份\n未回答\n主角是否已经有明确身份？\n影响角色方向、主角团初始化和调查动机。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "故事基调\n未回答\n整体基调更偏温暖还是冷峻？\n影响 Framework 节奏、场景密度和叙事压迫感。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂时只保留调查者方向",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是钟楼档案员",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是失忆晚宴幸存者",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂时跳过",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "回到草案审阅",
+          "disabled": true,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "补充信息",
+        "草案审阅"
+      ]
+    },
+    "mobile": {
+      "title": "故事设定缺失信息处理 UI V1",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 3028,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "设定入口",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "生成中",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "世界范围\n已保存\n故事范围是否只限港口城？\n影响世界画布范围、地理边界和章节路线。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角身份\n未回答\n主角是否已经有明确身份？\n影响角色方向、主角团初始化和调查动机。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "故事基调\n未回答\n整体基调更偏温暖还是冷峻？\n影响 Framework 节奏、场景密度和叙事压迫感。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂时只保留调查者方向",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是钟楼档案员",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "主角是失忆晚宴幸存者",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂时跳过",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "保存回答",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "回到草案审阅",
+          "disabled": true,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "设定入口",
+        "生成中",
+        "补充信息",
+        "草案审阅"
+      ]
+    }
+  },
+  {
+    "step": "05",
+    "name": "审查与决策",
+    "file": "<source-workspace>/UI Design/05 Page Records/08 Story Setup/05 Review And Decision/visual-drafts/story-setup-review-decision-v1.html",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "actions": [
+      {
+        "label": "选择确认交接",
+        "ok": true
+      },
+      {
+        "label": "记录决定",
+        "ok": true
+      },
+      {
+        "label": "进入交接准备",
+        "ok": true
+      }
+    ],
+    "desktop": {
+      "title": "故事设定审查与决策 UI V1",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 947,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "审查决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接准备",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "推荐\n确认为交接草案\n草案方向可进入下一步交接准备，下游工作台仍需确认正式内容。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "需要修改\n请求修订\n记录需要调整的方向，后续重新生成或返回前序补充。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂缓\n延后决定\n保留草案，不创建交接，稍后继续审查。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "放弃\n拒绝草案\n记录拒绝，不进入交接准备。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "重选",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "已记录",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "进入交接准备",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "草案审阅",
+        "补充信息",
+        "审查决策",
+        "交接准备"
+      ]
+    },
+    "mid": {
+      "title": "故事设定审查与决策 UI V1",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 943,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "审查决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接准备",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "推荐\n确认为交接草案\n草案方向可进入下一步交接准备，下游工作台仍需确认正式内容。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "需要修改\n请求修订\n记录需要调整的方向，后续重新生成或返回前序补充。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂缓\n延后决定\n保留草案，不创建交接，稍后继续审查。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "放弃\n拒绝草案\n记录拒绝，不进入交接准备。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "重选",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "已记录",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "进入交接准备",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "草案审阅",
+        "补充信息",
+        "审查决策",
+        "交接准备"
+      ]
+    },
+    "mobile": {
+      "title": "故事设定审查与决策 UI V1",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 2807,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "审查决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接准备",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "推荐\n确认为交接草案\n草案方向可进入下一步交接准备，下游工作台仍需确认正式内容。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "需要修改\n请求修订\n记录需要调整的方向，后续重新生成或返回前序补充。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "暂缓\n延后决定\n保留草案，不创建交接，稍后继续审查。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "放弃\n拒绝草案\n记录拒绝，不进入交接准备。",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "重选",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "已记录",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "进入交接准备",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "草案审阅",
+        "补充信息",
+        "审查决策",
+        "交接准备"
+      ]
+    }
+  },
+  {
+    "step": "06",
+    "name": "交接与初始化",
+    "file": "<source-workspace>/UI Design/05 Page Records/08 Story Setup/06 Handoff Initialization/visual-drafts/story-setup-handoff-initialization-v1.html",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "actions": [
+      {
+        "label": "创建交接包",
+        "ok": true
+      },
+      {
+        "label": "初始化工作台",
+        "ok": true
+      }
+    ],
+    "desktop": {
+      "title": "故事设定交接与初始化 UI V1",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 960,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "hidden",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "审查决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接初始化",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "重置演示",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "创建交接包",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "初始化工作台",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "进入世界画布",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "草案审阅",
+        "补充信息",
+        "审查决策",
+        "交接初始化"
+      ]
+    },
+    "mid": {
+      "title": "故事设定交接与初始化 UI V1",
+      "width": 1366,
+      "height": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 834,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "审查决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接初始化",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "重置演示",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "创建交接包",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "初始化工作台",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "进入世界画布",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "草案审阅",
+        "补充信息",
+        "审查决策",
+        "交接初始化"
+      ]
+    },
+    "mobile": {
+      "title": "故事设定交接与初始化 UI V1",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 3207,
+      "horizontalOverflow": false,
+      "verticalOverflow": true,
+      "bodyOverflow": "auto",
+      "oldAssumptions": false,
+      "visibleEnglishApiTerms": false,
+      "inputsWithoutLabels": [],
+      "buttons": [
+        {
+          "text": "返回决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "草案审阅",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "补充信息",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "审查决策",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "交接初始化",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "重置演示",
+          "disabled": false,
+          "aria": ""
+        },
+        {
+          "text": "创建交接包",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "初始化工作台",
+          "disabled": true,
+          "aria": ""
+        },
+        {
+          "text": "进入世界画布",
+          "disabled": false,
+          "aria": ""
+        }
+      ],
+      "stageButtons": [
+        "草案审阅",
+        "补充信息",
+        "审查决策",
+        "交接初始化"
+      ]
+    }
+  }
+]

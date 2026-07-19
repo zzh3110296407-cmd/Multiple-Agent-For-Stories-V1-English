@@ -1,0 +1,743 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新故事档案 - Project Creation V2</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: #f7f1e6;
+      --paper-deep: #e9ddbf;
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --ink: #302c28;
+      --muted: #7d7168;
+      --line: rgba(120, 95, 80, 0.18);
+      --white: rgba(255, 252, 244, 0.78);
+      --shadow: 0 28px 70px rgba(92, 70, 55, 0.18);
+      --soft-shadow: 0 12px 28px rgba(92, 70, 55, 0.12);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 12% 20%, rgba(255, 250, 239, 0.72), transparent 34%),
+        radial-gradient(circle at 88% 76%, rgba(180, 138, 120, 0.18), transparent 30%),
+        linear-gradient(135deg, #ece7dc 0%, #eee8db 45%, #e8dfcf 100%);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(90deg, rgba(80, 62, 48, 0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(80, 62, 48, 0.035) 1px, transparent 1px);
+      background-size: 34px 34px, 42px 42px;
+      pointer-events: none;
+    }
+
+    .page {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      padding: 50px 74px 48px;
+    }
+
+    .ambient-ledger {
+      position: absolute;
+      right: -46px;
+      bottom: -82px;
+      width: 620px;
+      height: 520px;
+      opacity: 0.24;
+      filter: blur(0.2px);
+      pointer-events: none;
+    }
+
+    .ambient-ledger::before,
+    .ambient-ledger::after {
+      content: "";
+      position: absolute;
+      top: 56px;
+      width: 292px;
+      height: 390px;
+      background: linear-gradient(135deg, rgba(247, 241, 230, 0.88), rgba(221, 207, 183, 0.64));
+      border: 1px solid rgba(180, 138, 120, 0.18);
+      box-shadow: 0 26px 62px rgba(80, 58, 46, 0.12);
+    }
+
+    .ambient-ledger::before {
+      left: 16px;
+      border-radius: 24px 8px 8px 24px;
+      transform: rotate(-6deg);
+    }
+
+    .ambient-ledger::after {
+      right: 24px;
+      border-radius: 8px 24px 24px 8px;
+      transform: rotate(5deg);
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 46px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .back {
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(247, 241, 230, 0.58);
+      color: #3e3834;
+      min-width: 112px;
+      height: 42px;
+      border-radius: 10px;
+      font-weight: 750;
+      letter-spacing: 0;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+    }
+
+    .crumb {
+      color: #83776e;
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .theme {
+      min-width: 176px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(247, 241, 230, 0.48);
+      display: grid;
+      place-items: center;
+      color: #5f524b;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .headline {
+      position: relative;
+      z-index: 2;
+      margin-top: 24px;
+      margin-left: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 54px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      color: #2f2d29;
+      font-weight: 880;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: #756a62;
+      font-size: 16px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 2;
+      margin-top: 30px;
+      height: calc(100vh - 230px);
+      min-height: 610px;
+      display: grid;
+      grid-template-columns: minmax(760px, 1120px);
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .book {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 0.92fr;
+      gap: 0;
+      min-height: 100%;
+      border-radius: 18px;
+      background:
+        linear-gradient(90deg, rgba(158, 128, 93, 0.05), transparent 48%, rgba(92, 68, 51, 0.075) 50%, transparent 53%),
+        linear-gradient(135deg, rgba(255, 252, 242, 0.86), rgba(242, 232, 211, 0.78));
+      border: 1px solid rgba(255, 255, 255, 0.66);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .book::before {
+      content: "";
+      position: absolute;
+      top: 26px;
+      bottom: 26px;
+      left: calc(52.1% - 1px);
+      width: 2px;
+      background: linear-gradient(180deg, transparent, rgba(119, 91, 70, 0.19), transparent);
+      box-shadow: 0 0 28px rgba(83, 62, 48, 0.14);
+      pointer-events: none;
+    }
+
+    .book::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 8% 10%, rgba(255, 255, 255, 0.42), transparent 24%),
+        radial-gradient(circle at 96% 94%, rgba(180, 138, 120, 0.1), transparent 28%);
+      pointer-events: none;
+    }
+
+    .left-page,
+    .right-page {
+      position: relative;
+      z-index: 1;
+      padding: 38px 42px 34px;
+    }
+
+    .section-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #796d63;
+      font-size: 13px;
+      font-weight: 780;
+      margin-bottom: 18px;
+    }
+
+    .section-kicker::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.72;
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.12);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 176px;
+      gap: 18px;
+    }
+
+    label {
+      display: block;
+      color: #4a443e;
+      font-size: 13px;
+      font-weight: 760;
+      margin-bottom: 10px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid rgba(134, 111, 90, 0.2);
+      outline: none;
+      background: rgba(255, 252, 245, 0.66);
+      color: #211d19;
+      caret-color: #211d19;
+      border-radius: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      font: inherit;
+      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(86, 74, 65, 0.62);
+    }
+
+    input {
+      height: 54px;
+      padding: 0 18px;
+      font-size: 17px;
+      font-weight: 720;
+    }
+
+    textarea {
+      min-height: 300px;
+      resize: none;
+      padding: 18px 20px;
+      line-height: 1.85;
+      font-size: 15px;
+      margin-top: 22px;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(180, 138, 120, 0.58);
+      background: rgba(255, 253, 249, 0.82);
+      box-shadow: 0 0 0 4px rgba(180, 138, 120, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    }
+
+    .language {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      height: 54px;
+      padding: 6px;
+      border: 1px solid rgba(134, 111, 90, 0.18);
+      border-radius: 12px;
+      background: rgba(255, 252, 245, 0.48);
+    }
+
+    .lang-option {
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: #776a61;
+      font-weight: 780;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .lang-option.active {
+      color: #332e29;
+      background: rgba(233, 221, 191, 0.88);
+      box-shadow: 0 8px 18px rgba(120, 89, 72, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .textarea-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-top: 24px;
+    }
+
+    .hint {
+      color: #8e8177;
+      font-size: 12px;
+      font-weight: 560;
+    }
+
+    .right-page {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .choice-stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .choice {
+      position: relative;
+      min-height: 114px;
+      text-align: left;
+      border: 1px solid rgba(134, 111, 90, 0.18);
+      border-radius: 14px;
+      background: rgba(255, 252, 245, 0.52);
+      padding: 20px 20px 18px;
+      cursor: pointer;
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .choice:hover {
+      transform: translateY(-2px);
+      border-color: rgba(180, 138, 120, 0.42);
+      box-shadow: 0 12px 28px rgba(92, 70, 55, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    }
+
+    .choice.active {
+      background: linear-gradient(135deg, rgba(247, 241, 230, 0.92), rgba(233, 221, 191, 0.72));
+      border-color: rgba(180, 138, 120, 0.66);
+      box-shadow: 0 16px 32px rgba(92, 70, 55, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.68);
+    }
+
+    .choice.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 18px;
+      bottom: 18px;
+      width: 5px;
+      border-radius: 0 5px 5px 0;
+      background: var(--accent);
+      opacity: 0.88;
+    }
+
+    .choice-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .choice-title span:last-child {
+      font-size: 12px;
+      color: #8c7d73;
+      font-weight: 760;
+    }
+
+    .choice p {
+      margin: 14px 0 0;
+      color: #7a6f66;
+      line-height: 1.65;
+      font-size: 13px;
+      font-weight: 540;
+    }
+
+    .status-card {
+      margin-top: 22px;
+      border-radius: 14px;
+      border: 1px solid rgba(134, 111, 90, 0.16);
+      background: rgba(255, 252, 245, 0.38);
+      padding: 18px 18px 16px;
+    }
+
+    .status-card h3 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: #574c44;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 9px 0;
+      color: #81746b;
+      font-size: 12px;
+      border-top: 1px solid rgba(134, 111, 90, 0.08);
+    }
+
+    .status-row:first-of-type {
+      border-top: 0;
+    }
+
+    .status-row strong {
+      color: #3f3933;
+      font-size: 12px;
+      font-weight: 820;
+      text-align: right;
+    }
+
+    .flow-state {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .flow-state span {
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: rgba(255, 252, 245, 0.48);
+      color: #8a7e74;
+      font-size: 11px;
+      font-weight: 760;
+      border: 1px solid rgba(134, 111, 90, 0.09);
+    }
+
+    .flow-state span.active {
+      color: #5e463f;
+      background: rgba(233, 221, 191, 0.72);
+      border-color: rgba(180, 138, 120, 0.24);
+    }
+
+    .right-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .primary {
+      width: 100%;
+      height: 58px;
+      border: 0;
+      border-radius: 12px;
+      color: #fffaf3;
+      background: linear-gradient(135deg, #9b7165, #7d5a51);
+      box-shadow: 0 18px 36px rgba(100, 68, 58, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      font-size: 16px;
+      font-weight: 860;
+      cursor: pointer;
+      transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+    }
+
+    .primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 42px rgba(100, 68, 58, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .primary:disabled {
+      cursor: not-allowed;
+      opacity: 0.42;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .message {
+      min-height: 18px;
+      color: #80665d;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100vh;
+        padding: 28px 20px;
+      }
+
+      .topbar {
+        height: auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px 12px;
+        align-items: center;
+      }
+
+      .top-left {
+        display: contents;
+      }
+
+      .back {
+        grid-column: 1;
+        width: 112px;
+      }
+
+      .theme {
+        grid-column: 2;
+        min-width: 176px;
+      }
+
+      .crumb {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        white-space: normal;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+
+      .book {
+        grid-template-columns: 1fr;
+      }
+
+      .book::before {
+        display: none;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="ambient-ledger" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="top-left">
+        <button class="back" type="button">返回主页</button>
+        <div class="crumb">主页 / 新创作 / 项目创建</div>
+      </div>
+    </header>
+
+    <section class="headline">
+      <h1>新故事档案</h1>
+      <div class="subtitle">为新的故事留下一页干净的扉页，之后再进入故事设定、世界画布与角色主轴。</div>
+    </section>
+
+    <section class="workspace" aria-label="Project Creation V1">
+      <div class="book">
+        <section class="left-page">
+          <div class="section-kicker">档案信息</div>
+
+          <div class="form-grid">
+            <div>
+              <label for="project-title">项目名称</label>
+              <input id="project-title" value="" placeholder="未命名故事" autocomplete="off" />
+            </div>
+            <div>
+              <label>语言</label>
+              <div class="language" aria-label="语言选择">
+                <button class="lang-option active" type="button" data-lang="zh">中文</button>
+                <button class="lang-option" type="button" data-lang="en">English</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="textarea-head">
+            <label for="story-prompt">初始构想</label>
+            <div class="hint">可留空</div>
+          </div>
+          <textarea id="story-prompt" placeholder="例如：写下题材、世界范围、主角、核心冲突、篇幅和你已经确定的故事规则。"></textarea>
+        </section>
+
+        <aside class="right-page">
+          <div class="section-kicker">创作起点</div>
+
+          <div class="choice-stack">
+            <button class="choice active" type="button" data-mode="blank">
+              <div class="choice-title">
+                <span>空白故事</span>
+                <span>无预设</span>
+              </div>
+              <p>只建立项目档案，不预设故事方向。之后由用户在故事设定和世界画布中逐步补充。</p>
+            </button>
+
+            <button class="choice" type="button" data-mode="prompt">
+              <div class="choice-title">
+                <span>从构想开始</span>
+                <span>整理构想</span>
+              </div>
+              <p>带着初始构想进入故事设定，让系统先整理题材、范围、基调和待确认问题。</p>
+            </button>
+          </div>
+
+          <div class="status-card" aria-label="当前创建状态">
+            <h3>当前将创建</h3>
+            <div class="status-row">
+              <span>模式</span>
+              <strong id="mode-text">空白故事</strong>
+            </div>
+            <div class="status-row">
+              <span>语言</span>
+              <strong id="language-text">中文</strong>
+            </div>
+            <div class="status-row">
+              <span>下一步</span>
+              <strong id="next-text">当前项目</strong>
+            </div>
+            <div class="flow-state" aria-label="创建流程状态">
+              <span class="active" data-flow="request">请求</span>
+              <span data-flow="draft">草案</span>
+              <span data-flow="confirm">确认</span>
+            </div>
+          </div>
+
+          <div class="right-actions">
+            <button class="primary" id="create-button" type="button">创建空白档案</button>
+            <div class="message" id="message"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const titleInput = document.querySelector("#project-title");
+    const promptInput = document.querySelector("#story-prompt");
+    const choices = [...document.querySelectorAll(".choice")];
+    const langOptions = [...document.querySelectorAll(".lang-option")];
+    const createButton = document.querySelector("#create-button");
+    const modeText = document.querySelector("#mode-text");
+    const nextText = document.querySelector("#next-text");
+    const languageText = document.querySelector("#language-text");
+    const message = document.querySelector("#message");
+    const flowStates = [...document.querySelectorAll(".flow-state span")];
+    let mode = "blank";
+    let language = "zh";
+    let flowState = "request";
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      choices.forEach((choice) => choice.classList.toggle("active", choice.dataset.mode === mode));
+      updateState();
+    }
+
+    function setLanguage(nextLanguage) {
+      language = nextLanguage;
+      langOptions.forEach((option) => option.classList.toggle("active", option.dataset.lang === language));
+      titleInput.placeholder = language === "zh" ? "未命名故事" : "Untitled Story";
+      promptInput.placeholder = language === "zh"
+        ? "例如：写下题材、世界范围、主角、核心冲突、篇幅和你已经确定的故事规则。"
+        : "Example: A harbor city loses one shared memory every night, and the bells decide who can still remember the truth.";
+      updateState();
+    }
+
+    function setFlowState(nextState) {
+      flowState = nextState;
+      flowStates.forEach((item) => item.classList.toggle("active", item.dataset.flow === flowState));
+    }
+
+    function updateState() {
+      const titleReady = titleInput.value.trim().length > 0;
+      const hasPrompt = promptInput.value.trim().length > 0;
+      if (hasPrompt && mode === "blank") {
+        mode = "prompt";
+        choices.forEach((choice) => choice.classList.toggle("active", choice.dataset.mode === mode));
+      }
+
+      modeText.textContent = mode === "prompt" ? "从构想开始" : "空白故事";
+      languageText.textContent = language === "zh" ? "中文" : "English";
+      nextText.textContent = mode === "prompt" ? "故事设定" : "当前项目";
+      createButton.disabled = !titleReady;
+      createButton.textContent = !titleReady ? "创建" : mode === "prompt" ? "创建并整理设定" : "创建空白档案";
+      message.textContent = "";
+    }
+choices.forEach((choice) => {
+      choice.addEventListener("click", () => setMode(choice.dataset.mode));
+    });
+
+    langOptions.forEach((option) => {
+      option.addEventListener("click", () => setLanguage(option.dataset.lang));
+    });
+
+    promptInput.addEventListener("input", updateState);
+    titleInput.addEventListener("input", updateState);
+createButton.addEventListener("click", () => {
+      if (createButton.disabled) return;
+      setFlowState("draft");
+      message.textContent = mode === "prompt" ? "正在建立档案，并准备故事设定草案" : "正在建立空白故事档案";
+      createButton.textContent = "创建中";
+      setTimeout(() => {
+        setFlowState("confirm");
+        createButton.textContent = mode === "prompt" ? "进入故事设定" : "进入当前项目";
+        message.textContent = "项目草案已生成，等待确认";
+      }, 900);
+    });
+    setLanguage("zh");
+    updateState();
+  </script>
+</body>
+</html>

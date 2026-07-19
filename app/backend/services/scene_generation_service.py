@@ -76,6 +76,10 @@ from app.backend.services.character_prompt_fidelity_service import (
 from app.backend.services.prompt_anchor_classification_service import classify_prompt_anchor_values
 from app.backend.services.project_story_premise_service import FORBIDDEN_DEMO_DEFAULTS
 from app.backend.services.quality_check_service import QualityCheckService
+from app.backend.services.scene_character_visibility import (
+    character_visibility_aliases,
+    text_mentions_character,
+)
 from app.backend.services.scene_progress_service import (
     NEXT_READY_SCENE_STATUSES,
     SceneProgressService,
@@ -390,16 +394,27 @@ class SceneGenerationService:
             fallback=LOCAL_PROJECT_ID,
         )
 
-    def get_current_scene(self) -> SceneGenerationResponse:
-        scene = self._find_current_scene()
-        chapter_id = scene.chapter_id if scene else None
+    def get_current_scene(
+        self,
+        chapter_id: str | None = None,
+        scene_index: int | None = None,
+    ) -> SceneGenerationResponse:
+        scene = self._find_current_scene(
+            chapter_id=chapter_id,
+            scene_index=scene_index,
+        )
+        resolved_chapter_id = scene.chapter_id if scene else chapter_id
+        resolved_scene_index = scene.scene_index if scene else (scene_index or 1)
         return SceneGenerationResponse(
             success=scene is not None,
             scene=model_to_dict(scene) if scene else None,
             story_information_summary=self._story_information_summary(scene),
             quality_report=scene.quality_report if scene else None,
-            readiness=self.check_scene_generation_ready(),
-            progress=self.get_scene_progress(chapter_id),
+            readiness=self.check_scene_generation_ready(
+                chapter_id=resolved_chapter_id,
+                scene_index=resolved_scene_index,
+            ),
+            progress=self.get_scene_progress(resolved_chapter_id),
             scene_gate_pipeline=self._scene_gate_pipeline_from_scene(scene)
             if scene
             else None,
@@ -476,16 +491,35 @@ class SceneGenerationService:
     def regenerate_first_scene(
         self,
         regeneration_hint: str = "",
+        scene_id: str | None = None,
+        chapter_id: str | None = None,
+        scene_index: int | None = None,
     ) -> SceneGenerationResponse:
-        current_scene = self._find_current_scene()
+        current_scene = (
+            self._find_scene_by_id(scene_id)
+            if scene_id
+            else self._find_current_scene(
+                chapter_id=chapter_id,
+                scene_index=scene_index,
+            )
+        )
+        if scene_id and current_scene is None:
+            raise StorageError(
+                "SCENE_DRAFT_MISSING: Requested scene draft does not exist."
+            )
         if current_scene and current_scene.status in {"confirmed", "committed"}:
             raise StorageError(
                 "SCENE_ALREADY_CONFIRMED: Current scene is confirmed and cannot be regenerated in Milestone 7."
             )
-        chapter_id = current_scene.chapter_id if current_scene else None
+        resolved_chapter_id = current_scene.chapter_id if current_scene else chapter_id
+        resolved_scene_index = (
+            current_scene.scene_index
+            if current_scene
+            else int(scene_index or 1)
+        )
         return self._generate_scene_draft(
-            chapter_id=chapter_id,
-            scene_index=1,
+            chapter_id=resolved_chapter_id,
+            scene_index=resolved_scene_index,
             regeneration_hint=regeneration_hint.strip(),
         )
 
@@ -1226,6 +1260,7 @@ class SceneGenerationService:
 
         return {
             "project_id": self._current_project_id(),
+            "output_language": self._project_output_language(),
             "scene_index": scene_index,
             "scene_count": chapter.scene_count,
             "world_canvas": model_to_dict(world_canvas),
@@ -1259,6 +1294,21 @@ class SceneGenerationService:
             "tiered_character_context_package": character_context,
             **memory_context,
         }
+
+    def _project_output_language(self) -> str:
+        try:
+            project = self.store.read(self.project_file)
+        except Exception:
+            project = {}
+        language = str(
+            project.get("language")
+            or project.get("requested_language")
+            or project.get("requestedLanguage")
+            or "zh"
+        ).strip().lower()
+        if language.startswith("en"):
+            return "en"
+        return "zh"
 
     def _project_intent_summary(
         self,
@@ -1395,6 +1445,7 @@ class SceneGenerationService:
         return SceneWritingContext(
             project_id=project_id,
             chapter_id=chapter.chapter_id,
+            chapter_index=chapter.chapter_index,
             scene_id=scene_id,
             scene_index=scene_index,
             scene_count=chapter.scene_count,
@@ -1599,20 +1650,23 @@ class SceneGenerationService:
         *,
         prompt_terms: list[str],
     ) -> str:
-        term = prompt_terms[0] if prompt_terms else "the active project premise"
+        term = prompt_terms[0] if prompt_terms else "当前项目前提"
+        chapter_index = max(1, int(writing_context.chapter_index or 1))
         phase_templates = [
-            "Scene 1 opens the active premise by locating a first concrete clue tied to {term}.",
-            "Scene 2 tests the first clue through a different participant choice tied to {term}.",
-            "Scene 3 turns the investigation by exposing a cost or contradiction around {term}.",
-            "Scene 4 escalates the conflict through a consequence that changes participant pressure around {term}.",
-            "Scene 5 forces a chapter-level decision that carries {term} into the next story beat.",
+            "第 {chapter_index} 章第 1 幕通过一个和{term}有关的具体线索打开当前章节。",
+            "第 {chapter_index} 章第 2 幕用不同角色选择检验上一幕线索，并让{term}的压力更明确。",
+            "第 {chapter_index} 章第 3 幕揭示{term}背后的代价或矛盾，推动本章发生转向。",
+            "第 {chapter_index} 章第 4 幕用一个后果升级冲突，让角色围绕{term}承受更强压力。",
+            "第 {chapter_index} 章第 5 幕迫使角色作出章节级决定，并把{term}带入下一段故事。",
         ]
         index = max(1, int(writing_context.scene_index or 1))
         if index <= len(phase_templates):
-            return phase_templates[index - 1].format(term=term)
+            return phase_templates[index - 1].format(
+                chapter_index=chapter_index,
+                term=term,
+            )
         return (
-            f"Scene {index} advances a distinct consequence tied to {term} "
-            "without replaying earlier scene objectives."
+            f"第 {chapter_index} 章第 {index} 幕推进一个和{term}有关的新后果，避免重复前面幕的目标。"
         )
 
     def _is_generic_scene_objective(self, value: str) -> bool:
@@ -1658,11 +1712,14 @@ class SceneGenerationService:
     ) -> OrderedStoryInformationPackage:
         updated = OrderedStoryInformationPackage(**model_to_dict(ordered_package))
         progression_lines = [
-            progression.scene_objective,
-            progression.new_information,
-            progression.character_state_delta,
-            progression.conflict_turn,
-            progression.difference_from_previous_scene,
+            self._clean_scene_goal_text(progression.scene_objective, max_len=360),
+            self._clean_scene_goal_text(progression.new_information, max_len=300),
+            self._clean_scene_goal_text(progression.character_state_delta, max_len=300),
+            self._clean_scene_goal_text(progression.conflict_turn, max_len=300),
+            self._clean_scene_goal_text(
+                progression.difference_from_previous_scene,
+                max_len=300,
+            ),
         ]
         updated.scene_progression = self._unique_strings(
             [line for line in progression_lines if line]
@@ -2018,15 +2075,14 @@ class SceneGenerationService:
             ).strip()
             if summary:
                 return (
-                    f"{first_character_id or 'active_character'} changes stance from "
-                    f"the prior context instead of repeating it: {summary}"
+                    f"当前核心角色必须基于前文产生新的压力或选择，不能重复上一幕状态：{summary}"
                 )
         if first_character_id:
             return (
-                f"{first_character_id} must leave this scene with a new pressure, "
-                "choice, or knowledge boundary compared with the previous scene."
+                "当前核心角色在本幕结束时必须获得新的压力、选择或知识边界，"
+                "并且状态要明显区别于上一幕。"
             )
-        return "At least one active participant must leave this scene with a changed pressure or choice."
+        return "至少一名行动参与者必须在本幕结束时产生新的压力或选择。"
 
     def _difference_from_previous_scene(
         self,
@@ -2036,12 +2092,12 @@ class SceneGenerationService:
         previous = writing_context.previous_scene_summary.strip()
         if not previous:
             return (
-                "This is the first active scene in the chapter; establish a new "
-                "entry point without importing demo defaults or prior chapter endings."
+                "本章第一个有效行动场景从新的行动入口打开，角色只处理眼前可验证的变化，"
+                "不引入演示默认线索，也不复用前章结尾。"
             )
         return (
-            "Do not replay the previous confirmed scene. Previous scene summary: "
-            f"{previous[:360]} Current scene must advance: {scene_objective[:360]}"
+            "本幕不能复述上一幕已确认内容；需要把前文进展转化为新的现场行动。"
+            f"上一幕摘要：{previous[:360]} 本幕推进：{scene_objective[:360]}"
         )
 
     def _inspect_scene_progression(
@@ -2972,7 +3028,12 @@ class SceneGenerationService:
             raise StorageError(
                 "SCENE_ALREADY_CONFIRMED: Current scene is already committed and cannot be overwritten."
             )
-        if current_scene and scene_index != 1 and current_scene.status == "draft":
+        if (
+            current_scene
+            and scene_index != 1
+            and current_scene.status == "draft"
+            and not regeneration_hint.strip()
+        ):
             raise StorageError(
                 "SCENE_NEXT_NOT_READY: 下一幕草稿已存在，请先确认或处理该草稿。"
             )
@@ -3135,8 +3196,12 @@ class SceneGenerationService:
                 )
         else:
             if used_content_fallback:
-                memory_extraction = SceneMemoryExtraction(
-                    no_event_reason="Scene prose fallback is diagnostic-only; memory extraction skipped."
+                memory_extraction = self._fallback_memory_extraction(
+                    scene_id=scene_id,
+                    chapter=chapter,
+                    scene_index=scene_index,
+                    content=content,
+                    context=context,
                 )
             else:
                 memory_extraction = self._fallback_memory_extraction(
@@ -3224,45 +3289,6 @@ class SceneGenerationService:
             created_at=current_scene.created_at if current_scene else timestamp,
             updated_at=timestamp,
         )
-        if write_prose:
-            try:
-                quality_response = self.quality_check_service.check_scene_object(
-                    scene,
-                    context=approved_context,
-                    persist_scene=False,
-                )
-                quality_report = quality_response.embedded_report
-                if provider_fallback_reasons:
-                    quality_report = self._provider_failure_quality_report(
-                        stage="scene_generation",
-                        exc=ModelCallError("; ".join(provider_fallback_reasons)),
-                        existing_report=quality_report,
-                    )
-                scene = Scene(
-                    **{
-                        **model_to_dict(scene),
-                        "quality_report": model_to_dict(quality_report),
-                        "quality_report_id": quality_response.report.quality_report_id,
-                    }
-                )
-            except (ModelCallError, ModelJsonParseError) as exc:
-                provider_fallback_reasons.append(
-                    f"quality_check:{self._safe_composite_runtime_error(exc)}"
-                )
-                scene = Scene(
-                    **{
-                        **model_to_dict(scene),
-                        "quality_report": model_to_dict(
-                            self._provider_failure_quality_report(
-                                stage="scene_generation_quality_check",
-                                exc=ModelCallError(
-                                    "; ".join(provider_fallback_reasons)
-                                ),
-                                existing_report=scene.quality_report,
-                            )
-                        ),
-                    }
-                )
         if trace.progression_inspection is not None:
             scene = Scene(
                 **{
@@ -3299,7 +3325,7 @@ class SceneGenerationService:
         self,
         scene: Scene,
         *,
-        max_rounds: int = 3,
+        max_rounds: int = 1,
     ) -> tuple[Scene, SceneGatePipelineSummary]:
         scene = self._run_generation_gate_checks(scene)
         if self._scene_gate_provider_degraded(scene):
@@ -4205,9 +4231,14 @@ class SceneGenerationService:
             event_summary = [
                 {
                     **event,
-                    "participants": self._filter_visible_participants(
-                        event.get("participants") or [],
-                        visible_character_ids,
+                    "participants": self._unique_strings(
+                        [
+                            *self._filter_visible_participants(
+                                event.get("participants") or [],
+                                visible_character_ids,
+                            ),
+                            *visible_character_ids,
+                        ]
                     ),
                 }
                 for event in event_summary
@@ -4218,6 +4249,9 @@ class SceneGenerationService:
                 index=index,
                 scene_id=scene_id,
                 summary=summary,
+                context_character_ids=(
+                    visible_character_ids or context_character_ids
+                ),
             )
             for index, item in enumerate(
                 self._coerce_memory_extraction_items(
@@ -4229,18 +4263,28 @@ class SceneGenerationService:
             )
             if isinstance(item, dict)
         ]
-        relationship_changes = [
-            self._normalize_relationship_change_item(item, index, scene_id)
-            for index, item in enumerate(
-                self._coerce_memory_extraction_items(
-                    raw.get("relationship_changes"),
-                    string_field="summary",
-                    allow_string=False,
-                ),
-                start=1,
+        relationship_changes = []
+        known_relationship_ids = set(context_relationship_ids)
+        for index, item in enumerate(
+            self._coerce_memory_extraction_items(
+                raw.get("relationship_changes"),
+                string_field="summary",
+                allow_string=False,
+            ),
+            start=1,
+        ):
+            if not isinstance(item, dict):
+                continue
+            normalized_change = self._normalize_relationship_change_item(
+                item,
+                index,
+                scene_id,
             )
-            if isinstance(item, dict)
-        ]
+            relationship_id = str(
+                normalized_change.get("relationship_id") or ""
+            ).strip()
+            if relationship_id and relationship_id in known_relationship_ids:
+                relationship_changes.append(normalized_change)
         memory_records = [
             self._normalize_memory_record_item(
                 item,
@@ -4333,12 +4377,7 @@ class SceneGenerationService:
         visible: list[str] = []
         for character_id in candidate_ids:
             character = characters_by_id.get(character_id)
-            names = [
-                character_id,
-                character.name if character else "",
-                character.profile.identity if character else "",
-            ]
-            if any(name and str(name) in text for name in names):
+            if character and text_mentions_character(text, character):
                 visible.append(character_id)
         return self._unique_strings(visible)
 
@@ -4408,6 +4447,7 @@ class SceneGenerationService:
         index: int,
         scene_id: str,
         summary: str,
+        context_character_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         change = dict(item)
         character_id = str(change.get("character_id") or "").strip()
@@ -4424,6 +4464,15 @@ class SceneGenerationService:
             target_type = target_type or "scene"
             target_id = str(change.get("scene_id") or scene_id)
         target_type = target_type or "scene"
+
+        if target_type == "scene" and target_id == scene_id:
+            inferred_character_id = self._infer_character_state_change_target(
+                change,
+                context_character_ids or [],
+            )
+            if inferred_character_id:
+                target_type = "character"
+                target_id = inferred_character_id
 
         field = str(change.get("field") or change.get("path") or "").strip()
         before = dict(change.get("before") or {})
@@ -4459,6 +4508,65 @@ class SceneGenerationService:
                 or ("proposed" if change.get("requires_user_confirmation") else "confirmed")
             ),
         }
+
+    def _infer_character_state_change_target(
+        self,
+        change: dict[str, Any],
+        context_character_ids: list[str],
+    ) -> str:
+        candidate_ids = self._unique_strings(context_character_ids)
+        if not candidate_ids:
+            return ""
+        payload = json.dumps(change, ensure_ascii=False, sort_keys=True).casefold()
+        state_markers = (
+            "emotional_state",
+            "active_goal",
+            "current_desire",
+            "current_fear",
+            "knowledge",
+            "belief",
+            "emotion",
+            "resolve",
+            "decide",
+            "alert",
+            "fear",
+            "realize",
+            "\u60c5\u7eea",
+            "\u76ee\u6807",
+            "\u6b32\u671b",
+            "\u6050\u60e7",
+            "\u8ba4\u77e5",
+            "\u4fe1\u5ff5",
+            "\u51b3\u5fc3",
+            "\u51b3\u5b9a",
+            "\u8b66\u89c9",
+            "\u610f\u8bc6",
+        )
+        if not any(marker.casefold() in payload for marker in state_markers):
+            return ""
+
+        characters = self._read_confirmed_characters_by_ids(candidate_ids)
+        matched: list[Character] = []
+        for character in characters:
+            aliases = character_visibility_aliases(character)
+            if any(
+                alias and str(alias).casefold() in payload
+                for alias in aliases
+            ):
+                matched.append(character)
+        if len(matched) == 1:
+            return matched[0].character_id
+        if len(matched) > 1:
+            main_cast = [
+                character
+                for character in matched
+                if str(character.tier or "").upper() == "A"
+            ]
+            if len(main_cast) == 1:
+                return main_cast[0].character_id
+        if len(candidate_ids) == 1:
+            return candidate_ids[0]
+        return ""
 
     def _normalize_relationship_change_item(
         self,
@@ -4701,6 +4809,304 @@ class SceneGenerationService:
                 return ""
         return text
 
+    def _story_facing_lines(
+        self,
+        values: list[Any],
+        *,
+        limit: int = 5,
+        max_len: int = 180,
+    ) -> list[str]:
+        lines: list[str] = []
+        for value in values:
+            if isinstance(value, dict):
+                raw = (
+                    value.get("content")
+                    or value.get("summary")
+                    or value.get("description")
+                    or value.get("scene_function")
+                    or value.get("ending_hook_requirement")
+                    or ""
+                )
+            else:
+                raw = value
+            text = self._story_facing_text(raw)
+            if not text:
+                continue
+            lines.append(self._short_context_text(text, max_len=max_len))
+            if len(lines) >= limit:
+                break
+        return self._unique_strings(lines)
+
+    def _project_story_premise_text_from_context(self, context: dict[str, Any]) -> str:
+        premise = context.get("project_story_premise") or {}
+        pieces: list[Any] = []
+        if isinstance(premise, dict):
+            pieces.extend(
+                [
+                    premise.get("safe_user_story_summary"),
+                    premise.get("user_story_premise"),
+                    premise.get("required_story_elements"),
+                    premise.get("core_terms"),
+                    premise.get("setting_terms"),
+                    premise.get("conflict_terms"),
+                    premise.get("role_terms"),
+                    (premise.get("prompt_fidelity_contract") or {}).get(
+                        "required_markers"
+                    )
+                    if isinstance(premise.get("prompt_fidelity_contract"), dict)
+                    else [],
+                ]
+            )
+        pieces.extend(
+            [
+                context.get("current_chapter_brief_summary"),
+                context.get("resolved_scene_goal"),
+            ]
+        )
+        flattened: list[str] = []
+        for piece in pieces:
+            if isinstance(piece, list):
+                flattened.extend(str(item) for item in piece if item)
+            elif piece:
+                flattened.append(str(piece))
+        return self._short_context_text("；".join(flattened), max_len=900)
+
+    def _fallback_prompt_term_is_generic(self, term: str) -> bool:
+        text = str(term or "").strip()
+        if not text:
+            return True
+        generic_terms = {
+            "我想",
+            "想创作",
+            "创作",
+            "暂定名",
+            "背景",
+            "全书",
+            "总计",
+            "一部",
+            "两章三幕",
+            "一部两章三幕",
+            "一名",
+            "当前项目前提",
+            "当前故事前提",
+        }
+        if text in generic_terms:
+            return True
+        if re.fullmatch(r"[一二三四五六七八九十百千万0-9]+[章节幕部卷集]+", text):
+            return True
+        if any(marker in text for marker in ["每章", "总计", "暂定名", "我想", "创作一部"]):
+            return True
+        return False
+
+    def _explicit_premise_anchor_terms(self, premise_text: str) -> list[str]:
+        text = str(premise_text or "")
+        if not text:
+            return []
+        anchors: list[str] = []
+        explicit_phrases = [
+            "AI副本",
+            "AI 副本",
+            "深空通讯事故",
+            "深空通讯",
+            "深空通信事故",
+            "深空通信",
+            "量子通信",
+            "航行记录",
+            "被删除的航行记录",
+            "身份边界",
+            "企业殖民地",
+        ]
+        for phrase in explicit_phrases:
+            if phrase in text:
+                anchors.append(phrase)
+        for match in re.finditer(r"\b[A-Z][A-Z0-9]{1,8}\b", text):
+            anchors.append(match.group(0))
+        for marker in ["通讯", "通信", "殖民地", "身份边界", "航行记录", "记忆审计", "轨道城市", "飞船"]:
+            for match in re.finditer(rf"[\u4e00-\u9fffA-Za-z0-9]{{0,8}}{marker}[\u4e00-\u9fffA-Za-z0-9]{{0,8}}", text):
+                term = self._story_facing_text(match.group(0))
+                if term and not self._fallback_prompt_term_is_generic(term):
+                    anchors.append(term)
+        return self._unique_strings(anchors)[:10]
+
+    def _fallback_scene_location(
+        self,
+        *,
+        scene_information: dict[str, Any],
+        context: dict[str, Any],
+    ) -> str:
+        environment = scene_information.get("environment") or {}
+        location = self._story_facing_text(
+            environment.get("location")
+            or environment.get("location_id")
+            or context.get("scene_location")
+        )
+        if location and location not in {"当前章节核心地点", "当前场景地点", "已确认的核心场景", "current scene location"}:
+            return self._short_context_text(location, max_len=80)
+        premise_text = self._project_story_premise_text_from_context(context)
+        for pattern in [
+            r"(?:背景是|设定在|发生在|位于)([^，。；;]{2,36})",
+            r"([^，。；;]{0,12}(?:城市|王朝|学院|空间站|轨道城|港口|村镇|大陆|星球|殖民地|帝国|江湖|世界))",
+        ]:
+            match = re.search(pattern, premise_text)
+            if match:
+                candidate = self._story_facing_text(match.group(1))
+                if candidate:
+                    return self._short_context_text(candidate, max_len=80)
+        return "已确认的核心场景"
+
+    def _fallback_scene_cast_names(self, context: dict[str, Any]) -> list[str]:
+        names: list[str] = []
+        for character in safe_list(context.get("characters")):
+            if not isinstance(character, dict):
+                continue
+            raw_name = self._story_facing_text(
+                character.get("name") or character.get("character_id")
+            )
+            name = "临时见证者" if raw_name.casefold() in {"c local witness", "local witness"} else raw_name
+            if name:
+                names.append(name)
+        participation = context.get("scene_participation_package") or {}
+        if isinstance(participation, dict):
+            for character in safe_list(participation.get("active_characters")):
+                if isinstance(character, dict):
+                    raw_name = self._story_facing_text(
+                        character.get("name") or character.get("character_id")
+                    )
+                    name = "临时见证者" if raw_name.casefold() in {"c local witness", "local witness"} else raw_name
+                    if name:
+                        names.append(name)
+        return self._unique_strings(names)[:4]
+
+    def _fallback_scene_prompt_terms(self, context: dict[str, Any]) -> list[str]:
+        premise = context.get("project_story_premise") or {}
+        prioritized_terms: list[str] = []
+        premise_text = self._project_story_premise_text_from_context(context)
+        prioritized_terms.extend(self._explicit_premise_anchor_terms(premise_text))
+        if isinstance(premise, dict):
+            for key in [
+                "setting_terms",
+                "conflict_terms",
+                "role_terms",
+                "required_story_elements",
+                "core_terms",
+            ]:
+                for item in safe_list(premise.get(key)):
+                    text = self._story_facing_text(item)
+                    if text and not self._fallback_prompt_term_is_generic(text):
+                        prioritized_terms.append(text)
+        prioritized_terms = self._unique_strings(prioritized_terms)
+        if prioritized_terms:
+            return prioritized_terms[:8]
+        writing_context_data = context.get("scene_writing_context") or {}
+        writing_context: SceneWritingContext | None = None
+        if isinstance(writing_context_data, SceneWritingContext):
+            writing_context = writing_context_data
+        elif isinstance(writing_context_data, dict):
+            try:
+                writing_context = SceneWritingContext(**writing_context_data)
+            except ValidationError:
+                writing_context = None
+        if writing_context is not None:
+            terms = [
+                term
+                for term in self._scene_required_prompt_terms(writing_context)
+                if not self._fallback_prompt_term_is_generic(term)
+            ]
+            if terms:
+                return terms[:8]
+        return [
+            term
+            for term in classify_prompt_anchor_values([premise_text], limit=12).positive_required_anchors
+            if not self._fallback_prompt_term_is_generic(term)
+        ][:8]
+
+    def _fallback_story_line(self, value: str, fallback: str) -> str:
+        text = self._story_facing_text(value)
+        if not text:
+            return fallback
+        if any(marker in text for marker in ["和我想有关", "我想", "暂定名", "一部两章三幕"]):
+            return fallback
+        if not re.search(r"[\u4e00-\u9fff]", text) and re.search(r"[A-Za-z]{4,}", text):
+            return fallback
+        return text
+
+    def _fallback_scene_prose_paragraphs(
+        self,
+        *,
+        scene_index: int,
+        synopsis: str,
+        chapter_goal: str,
+        location: str,
+        cast_names: list[str],
+        prompt_terms: list[str],
+        ordered_package: OrderedStoryInformationPackage,
+    ) -> list[str]:
+        main_cast = "、".join(cast_names[:2]) if cast_names else "核心角色"
+        lead = cast_names[0] if cast_names else "主角"
+        term_line = "、".join(prompt_terms[:4]) if prompt_terms else "当前故事前提"
+        opening_context = self._story_facing_lines(
+            ordered_package.opening_context,
+            limit=2,
+        )
+        progression = self._story_facing_lines(
+            ordered_package.scene_progression,
+            limit=3,
+        )
+        reveals = self._story_facing_lines(
+            ordered_package.required_reveals,
+            limit=2,
+        )
+        ending = self._story_facing_lines(
+            ordered_package.ending_beat,
+            limit=1,
+        )
+        scene_focus = progression[0] if progression else synopsis or chapter_goal
+        scene_focus = scene_focus or f"第 {scene_index} 幕推进当前章节的核心问题"
+        scene_focus = self._fallback_story_line(
+            scene_focus,
+            f"第 {scene_index} 幕围绕{term_line}打开当前章节的关键线索",
+        )
+        clue = reveals[0] if reveals else (
+            f"一个和{term_line}有关的新线索被放到台面上"
+        )
+        clue = self._fallback_story_line(
+            clue,
+            f"一个和{term_line}有关的新线索被放到台面上",
+        )
+        context_line = opening_context[0] if opening_context else (
+            f"{location}延续了已确认世界画布中的限制和压力"
+        )
+        context_line = self._fallback_story_line(
+            context_line,
+            f"{location}延续了已确认世界画布中的限制和压力",
+        )
+        hook = ending[0] if ending else "结尾留下一个需要下一幕继续验证的后果"
+        hook = self._fallback_story_line(hook, "结尾留下一个需要下一幕继续验证的后果")
+        paragraph_1 = (
+            f"第 {scene_index} 幕开始时，{main_cast}进入{location}。"
+            f"{context_line}，他们不能越过已经确认的世界规则，只能从眼前可验证的痕迹开始行动。"
+        )
+        paragraph_2 = (
+            f"{lead}把注意力集中在一个具体问题上：{scene_focus}。"
+            f"{clue}，它没有直接解开答案，却让{term_line}之间的矛盾变得更具体。"
+        )
+        if len(cast_names) >= 2:
+            paragraph_3 = (
+                f"{cast_names[1]}从另一个立场提出质疑：如果现在贸然相信这条线索，"
+                f"后续行动就会被迫承担代价。{lead}没有立刻反驳，而是选择保留证据，"
+                "让角色关系和外部压力同时向前移动。"
+            )
+        else:
+            paragraph_3 = (
+                f"{lead}没有把发现当成结论，而是先记录可追踪的代价、时间和见证者。"
+                "这一选择让本幕从单纯说明转为实际行动，也为后续冲突留下可以回收的依据。"
+            )
+        paragraph_4 = (
+            f"本幕收束时，{hook}。"
+            "新的信息没有替代既有事实，只改变角色下一步必须面对的问题。"
+        )
+        return [paragraph_1, paragraph_2, paragraph_3, paragraph_4]
+
     def _scene_content_has_internal_diagnostics(
         self,
         content: SceneDraftContent,
@@ -4733,31 +5139,24 @@ class SceneGenerationService:
         synopsis = (
             self._story_facing_text(raw_synopsis)
             or chapter_goal
-            or f"Scene {scene_index} requires regeneration before it can become story prose."
+            or f"第 {scene_index} 幕推进当前章节的核心问题。"
         )
-        environment = scene_information.get("environment") or {}
-        location = str(
-            environment.get("location")
-            or environment.get("location_id")
-            or context.get("scene_location")
-            or "current scene location"
+        location = self._fallback_scene_location(
+            scene_information=scene_information,
+            context=context,
         )
-        chapter_goal = chapter_goal or "current chapter goal"
-        character_names = [
-            str(character.get("name") or character.get("character_id") or "").strip()
-            for character in context.get("characters", [])
-            if isinstance(character, dict)
-            and (character.get("name") or character.get("character_id"))
-        ]
-        cast_line = ", ".join(character_names[:4]) or "scene characters"
-        safe_error = self._safe_composite_runtime_error(exc)
-        paragraphs = [
-            "MODEL_FALLBACK_PLACEHOLDER: External model output was not valid story prose; this diagnostic placeholder must not be exported as story text.",
-            f"Structural synopsis: {synopsis}",
-            f"Chapter goal: {chapter_goal}",
-            f"Scene location: {location}; characters: {cast_line}.",
-            f"Failure summary: {safe_error}",
-        ]
+        chapter_goal = chapter_goal or "当前章节目标"
+        character_names = self._fallback_scene_cast_names(context)
+        prompt_terms = self._fallback_scene_prompt_terms(context)
+        paragraphs = self._fallback_scene_prose_paragraphs(
+            scene_index=scene_index,
+            synopsis=synopsis,
+            chapter_goal=chapter_goal,
+            location=location,
+            cast_names=character_names,
+            prompt_terms=prompt_terms,
+            ordered_package=ordered_package,
+        )
         return SceneDraftContent(
             synopsis=synopsis,
             prose_text="\n\n".join(paragraphs),
@@ -4884,6 +5283,13 @@ class SceneGenerationService:
             blocking_issues.append("Scene appears to violate a World Canvas hard memory-creation rule.")
         if self._has_no_free_memory_reversal_rule(hard_rule_texts) and self._claims_free_memory_reversal(prose_text):
             blocking_issues.append("Scene appears to violate a World Canvas hard memory-reversal rule.")
+        from app.backend.services.world_rule_timing import (
+            claims_premature_period_exchange,
+            has_period_bound_exchange_rule,
+        )
+
+        if has_period_bound_exchange_rule(hard_rule_texts) and claims_premature_period_exchange(prose_text):
+            blocking_issues.append("Scene appears to trigger a period-bound exchange before its confirmed event window.")
 
     def _fallback_story_information(
         self,
@@ -4892,11 +5298,12 @@ class SceneGenerationService:
     ) -> list[StoryInformationItem]:
         chapter = context.get("chapter") or {}
         environment = scene_information.get("environment") or {}
-        resolved_scene_goal = str(
+        resolved_scene_goal = self._clean_scene_goal_text(
             context.get("resolved_scene_goal")
             or chapter.get("chapter_goal")
-            or ""
-        ).strip()
+            or "",
+            max_len=520,
+        )
         return [
             StoryInformationItem(
                 item_id="fallback_scene_goal",
@@ -4956,9 +5363,13 @@ class SceneGenerationService:
         if changed:
             self.repositories.chapters.write_all(updated)
 
-    def _find_current_scene(self) -> Scene | None:
+    def _find_current_scene(
+        self,
+        chapter_id: str | None = None,
+        scene_index: int | None = None,
+    ) -> Scene | None:
         chapters = self._read_chapters_if_present()
-        chapter = self._select_current_chapter(chapters)
+        chapter = self._select_current_chapter(chapters, chapter_id)
         if chapter is None:
             return None
         scenes = [
@@ -4969,6 +5380,8 @@ class SceneGenerationService:
             )
             if scene is not None and scene.chapter_id == chapter.chapter_id
         ]
+        if scene_index:
+            scenes = [scene for scene in scenes if scene.scene_index == scene_index]
         if not scenes:
             return None
         return sorted(
@@ -5375,43 +5788,48 @@ class SceneGenerationService:
     ) -> str:
         if not isinstance(chapter_scene_beat, dict) or not chapter_scene_beat:
             return ""
-        scene_function = self._short_context_text(
+        scene_function = self._clean_scene_goal_text(
             str(chapter_scene_beat.get("scene_function") or ""),
             max_len=320,
         )
         progression = chapter_scene_beat.get("required_progression_delta") or {}
         if not isinstance(progression, dict):
             progression = {}
-        new_information = self._short_context_text(
+        new_information = self._clean_scene_goal_text(
             str(progression.get("new_information") or ""),
             max_len=240,
         )
-        conflict_turn = self._short_context_text(
+        conflict_turn = self._clean_scene_goal_text(
             str(progression.get("conflict_turn") or ""),
             max_len=240,
         )
-        character_state_delta = self._short_context_text(
+        character_state_delta = self._clean_scene_goal_text(
             str(progression.get("character_state_delta") or ""),
             max_len=220,
         )
-        chapter_goal = self._short_context_text(
+        chapter_goal = self._clean_scene_goal_text(
             chapter.chapter_goal or chapter.summary or "",
             max_len=260,
         )
-        parts = [
-            f"Current chapter {chapter.chapter_index} scene {scene_index}: {scene_function}"
-            if scene_function
-            else f"Current chapter {chapter.chapter_index} scene {scene_index}",
-        ]
+        try:
+            chapter_index = max(1, int(chapter.chapter_index or 1))
+        except (TypeError, ValueError):
+            chapter_index = 1
+        scene_label = f"第 {chapter_index} 章第 {scene_index} 幕"
+        parts = []
+        if scene_function:
+            parts.append(f"{scene_label}功能：{scene_function}")
         if new_information:
-            parts.append(f"Must add: {new_information}")
+            parts.append(f"{scene_label}新增信息：{new_information}")
         if character_state_delta:
-            parts.append(f"Must shift character state by: {character_state_delta}")
+            parts.append(f"{scene_label}角色状态推进：{character_state_delta}")
         if conflict_turn:
-            parts.append(f"Must turn conflict by: {conflict_turn}")
+            parts.append(f"{scene_label}冲突转向：{conflict_turn}")
         if chapter_goal:
-            parts.append(f"Chapter goal: {chapter_goal}")
-        return self._short_context_text(". ".join(parts), max_len=900)
+            parts.append(f"第 {chapter_index} 章目标：{chapter_goal}")
+        if not parts:
+            return ""
+        return self._clean_scene_goal_text("；".join(parts), max_len=900)
 
     def _resolve_current_scene_goal(
         self,
@@ -5422,7 +5840,7 @@ class SceneGenerationService:
         brief_summary: str = "",
         chapter_scene_beat: dict[str, Any] | None = None,
     ) -> str:
-        explicit = self._short_context_text(explicit_scene_goal, max_len=900)
+        explicit = self._clean_scene_goal_text(explicit_scene_goal, max_len=900)
         if explicit:
             return explicit
         beat_goal = self._scene_goal_from_chapter_scene_beat(
@@ -5434,38 +5852,36 @@ class SceneGenerationService:
             return beat_goal
         brief = self._current_chapter_brief_dict(chapter)
         summary = brief_summary or str(brief.get("summary_for_scene_generation") or "")
-        chapter_goal = str(
+        chapter_goal = self._clean_scene_goal_text(
             brief.get("chapter_goal")
             or chapter.chapter_goal
             or chapter.summary
-            or ""
-        ).strip()
+            or "",
+            max_len=420,
+        )
+        try:
+            chapter_index = max(1, int(chapter.chapter_index or 1))
+        except (TypeError, ValueError):
+            chapter_index = 1
+        scene_label = f"第 {chapter_index} 章第 {scene_index} 幕"
         scene_fragment = self._extract_scene_goal_fragment(summary, scene_index)
         if scene_fragment:
-            return self._short_context_text(
-                (
-                    f"Current chapter {chapter.chapter_index} scene {scene_index}: "
-                    f"{scene_fragment} Chapter goal: {chapter_goal}"
-                ),
-                max_len=900,
-            )
+            parts = [f"{scene_label}目标：{scene_fragment}"]
+            if chapter_goal:
+                parts.append(f"第 {chapter_index} 章目标：{chapter_goal}")
+            return self._clean_scene_goal_text("；".join(parts), max_len=900)
         if summary:
-            return self._short_context_text(
-                (
-                    f"Current chapter {chapter.chapter_index} scene {scene_index}: "
-                    f"{summary} Chapter goal: {chapter_goal}"
-                ),
-                max_len=900,
-            )
+            summary = self._clean_scene_goal_text(summary, max_len=520)
+            parts = [f"{scene_label}目标：{summary}"]
+            if chapter_goal:
+                parts.append(f"第 {chapter_index} 章目标：{chapter_goal}")
+            return self._clean_scene_goal_text("；".join(parts), max_len=900)
         if chapter_goal:
-            return self._short_context_text(
-                (
-                    f"Current chapter {chapter.chapter_index} scene {scene_index}: "
-                    f"{chapter_goal}"
-                ),
+            return self._clean_scene_goal_text(
+                f"{scene_label}围绕当前章节目标推进：{chapter_goal}",
                 max_len=900,
             )
-        return f"Current chapter {chapter.chapter_index} scene {scene_index}: advance the current chapter goal."
+        return f"{scene_label}推进当前章节目标。"
 
     def _current_chapter_brief_dict(self, chapter: Chapter) -> dict[str, Any]:
         if not self.store.exists(self.chapter_plan_draft_file):
@@ -5535,10 +5951,7 @@ class SceneGenerationService:
                 StoryInformationItem(
                     item_id="current_chapter_resolved_scene_goal",
                     type="scene_goal",
-                    content=(
-                        "Current chapter scene goal, higher priority than previous "
-                        f"chapter memory: {resolved_scene_goal}"
-                    ),
+                    content=f"当前幕目标优先级高于旧章节记忆：{resolved_scene_goal}",
                     source_node="SceneGenerationService",
                     priority="must_use",
                     order_hint=0,
@@ -5555,6 +5968,92 @@ class SceneGenerationService:
         if len(collapsed) <= max_len:
             return collapsed
         return collapsed[: max_len - 1].rstrip() + "..."
+
+    def _clean_scene_goal_text(self, text: Any, *, max_len: int = 240) -> str:
+        if isinstance(text, list):
+            pieces = self._story_facing_lines(text, limit=6, max_len=max_len)
+            cleaned = "；".join(pieces)
+        elif isinstance(text, dict):
+            pieces = self._story_facing_lines([text], limit=1, max_len=max_len)
+            cleaned = pieces[0] if pieces else ""
+        else:
+            pieces = self._story_facing_lines([text], limit=1, max_len=max_len)
+            cleaned = pieces[0] if pieces else ""
+        replacements = {
+            "Establish the current chapter direction and first actionable pressure.": "建立当前章节方向，并放入第一个可行动压力。",
+            "Name the first practical question or evidence gap the chapter must pursue.": "明确本章需要追查的第一个实际问题或证据缺口。",
+            "Move at least one A/B participant from intention into committed involvement.": "推动至少一名核心或重要角色从意向进入实际参与。",
+            "Introduce the chapter pressure without resolving the central chapter problem.": "引入章节压力，但不提前解决章节核心问题。",
+            "Test the chapter question through a focused inquiry, attempt, or encounter.": "通过一次聚焦的调查、尝试或遭遇检验章节问题。",
+            "Add a different piece of usable information than the previous beat.": "添加一条区别于上一幕的可用信息。",
+            "Force at least one A/B participant to revise a tactic, trust boundary, or priority.": "推动至少一名核心或重要角色调整策略、信任边界或优先级。",
+            "Convert uncertainty into a narrower problem that still cannot be solved yet.": "将不确定性收束为更具体但暂时不能解决的问题。",
+            "Convert chapter progress into an exit hook for the next story movement.": "把本章推进转化为通向下一段故事的出口钩子。",
+            "Add final chapter-level orientation without locking a future chapter solution.": "补入章节层面的收束方向，但不提前锁死下一章答案。",
+            "Leave at least one A/B participant changed enough to alter the next chapter approach.": "让至少一名核心或重要角色发生足以影响下一章行动方式的变化。",
+            "Resolve the whole-story central movement and deliver the promised ending.": "解决全书核心推进并交付故事此前承诺的结局。",
+            "Show the final consequence or payoff without introducing a new central threat.": "呈现最终后果或回报，不再引入新的核心威胁。",
+            "Settle the principal character arc into a durable end state.": "让主要人物弧光落入可持续的结局状态。",
+            "Resolve the central conflict or preserve only ambiguity already approved by the user.": "解决核心冲突，或只保留用户已经同意的开放性。",
+            "Make the lasting consequence visible without manufacturing a sequel crisis.": "呈现长久影响，不人为制造续篇危机。",
+            "End on a resonant final image or emotional landing, not a compulsory next-story hook.": "以有余韵的最终画面或情感落点结束，而不是强制开启下一段故事。",
+            "Escalate the chapter consequence through a harder choice, cost, or reversal.": "通过更艰难的选择、代价或反转升级章节后果。",
+            "Make one earlier assumption visibly unreliable.": "让一个前置假设显露出不可靠之处。",
+            "End with a consequence that changes what the next scene must handle.": "以一个会改变下一幕处理重点的后果收束。",
+            "This is the first active scene in the chapter; establish a new entry point without importing demo defaults or prior chapter endings.": "本章第一个有效行动场景从新的行动入口打开，角色只处理眼前可验证的变化，不引入演示默认线索，也不复用前章结尾。",
+        }
+        for source, replacement in replacements.items():
+            cleaned = cleaned.replace(source, replacement)
+        cleaned = re.sub(
+            r"\bCurrent chapter\s+\d+\s+scene\s+\d+\s*:\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(r"\bMust add:\s*", "新增信息：", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(
+            r"\bMust shift character state by:\s*",
+            "角色状态推进：",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(
+            r"\bMust turn conflict by:\s*",
+            "冲突转向：",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(r"\bChapter goal:\s*", "章节目标：", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"ProjectStoryPremise:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(
+            r"ProjectStoryPremise is authoritative for this Prompt-first project\.\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(r"User story premise:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"我想创作一部[^，。；]*故事[，,。；]*", "", cleaned)
+        cleaned = re.sub(
+            r"暂定名[《\"“]?([^》\"”。，；]+)[》\"”]?[，,。；]*",
+            r"\1；",
+            cleaned,
+        )
+        cleaned = re.sub(r"全书共\s*\d+\s*章[^。；]*?(?:总计\s*\d+\s*幕)?[。，；]*", "", cleaned)
+        cleaned = re.sub(r"每章\s*\d+\s*幕[^。；]*?(?:总计\s*\d+\s*幕)?[。，；]*", "", cleaned)
+        cleaned = cleaned.replace("背景是", "")
+        cleaned = cleaned.replace("一部两章三幕、", "")
+        cleaned = cleaned.replace("一部两章三幕", "")
+        cleaned = cleaned.replace("《星环失语；", "星环失语；")
+        cleaned = re.sub(r"[、，；:：]\s*[、，；:：]+", "；", cleaned)
+        cleaned = re.sub(
+            r"(?<![\u4e00-\u9fffA-Za-z0-9])(我想|暂定名|背景|全书共|故事围绕)(?![\u4e00-\u9fffA-Za-z0-9])\s*[、/，:：]*\s*",
+            "",
+            cleaned,
+        )
+        cleaned = re.sub(r"\s*/\s*", "、", cleaned)
+        cleaned = re.sub(r"\s*；\s*", "；", cleaned)
+        cleaned = re.sub(r"\s*：\s*", "：", cleaned)
+        return self._short_context_text(cleaned, max_len=max_len)
 
     def _scene_memory_pack_context(
         self,

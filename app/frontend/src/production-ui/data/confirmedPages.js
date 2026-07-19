@@ -1,5 +1,14 @@
 const ROOT = "/confirmed-ui/";
 
+const SETTINGS_NAV_ACTIONS = [
+  { match: ["设置总览"], to: "settings-overview", actionId: "settings.workbench" },
+  { match: ["外观与主题"], to: "settings-appearance", actionId: "settings.workbench" },
+  { match: ["模型配置"], to: "settings-model", actionId: "settings.workbench" },
+  { match: ["当前模型"], to: "settings-health", actionId: "settings.activeModel" },
+  { match: ["密钥与安全"], to: "settings-secrets", actionId: "settings.secretPolicy" },
+  { match: ["创作偏好"], to: "settings-preferences", actionId: "settings.workbench" },
+];
+
 function page(id, title, file, actions = []) {
   return { id, title, src: `${ROOT}${encodeURI(file)}`, actions };
 }
@@ -82,24 +91,28 @@ export const CONFIRMED_PAGES = [
   ]),
   page("story-setup-entry", "故事设定入口", "08 Story Setup/01 Setup Entry/visual-drafts/story-setup-entry-v1.html", [
     { match: ["返回总览"], to: "current-project" },
+    { selector: "#loadPrompt", match: ["载入项目提示词"], actionId: "storySetup.loadProjectPrompt" },
     { selector: "#generateButton", match: ["生成", "开始"], to: "story-setup-generating", actionId: "storySetup.createPrompt" },
   ]),
   page("story-setup-generating", "故事设定生成中", "08 Story Setup/02 Generating/visual-drafts/story-setup-generating-v1.html", [
     { selector: "#reviewButton", match: ["查看", "完成", "继续"], to: "story-setup-review", actionId: "storySetup.current" },
   ]),
   page("story-setup-review", "故事设定草案审阅", "08 Story Setup/03 Draft Review/visual-drafts/story-setup-draft-review-v1.html", [
-    { match: ["缺失", "补充"], to: "story-setup-missing", actionId: "storySetup.answerQuestion" },
-    { match: ["审查", "决策", "确认"], to: "story-setup-decision", actionId: "storySetup.createDecision" },
+    { match: ["缺失", "补充"], to: "story-setup-missing" },
+    { match: ["审查", "决策", "确认"], to: "story-setup-decision" },
   ]),
   page("story-setup-missing", "故事设定缺失信息处理", "08 Story Setup/04 Missing Information Handling/visual-drafts/story-setup-missing-info-v1.html", [
-    { match: ["提交", "完成", "返回草案"], to: "story-setup-review", actionId: "storySetup.answerQuestion" },
+    { selector: ".mini-save, #saveButton", match: ["保存回答", "更新回答"], to: "story-setup-missing", actionId: "storySetup.answerQuestion" },
+    { match: ["返回草案", "回到草案"], to: "story-setup-review" },
   ]),
   page("story-setup-decision", "故事设定审查与决策", "08 Story Setup/05 Review And Decision/visual-drafts/story-setup-review-decision-v1.html", [
     { match: ["修订"], to: "story-setup-generating", actionId: "storySetup.reviseDecision" },
     { selector: "#recordButton", match: ["记录", "确认"], to: "story-setup-handoff", actionId: "storySetup.confirmDecision" },
   ]),
   page("story-setup-handoff", "故事设定交接与初始化", "08 Story Setup/06 Handoff Initialization/visual-drafts/story-setup-handoff-initialization-v1.html", [
-    { selector: "#bootstrapButton", match: ["初始化"], to: "world-entry", actionId: "storySetup.bootstrapHandoff" },
+    { selector: "#createButton", match: ["创建交接包"], actionId: "storySetup.createHandoff" },
+    { selector: "#bootstrapButton", match: ["初始化工作台"], actionId: "storySetup.bootstrapHandoff" },
+    { selector: "#enterButton", match: ["进入目标工作台", "进入世界画布工作台"], to: "world-entry" },
   ]),
   page("world-entry", "世界画布入口", "09 World Canvas/01 Source Premise And Generation Entry/visual-drafts/world-canvas-source-premise-entry-v1.html", [
     { selector: "#backButton", match: ["返回总览"], to: "current-project" },
@@ -109,12 +122,14 @@ export const CONFIRMED_PAGES = [
     { match: ["查看", "完成", "审阅"], to: "world-review", actionId: "world.current" },
   ]),
   page("world-review", "世界画布草案审阅", "09 World Canvas/03 Draft Review/visual-drafts/world-canvas-draft-review-v1.html", [
-    { match: ["缺口", "冲突"], to: "world-gap", actionId: "world.current" },
-    { match: ["修订"], to: "world-revision", actionId: "world.revise" },
-    { match: ["确认"], to: "world-confirm", actionId: "world.confirm" },
+    { selector: "#problemButton", match: ["处理问题", "缺口", "冲突"], to: "world-gap", actionId: "world.current" },
+    { selector: "#reviseButton", match: ["修订草案", "修订"], to: "world-revision" },
+    { selector: "#confirmButton", match: ["确认草案", "确认"], to: "world-confirm", actionId: "world.confirm" },
   ]),
   page("world-gap", "世界画布缺口与冲突处理", "09 World Canvas/04 Gap And Conflict Handling/visual-drafts/world-canvas-gap-conflict-handling-v1.html", [
-    { match: ["回到", "审阅", "提交"], to: "world-review", actionId: "world.revise" },
+    { selector: "#reviewButton", match: ["返回草案审阅"], to: "world-review" },
+    { selector: "#saveButton", match: ["提交处理并返回审阅", "保存处理"], to: "world-review", actionId: "world.revise" },
+    { selector: "#continueButton", match: ["返回草案审阅", "继续确认"], to: "world-review" },
   ]),
   page("world-revision", "修订世界草案", "09 World Canvas/05 Draft Revision/visual-drafts/world-canvas-draft-revision-v1.html", [
     { match: ["提交修订", "重新生成"], to: "world-generating", actionId: "world.revise" },
@@ -131,10 +146,9 @@ export const CONFIRMED_PAGES = [
     { selector: "#reviewButton", match: ["进入草案审阅", "查看", "完成", "草案"], to: "character-review", actionId: "characters.current" },
   ]),
   page("character-review", "角色草案审阅", "10 Character Spine/03 Draft Review/visual-drafts/character-spine-draft-review-v1.html", [
-    { match: ["关系", "冲突"], to: "character-conflict", actionId: "characters.current" },
-    { match: ["缺失"], to: "character-missing", actionId: "characters.revise" },
-    { match: ["修订"], to: "character-revision", actionId: "characters.revise" },
-    { match: ["确认"], to: "character-confirm", actionId: "characters.confirm" },
+    { selector: "#missingButton", match: ["处理缺口", "缺失"], to: "character-missing" },
+    { selector: "#reviseToggle", match: ["修订草案", "修订"], to: "character-revision" },
+    { selector: "#confirmButton, #sideConfirm", match: ["确认草案", "确认"], to: "character-confirm", actionId: "characters.confirm" },
   ]),
   page("character-conflict", "关系与冲突处理", "10 Character Spine/04 Relationship Conflict Handling/visual-drafts/character-spine-conflict-handling-v1.html", [
     { match: ["状态变更"], to: "a-tier-state-change", actionId: "roles.proposeStateChange" },
@@ -176,10 +190,10 @@ export const CONFIRMED_PAGES = [
     { match: ["查看", "完成"], to: "chapter-route-review", actionId: "chapter.currentPlan" },
   ]),
   page("chapter-route-review", "章节路线审阅", "11 Chapter Planning/06 Chapter Route Review/visual-drafts/chapter-planning-route-review-v1.html", [
-    { match: ["场景数"], to: "chapter-scene-count", actionId: "chapter.setSceneCount" },
+    { match: ["场景数"], to: "chapter-scene-count" },
     { match: ["问题"], to: "chapter-issue", actionId: "chapter.repairRoles" },
     { match: ["修订"], to: "chapter-revision", actionId: "chapter.revise" },
-    { match: ["确认"], to: "chapter-confirm", actionId: "chapter.confirm" },
+    { match: ["确认"], to: "chapter-confirm" },
   ]),
   page("chapter-scene-count", "场景数设置 / 修复", "11 Chapter Planning/07 Scene Count Setting And Repair/visual-drafts/chapter-planning-scene-count-repair-v1.html", [
     { match: ["应用", "返回"], to: "chapter-route-review", actionId: "chapter.setSceneCount" },
@@ -191,7 +205,7 @@ export const CONFIRMED_PAGES = [
     { match: ["提交修订", "重新生成"], to: "chapter-route-generating", actionId: "chapter.revise" },
   ]),
   page("chapter-confirm", "确认章节计划", "11 Chapter Planning/10 Confirm Chapter Plan/visual-drafts/chapter-planning-confirm-v1.html", [
-    { match: ["进入场景", "场景写作"], to: "scene-entry", actionId: "navigation.scene" },
+    { match: ["进入场景", "场景写作"], to: "scene-entry", actionId: "chapter.confirm" },
   ]),
   page("scene-entry", "场景入口", "12 Scene Writing/01 Source Preconditions And Scene Entry/visual-drafts/scene-writing-source-preconditions-entry-v1.html", [
     { match: ["生成首场景", "生成"], to: "scene-generating", actionId: "scene.generateFirst" },
@@ -220,8 +234,8 @@ export const CONFIRMED_PAGES = [
     { match: ["章节收尾", "章节末尾", "准备下一章"], to: "chapter-closeout", actionId: "scene.archivePreview" },
   ]),
   page("scene-gate", "后台检查修复与参与角色候选", "12 Scene Writing/08 Scene Gate Repair And Participant Candidates/visual-drafts/scene-gate-repair-participant-candidates-v1.html", [
-    { selector: "[data-candidate]", match: ["确认候选", "确认"], to: "scene-review", actionId: "scene.confirmParticipant" },
-    { match: ["拒绝候选"], to: "scene-review", actionId: "scene.rejectParticipant" },
+    { selector: "[data-candidate]", match: ["确认候选", "确认"], to: "scene-entry", actionId: "scene.confirmParticipant" },
+    { match: ["拒绝候选"], to: "scene-entry", actionId: "scene.rejectParticipant" },
     { match: ["刷新候选"], to: "scene-gate", actionId: "scene.participantRefresh" },
   ]),
   page("scene-impact", "修改影响与未来问题", "12 Scene Writing/09 Modification Impact And Future Issues/visual-drafts/modification-impact-future-issues-v1.html", [
@@ -232,25 +246,30 @@ export const CONFIRMED_PAGES = [
     { match: ["故事草稿完成", "最终输出"], to: "final-entry", actionId: "scene.confirmStoryComplete" },
   ]),
   page("final-entry", "输出入口 / 完成度检查", "13 Final Output/01 Output Entry And Completion Check/visual-drafts/final-output-entry-completion-check-v1.html", [
-    { match: ["进入成稿组装", "评估完成度", "开始"], to: "final-assembly", actionId: "final.evaluate" },
+    { match: ["进入成稿组装", "开始"], to: "final-assembly", actionId: "final.assemble" },
+    { selector: "#refreshButton", match: ["评估完成度", "重新检查"], to: "final-entry", actionId: "final.evaluate" },
   ]),
   page("final-assembly", "成稿组装中", "13 Final Output/02 Manuscript Assembly In Progress/visual-drafts/final-output-manuscript-assembly-v1.html", [
-    { match: ["查看", "完成"], to: "final-review", actionId: "final.export" },
+    { selector: "#nextButton", match: ["进入成稿审阅", "查看", "完成"], to: "final-review", actionId: "final.refreshExports" },
+    { selector: "#returnButton", match: ["返回检查"], to: "final-entry", actionId: "final.evaluate" },
   ]),
   page("final-review", "成稿审阅", "13 Final Output/03 Manuscript Review/visual-drafts/final-output-manuscript-review-v1.html", [
     { selector: "#confirmButton", match: ["确认成稿", "进入导出交付"], to: "final-settings", actionId: "final.viewerState" },
     { match: ["问题"], to: "final-issue", actionId: "final.readiness" },
   ]),
   page("final-settings", "输出设置", "13 Final Output/04 Output Settings/visual-drafts/final-output-output-settings-v1.html", [
-    { match: ["开始导出", "下载所选格式", "导出"], to: "final-exporting", actionId: "final.export" },
+    { match: ["开始导出", "下载所选格式", "准备交付文件", "导出"], to: "final-exporting", actionId: "final.refreshExports" },
+    { match: ["回到成稿审阅", "返回成稿审阅"], to: "final-review", actionId: "final.refreshExports" },
   ]),
   page("final-exporting", "导出生成中", "13 Final Output/05 Export Generation In Progress/visual-drafts/final-output-export-generation-v1.html", [
     { selector: "#completeButton", match: ["进入交付结果", "完成"], to: "final-result", actionId: "final.refreshExports" },
+    { match: ["返回输出设置", "返回设置"], to: "final-settings", actionId: "final.refreshExports" },
   ]),
   page("final-result", "导出结果 / 下载与归档", "13 Final Output/06 Export Result Download And Archive/visual-drafts/final-output-export-result-v1.html", [
-    { match: ["下载", "TXT", "Markdown", "JSON"], to: "final-result", actionId: "final.download" },
-    { match: ["选择插件", "开始", "插件输出"], to: "plugin-select", actionId: "plugins.refresh" },
-    { match: ["返回", "完成"], to: "current-project" },
+    { selector: ".download-button[data-format]", to: "final-result", actionId: "final.download" },
+    { selector: "[data-action='back-output']", to: "final-exporting", actionId: "final.refreshExports" },
+    { selector: "[data-action='open-collection']", to: "projects" },
+    { selector: "[data-action='back-settings']", to: "final-settings", actionId: "final.refreshExports" },
   ]),
   page("final-issue", "输出问题处理", "13 Final Output/07 Output Issue Handling/visual-drafts/final-output-issue-handling-v1.html", [
     { match: ["返回", "成稿"], to: "final-review", actionId: "final.readiness" },
@@ -279,28 +298,32 @@ export const CONFIRMED_PAGES = [
     { match: ["返回", "选择"], to: "plugin-select" },
   ]),
   page("settings-overview", "设置总览", "15 Settings/01 Settings Overview/visual-drafts/settings-overview-v1.html", [
-    { match: ["外观", "主题"], to: "settings-appearance" },
-    { match: ["模型配置"], to: "settings-model", actionId: "settings.workbench" },
-    { match: ["健康检查", "当前模型"], to: "settings-health", actionId: "settings.activeModel" },
-    { match: ["密钥", "安全"], to: "settings-secrets", actionId: "settings.secretPolicy" },
-    { match: ["创作偏好"], to: "settings-preferences" },
+    ...SETTINGS_NAV_ACTIONS,
   ]),
   page("settings-appearance", "外观与主题", "15 Settings/02 Appearance And Theme/visual-drafts/settings-appearance-theme-v1.html", [
-    { match: ["返回", "保存"], to: "settings-overview", actionId: "settings.preferences" },
+    ...SETTINGS_NAV_ACTIONS,
+    { match: ["返回"], to: "settings-overview", actionId: "settings.workbench" },
   ]),
   page("settings-model", "模型配置", "15 Settings/03 Model Configuration/visual-drafts/settings-model-configuration-v1.html", [
-    { match: ["健康检查"], to: "settings-health", actionId: "settings.patchProfile" },
-    { match: ["返回", "保存"], to: "settings-overview", actionId: "settings.patchProfile" },
+    ...SETTINGS_NAV_ACTIONS,
+    { selector: "#newProfileButton", match: ["新建 Profile"], actionId: "settings.createProfile" },
+    { selector: "#saveButton", match: ["更新 Profile", "保存"], actionId: "settings.patchProfile" },
+    { selector: "#activeButton", match: ["设为当前"], actionId: "settings.setActive" },
+    { selector: "#healthButton", match: ["健康检查"], to: "settings-health", actionId: "settings.healthCheck" },
+    { match: ["返回总览"], to: "settings-overview" },
   ]),
   page("settings-health", "当前模型与健康检查", "15 Settings/04 Current Model And Health Check/visual-drafts/settings-current-model-health-v1.html", [
+    ...SETTINGS_NAV_ACTIONS,
     { selector: "#fullButton", match: ["运行完整检查", "运行健康检查"], to: "settings-health", actionId: "settings.healthCheck" },
     { match: ["返回"], to: "settings-overview" },
   ]),
   page("settings-secrets", "密钥与安全", "15 Settings/05 Secrets And Security/visual-drafts/settings-secrets-security-v1.html", [
+    ...SETTINGS_NAV_ACTIONS,
     { match: ["返回"], to: "settings-overview" },
   ]),
   page("settings-preferences", "创作偏好", "15 Settings/06 Creative Preferences/visual-drafts/settings-creative-preferences-v1.html", [
-    { match: ["返回", "保存"], to: "settings-overview", actionId: "settings.preferences" },
+    ...SETTINGS_NAV_ACTIONS,
+    { match: ["返回"], to: "settings-overview", actionId: "settings.workbench" },
   ]),
 ];
 

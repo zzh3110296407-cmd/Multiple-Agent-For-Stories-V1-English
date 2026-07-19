@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>导入源 UI V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --bg-deep: #e9ddbf;
+      --paper: rgba(250, 246, 235, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.92);
+      --paper-soft: rgba(242, 234, 216, 0.82);
+      --ink: #302d29;
+      --muted: #746c61;
+      --quiet: #9d9284;
+      --line: rgba(151, 125, 96, 0.24);
+      --line-strong: rgba(140, 112, 84, 0.36);
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --teal: #667d7b;
+      --teal-deep: #4f6664;
+      --sage: #858a79;
+      --shadow: 0 24px 70px rgba(82, 64, 45, 0.15);
+      --soft-shadow: 0 14px 36px rgba(80, 62, 44, 0.12);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255, 252, 244, 0.82), transparent 32%),
+        radial-gradient(circle at 88% 84%, rgba(180, 138, 120, 0.15), transparent 34%),
+        linear-gradient(135deg, #ece7dc 0%, #f0e8d8 46%, #e5dac7 100%);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .background-art {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .page-shadow {
+      position: absolute;
+      width: 460px;
+      height: 610px;
+      border: 1px solid rgba(153, 128, 96, 0.2);
+      background:
+        linear-gradient(120deg, rgba(255, 252, 244, 0.46), rgba(222, 208, 184, 0.24)),
+        repeating-linear-gradient(180deg, transparent 0 34px, rgba(94, 71, 50, 0.035) 35px 36px);
+      box-shadow: 0 34px 100px rgba(91, 68, 44, 0.08);
+    }
+
+    .page-shadow.one {
+      right: 18px;
+      top: 46px;
+      transform: rotate(7deg);
+      opacity: 0.46;
+    }
+
+    .page-shadow.two {
+      left: -128px;
+      bottom: -230px;
+      transform: rotate(-10deg);
+      opacity: 0.34;
+    }
+
+    .arc {
+      position: absolute;
+      right: 318px;
+      top: 146px;
+      width: 330px;
+      height: 330px;
+      border: 1px solid rgba(102, 125, 123, 0.22);
+      border-radius: 50%;
+      background: radial-gradient(circle at 34% 30%, rgba(255, 252, 244, 0.36), rgba(102, 125, 123, 0.04) 62%, transparent 74%);
+      box-shadow: inset 0 0 48px rgba(102, 125, 123, 0.07);
+      opacity: 0.78;
+    }
+
+    .arc::after {
+      content: "";
+      position: absolute;
+      right: -112px;
+      bottom: 22px;
+      width: 158px;
+      height: 17px;
+      border-radius: 999px;
+      background: rgba(143, 103, 92, 0.13);
+      transform: rotate(40deg);
+      transform-origin: left center;
+    }
+
+    .thread {
+      position: absolute;
+      left: 412px;
+      top: 128px;
+      width: 520px;
+      height: 520px;
+      border: 1px solid rgba(180, 138, 120, 0.15);
+      border-left-color: transparent;
+      border-bottom-color: transparent;
+      border-radius: 48% 52% 46% 54%;
+      transform: rotate(-18deg);
+      opacity: 0.62;
+    }
+
+    .thread::before,
+    .thread::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(102, 125, 123, 0.13);
+      border-radius: 50%;
+    }
+
+    .thread::before {
+      inset: 70px 86px 88px 52px;
+    }
+
+    .thread::after {
+      inset: 142px 168px 156px 136px;
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1296px, calc(100vw - 84px));
+      height: calc(100vh - 70px);
+      margin: 35px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px 1fr 138px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .ledger-button,
+    .small-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      color: var(--ink);
+      box-shadow: 0 10px 24px rgba(74, 55, 38, 0.06);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .ghost-button:hover,
+    .ledger-button:hover,
+    .small-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+      box-shadow: 0 14px 30px rgba(74, 55, 38, 0.1);
+    }
+
+    .ghost-button {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ledger-button {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      color: #2f332f;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+
+    .route-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 430px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.48);
+      background: rgba(255, 252, 244, 0.28);
+      box-shadow: 0 12px 28px rgba(74, 55, 38, 0.06);
+    }
+
+    .route-step {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 11px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .route-step:hover {
+      color: var(--ink);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .route-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      box-shadow: 0 10px 24px rgba(79, 102, 100, 0.2);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 278px minmax(0, 1fr) 298px;
+      gap: 18px;
+    }
+
+    .panel,
+    .editor-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.5);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.64), rgba(242, 234, 216, 0.7));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .panel,
+    .side-panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .section-title strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--teal);
+      box-shadow: 0 0 0 6px rgba(102, 125, 123, 0.12);
+    }
+
+    .source-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .source-option {
+      width: 100%;
+      min-height: 76px;
+      padding: 13px 14px;
+      border: 1px solid rgba(151, 125, 96, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      color: var(--ink);
+      text-align: left;
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      align-items: center;
+      gap: 12px;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .source-option:hover,
+    .source-option.active {
+      transform: translateX(2px);
+      border-color: rgba(102, 125, 123, 0.42);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: 0 12px 28px rgba(74, 55, 38, 0.08);
+    }
+
+    .source-option.active .source-icon {
+      color: #fffaf2;
+      background: var(--teal);
+    }
+
+    .source-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(180, 138, 120, 0.13);
+      color: var(--accent-deep);
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+      font-weight: 900;
+      transition: background 180ms ease, color 180ms ease;
+    }
+
+    .source-copy strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .source-copy span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .source-form {
+      display: grid;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .field-label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .field-label input,
+    .field-label select {
+      width: 100%;
+      height: 42px;
+      border: 1px solid rgba(151, 125, 96, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--ink);
+      outline: none;
+      padding: 0 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .editor-head {
+      padding: 22px 24px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .editor-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .editor-head h2 {
+      margin: 6px 0 0;
+      font-size: 28px;
+      line-height: 1.18;
+    }
+
+    .kind-selector {
+      min-width: 218px;
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .kind-selector select {
+      height: 42px;
+      border: 1px solid rgba(151, 125, 96, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.62);
+      color: var(--ink);
+      outline: none;
+      padding: 0 12px;
+    }
+
+    .editor-body {
+      padding: 0 24px 18px;
+      min-height: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .content-box {
+      min-height: 0;
+      flex: 1;
+      position: relative;
+      border: 1px solid rgba(151, 125, 96, 0.22);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 94% 9%, rgba(102, 125, 123, 0.08), transparent 22%),
+        rgba(255, 252, 244, 0.62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 16px 38px rgba(78, 58, 38, 0.07);
+      overflow: hidden;
+      transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .content-box.dragging {
+      border-color: rgba(102, 125, 123, 0.54);
+      background:
+        radial-gradient(circle at 94% 9%, rgba(102, 125, 123, 0.14), transparent 22%),
+        rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 0 0 2px rgba(102, 125, 123, 0.14), 0 18px 44px rgba(78, 58, 38, 0.1);
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+      resize: none;
+      border: 0;
+      outline: none;
+      padding: 25px 28px;
+      background: transparent;
+      color: #4a4239;
+      font-size: 15px;
+      line-height: 1.92;
+    }
+
+    textarea::placeholder {
+      color: rgba(116, 108, 97, 0.78);
+    }
+
+    .upload-chip {
+      position: absolute;
+      right: 18px;
+      bottom: 16px;
+      min-width: 126px;
+      height: 38px;
+      border: 1px solid rgba(151, 125, 96, 0.2);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.72);
+      color: var(--accent-deep);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 8px 18px rgba(74, 55, 38, 0.07);
+    }
+
+    .hidden-file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 72px;
+      border: 1px solid rgba(151, 125, 96, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      padding: 13px 14px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .side-panel {
+      position: relative;
+      padding-bottom: 104px;
+    }
+
+    .guard-list {
+      display: grid;
+      gap: 11px;
+    }
+
+    .guard-item {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 13px 0;
+      border-top: 1px solid rgba(151, 125, 96, 0.16);
+    }
+
+    .guard-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .guard-label {
+      color: var(--accent-deep);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .guard-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .guard-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .path-list {
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .path-step {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: left;
+      border-radius: 7px;
+      padding: 3px 4px;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .path-step:hover {
+      color: var(--ink);
+      background: rgba(255, 252, 244, 0.42);
+      transform: translateX(1px);
+    }
+
+    .path-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(180, 138, 120, 0.12);
+      color: var(--accent-deep);
+      font-size: 12px;
+    }
+
+    .path-step.active {
+      color: var(--ink);
+    }
+
+    .path-step.active .path-num {
+      background: var(--teal);
+      color: #fffaf2;
+    }
+
+    .action-dock {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      left: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1.16fr;
+      gap: 10px;
+    }
+
+    .secondary-action,
+    .primary-action {
+      height: 52px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 900;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .secondary-action {
+      border: 1px solid rgba(151, 125, 96, 0.22);
+      background: rgba(255, 252, 244, 0.5);
+      color: var(--ink);
+    }
+
+    .primary-action {
+      border: 0;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      color: #fffaf2;
+      box-shadow: 0 16px 32px rgba(79, 102, 100, 0.22);
+    }
+
+    .primary-action[disabled],
+    .secondary-action[disabled] {
+      cursor: default;
+      opacity: 0.7;
+      transform: none;
+    }
+
+    .secondary-action:hover,
+    .primary-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 36px rgba(74, 55, 38, 0.13);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 260px;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 13px 18px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(55, 49, 42, 0.88);
+      color: #fffaf2;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 18px 42px rgba(55, 49, 42, 0.24);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      justify-items: end;
+      background: rgba(48, 45, 41, 0.16);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .drawer-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .record-drawer {
+      width: min(420px, calc(100vw - 34px));
+      height: calc(100vh - 34px);
+      margin: 17px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(250, 246, 235, 0.95), rgba(236, 226, 207, 0.95));
+      box-shadow: 0 28px 80px rgba(44, 37, 29, 0.22);
+      transform: translateX(24px);
+      transition: transform 220ms ease;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .drawer-backdrop.show .record-drawer {
+      transform: translateX(0);
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .drawer-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .drawer-head strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 22px;
+    }
+
+    .close-drawer {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(151, 125, 96, 0.24);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .record-list {
+      display: grid;
+      gap: 12px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .record-card {
+      border: 1px solid rgba(151, 125, 96, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .record-card strong {
+      font-size: 15px;
+    }
+
+    .record-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .record-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .record-meta b {
+      border-radius: 999px;
+      background: rgba(102, 125, 123, 0.12);
+      color: var(--teal-deep);
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: calc(100vw - 32px);
+        height: auto;
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .hero {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .route-strip {
+        min-width: 0;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-art" aria-hidden="true">
+    <div class="page-shadow one"></div>
+    <div class="page-shadow two"></div>
+    <div class="arc"></div>
+    <div class="thread"></div>
+  </div>
+
+  <main class="workspace">
+    <nav class="topbar" aria-label="页面导航">
+      <a class="ghost-button" href="../../../06 Framework Composition/visual-drafts/framework-composition-v1.html">返回 Framework</a>
+      <div class="breadcrumb">主页 / 当前项目 / Framework 编排 / 导入源</div>
+      <button class="ledger-button" id="ledgerButton" type="button">导入记录</button>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <h1>导入源</h1>
+        <p>把已有故事或分析器产物送入 Analyze Stories 分支，先形成可审阅的导入记录，再回到 Framework 编排。</p>
+      </div>
+      <div class="route-strip" aria-label="导入流程">
+        <button class="route-step active" type="button" data-route="source">导入源</button>
+        <button class="route-step" type="button" data-route="analysis">分析</button>
+        <button class="route-step" type="button" data-route="result">结果</button>
+        <button class="route-step" type="button" data-route="candidate">候选</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="section-title">
+          <div>
+            <span>来源</span>
+            <strong>选择导入方式</strong>
+          </div>
+          <i class="status-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="source-list" aria-label="导入方式">
+          <button class="source-option active" type="button" data-mode="paste">
+            <span class="source-icon">文</span>
+            <span class="source-copy">
+              <strong>粘贴故事</strong>
+              <span>正文、梗概、章节片段</span>
+            </span>
+          </button>
+          <button class="source-option" type="button" data-mode="upload">
+            <span class="source-icon">↑</span>
+            <span class="source-copy">
+              <strong>上传文件</strong>
+              <span>txt、json、docx、pdf</span>
+            </span>
+          </button>
+          <button class="source-option" type="button" data-mode="bundle">
+            <span class="source-icon">卷</span>
+            <span class="source-copy">
+              <strong>章节包</strong>
+              <span>多章结构与跨章线索</span>
+            </span>
+          </button>
+          <button class="source-option" type="button" data-mode="analyzer">
+            <span class="source-icon">析</span>
+            <span class="source-copy">
+              <strong>分析器输出</strong>
+              <span>Analyze Stories JSON</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="source-form">
+          <label class="field-label">
+            作品名
+            <input id="storyTitle" value="港口钟楼证词" />
+          </label>
+          <label class="field-label">
+            来源备注
+            <input id="sourceNote" value="旧稿第一卷 / 用户导入" />
+          </label>
+          <label class="field-label">
+            文件名
+            <input id="filename" value="harbor-clocktower-source.txt" />
+          </label>
+        </div>
+      </aside>
+
+      <section class="editor-panel">
+        <div class="editor-head">
+          <div>
+            <span id="editorEyebrow">故事源</span>
+            <h2 id="editorTitle">源内容</h2>
+          </div>
+          <label class="kind-selector">
+            识别类型
+            <select id="kindSelect">
+              <option value="">自动识别</option>
+              <option value="full_book_bundle">完整书卷</option>
+              <option value="story_analysis_report">故事分析报告</option>
+              <option value="framework_package">Framework 包</option>
+              <option value="cross_chapter_state_package">跨章节状态包</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="editor-body">
+          <div class="content-box" id="dropZone">
+            <textarea id="sourceText">第一章，港口城在傍晚失去了一段集体记忆。钟楼敲响第十三声之后，所有人都记得晚宴开始，却没有人记得谁第一个离席。
+
+城市里有低魔规则、行会、潮汐禁区，以及不能被公开讨论的龙影传说。主角需要追查钟声背后的证词缺口，并判断这座城市是否仍然可信。</textarea>
+            <input class="hidden-file-input" id="fileInput" type="file" accept=".txt,.md,.json,.docx,.pdf,application/json,text/plain,text/markdown" />
+            <button class="upload-chip" id="chooseFile" type="button">选择文件</button>
+          </div>
+
+          <div class="metrics" aria-label="源内容摘要">
+            <div class="metric">
+              <span>字数</span>
+              <strong id="wordCount">96</strong>
+            </div>
+            <div class="metric">
+              <span>章节</span>
+              <strong id="chapterCount">1</strong>
+            </div>
+            <div class="metric">
+              <span>源类型</span>
+              <strong id="modeName">粘贴故事</strong>
+            </div>
+            <div class="metric">
+              <span>状态</span>
+              <strong id="sourceState">待分析</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="section-title">
+          <div>
+            <span>边界</span>
+            <strong>导入保护</strong>
+          </div>
+          <i class="status-dot" aria-hidden="true"></i>
+        </div>
+
+        <div class="guard-list">
+          <div class="guard-item">
+            <div class="guard-label">源</div>
+            <div>
+              <strong>只创建导入记录</strong>
+              <span>不直接改写当前 Framework。</span>
+            </div>
+          </div>
+          <div class="guard-item">
+            <div class="guard-label">析</div>
+            <div>
+              <strong>先生成可审阅结果</strong>
+              <span>报告、缺口、候选分开确认。</span>
+            </div>
+          </div>
+          <div class="guard-item">
+            <div class="guard-label">写</div>
+            <div>
+              <strong>回写需要用户确认</strong>
+              <span>通过导入编辑会话进入正式编排。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="path-list" aria-label="后续路径">
+          <button class="path-step active" type="button" data-route="source"><span class="path-num">1</span><span>导入源</span></button>
+          <button class="path-step" type="button" data-route="analysis"><span class="path-num">2</span><span>分析与校验</span></button>
+          <button class="path-step" type="button" data-route="result"><span class="path-num">3</span><span>结果总览</span></button>
+          <button class="path-step" type="button" data-route="candidate"><span class="path-num">4</span><span>候选选择</span></button>
+        </div>
+
+        <div class="action-dock">
+          <button class="secondary-action" type="button" id="saveDraft">保存源草稿</button>
+          <button class="primary-action" type="button" id="startAnalysis">开始分析</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="drawer-backdrop" id="ledgerBackdrop" aria-hidden="true">
+    <aside class="record-drawer" role="dialog" aria-modal="true" aria-labelledby="ledgerTitle">
+      <div class="drawer-head">
+        <div>
+          <span>导入记录</span>
+          <strong id="ledgerTitle">Analyze Stories Ledger</strong>
+        </div>
+        <button class="close-drawer" id="closeLedger" type="button" aria-label="关闭导入记录">×</button>
+      </div>
+      <div class="record-list" id="recordList">
+        <article class="record-card">
+          <strong>港口钟楼证词</strong>
+          <span>来源：旧稿第一卷 / 用户导入。状态：源草稿。</span>
+          <div class="record-meta">
+            <b>粘贴故事</b>
+            <b>待分析</b>
+            <b>117 字</b>
+          </div>
+        </article>
+        <article class="record-card">
+          <strong>城堡晚宴分析报告</strong>
+          <span>来源：Analyze Stories JSON。状态：已生成报告，等待候选确认。</span>
+          <div class="record-meta">
+            <b>story_analysis_report</b>
+            <b>可审阅</b>
+          </div>
+        </article>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const draftKey = "mafs-import-source-draft-v1";
+      const modeData = {
+        paste: {
+          label: "粘贴故事",
+          eyebrow: "故事源",
+          title: "源内容",
+          filename: "harbor-clocktower-source.txt",
+          kind: "",
+          text: "第一章，港口城在傍晚失去了一段集体记忆。钟楼敲响第十三声之后，所有人都记得晚宴开始，却没有人记得谁第一个离席。\n\n城市里有低魔规则、行会、潮汐禁区，以及不能被公开讨论的龙影传说。主角需要追查钟声背后的证词缺口，并判断这座城市是否仍然可信。"
+        },
+        upload: {
+          label: "上传文件",
+          eyebrow: "文件源",
+          title: "上传内容预览",
+          filename: "imported-story-source.txt",
+          kind: "",
+          text: "文件内容会在这里显示预览。\n\n如果上传的是普通故事文本，系统会先进入分析器处理，再生成可导入的 Analyze Stories 产物。"
+        },
+        bundle: {
+          label: "章节包",
+          eyebrow: "章节包",
+          title: "多章节源内容",
+          filename: "full-book-bundle.json",
+          kind: "full_book_bundle",
+          text: "{\n  \"source\": \"analyze_stories\",\n  \"file_kind\": \"full_book_bundle\",\n  \"chapters\": [\n    { \"index\": 1, \"title\": \"钟楼证词\" },\n    { \"index\": 2, \"title\": \"潮汐禁区\" }\n  ]\n}"
+        },
+        analyzer: {
+          label: "分析器输出",
+          eyebrow: "Analyze Stories",
+          title: "分析器产物",
+          filename: "story-analysis-report.json",
+          kind: "story_analysis_report",
+          text: "{\n  \"source\": \"analyze_stories\",\n  \"file_kind\": \"story_analysis_report\",\n  \"safe_title\": \"港口钟楼证词\",\n  \"safe_summary\": \"城市记忆缺口、行会秩序、龙影传说与钟楼证词冲突。\"\n}"
+        }
+      };
+
+      let activeMode = "paste";
+      let currentStage = "source";
+
+      const sourceText = document.getElementById("sourceText");
+      const wordCount = document.getElementById("wordCount");
+      const chapterCount = document.getElementById("chapterCount");
+      const modeName = document.getElementById("modeName");
+      const sourceState = document.getElementById("sourceState");
+      const editorEyebrow = document.getElementById("editorEyebrow");
+      const editorTitle = document.getElementById("editorTitle");
+      const storyTitle = document.getElementById("storyTitle");
+      const sourceNote = document.getElementById("sourceNote");
+      const filename = document.getElementById("filename");
+      const kindSelect = document.getElementById("kindSelect");
+      const fileInput = document.getElementById("fileInput");
+      const dropZone = document.getElementById("dropZone");
+      const toast = document.getElementById("toast");
+      const ledgerBackdrop = document.getElementById("ledgerBackdrop");
+      const closeLedger = document.getElementById("closeLedger");
+      const recordList = document.getElementById("recordList");
+
+      function cloneButton(id) {
+        const original = document.getElementById(id);
+        const clone = original.cloneNode(true);
+        original.replaceWith(clone);
+        return clone;
+      }
+
+      const ledgerButton = cloneButton("ledgerButton");
+      const chooseFile = cloneButton("chooseFile");
+      const saveDraft = cloneButton("saveDraft");
+      const startAnalysis = cloneButton("startAnalysis");
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function countText(value) {
+        const trimmed = value.trim();
+        const cjk = (trimmed.match(/[\u4e00-\u9fff]/g) || []).length;
+        const words = trimmed.replace(/[\u4e00-\u9fff]/g, " ").split(/\s+/).filter(Boolean).length;
+        return cjk + words;
+      }
+
+      function chapterEstimate(value) {
+        const matches = value.match(/第[一二三四五六七八九十百\d]+章|"chapters"|"chapter_index"|chapter/gi) || [];
+        return Math.max(1, matches.length);
+      }
+
+      function kindLabel() {
+        return kindSelect.options[kindSelect.selectedIndex]?.text || "自动识别";
+      }
+
+      function updateMetrics(status = "") {
+        const value = sourceText.value;
+        wordCount.textContent = String(countText(value));
+        chapterCount.textContent = String(chapterEstimate(value));
+        modeName.textContent = activeMode === "analyzer" || activeMode === "bundle" ? kindLabel() : modeData[activeMode].label;
+        if (status) {
+          sourceState.textContent = status;
+        } else {
+          sourceState.textContent = value.trim() ? "待分析" : "空源";
+        }
+      }
+
+      function setRoute(stage) {
+        currentStage = stage;
+        document.querySelectorAll("[data-route]").forEach((item) => {
+          item.classList.toggle("active", item.dataset.route === stage);
+        });
+      }
+
+      function activateMode(mode, options = {}) {
+        const config = modeData[mode];
+        activeMode = mode;
+        document.querySelectorAll(".source-option").forEach((button) => {
+          button.classList.toggle("active", button.dataset.mode === mode);
+        });
+        editorEyebrow.textContent = config.eyebrow;
+        editorTitle.textContent = config.title;
+        if (!options.keepFilename) {
+          filename.value = config.filename;
+        }
+        if (!options.keepKind) {
+          kindSelect.value = config.kind;
+        }
+        if (!options.keepText) {
+          sourceText.value = config.text;
+        }
+        updateMetrics(options.status);
+      }
+
+      function inferKind(fileName, text) {
+        const lower = fileName.toLowerCase();
+        if (!lower.endsWith(".json")) {
+          return "";
+        }
+        try {
+          const json = JSON.parse(text);
+          const artifact = json.artifact && typeof json.artifact === "object" ? json.artifact : json;
+          const kind = artifact.file_kind || json.declared_file_kind || "";
+          const allowed = ["framework_package", "story_analysis_report", "full_book_bundle", "cross_chapter_state_package"];
+          return allowed.includes(kind) ? kind : "";
+        } catch (error) {
+          return "";
+        }
+      }
+
+      async function handleFile(file) {
+        if (!file) {
+          return;
+        }
+        activateMode("upload", { keepText: true, keepKind: true, keepFilename: true });
+        filename.value = file.name;
+        const lower = file.name.toLowerCase();
+        let text = "";
+        if (lower.endsWith(".txt") || lower.endsWith(".md") || lower.endsWith(".json")) {
+          text = await file.text();
+        } else {
+          text = `已选择文件：${file.name}\n\n该文件会先进入文本抽取与分析器处理，生成可审阅的 Analyze Stories 产物后再进入 Framework 分支。`;
+        }
+        if (lower.endsWith(".json")) {
+          try {
+            text = JSON.stringify(JSON.parse(text), null, 2);
+            activeMode = "analyzer";
+            document.querySelectorAll(".source-option").forEach((button) => {
+              button.classList.toggle("active", button.dataset.mode === "analyzer");
+            });
+            editorEyebrow.textContent = "Analyze Stories";
+            editorTitle.textContent = "分析器产物";
+          } catch (error) {
+            updateMetrics("格式需检查");
+          }
+        }
+        sourceText.value = text;
+        const inferred = inferKind(file.name, text);
+        kindSelect.value = inferred;
+        updateMetrics(lower.endsWith(".json") && !inferred ? "待识别" : "待分析");
+        showToast(`已载入：${file.name}`);
+      }
+
+      function openLedger() {
+        ledgerBackdrop.classList.add("show");
+        ledgerBackdrop.setAttribute("aria-hidden", "false");
+        closeLedger.focus();
+      }
+
+      function closeLedgerPanel() {
+        ledgerBackdrop.classList.remove("show");
+        ledgerBackdrop.setAttribute("aria-hidden", "true");
+        ledgerButton.focus();
+      }
+
+      function appendRecord(record) {
+        const title = escapeHtml(record.title || "未命名导入源");
+        const note = escapeHtml(record.note || "无来源备注");
+        const mode = escapeHtml(record.mode || modeData[activeMode].label);
+        const status = escapeHtml(record.status || "源草稿");
+        const count = escapeHtml(record.count || `${countText(sourceText.value)} 字`);
+        recordList.insertAdjacentHTML("afterbegin", `
+          <article class="record-card">
+            <strong>${title}</strong>
+            <span>来源：${note}。状态：${status}。</span>
+            <div class="record-meta">
+              <b>${mode}</b>
+              <b>${status}</b>
+              <b>${count}</b>
+            </div>
+          </article>
+        `);
+      }
+
+      function saveCurrentDraft() {
+        const draft = {
+          title: storyTitle.value.trim() || "未命名导入源",
+          note: sourceNote.value.trim() || "用户导入",
+          filename: filename.value.trim(),
+          mode: modeData[activeMode].label,
+          kind: kindSelect.value,
+          text: sourceText.value,
+          count: `${countText(sourceText.value)} 字`,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+        appendRecord({ ...draft, status: "源草稿" });
+        updateMetrics("已保存");
+        showToast("源草稿已保存");
+      }
+
+      function validateBeforeAnalysis() {
+        const value = sourceText.value.trim();
+        if (!value) {
+          updateMetrics("空源");
+          showToast("请先放入源内容");
+          return false;
+        }
+        const needsJson = kindSelect.value || activeMode === "analyzer" || activeMode === "bundle";
+        if (needsJson && value.startsWith("{")) {
+          try {
+            JSON.parse(value);
+          } catch (error) {
+            updateMetrics("格式需检查");
+            showToast("JSON 格式需要先修正");
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function beginAnalysis() {
+        if (!validateBeforeAnalysis()) {
+          return;
+        }
+        setRoute("analysis");
+        updateMetrics("分析中");
+        startAnalysis.disabled = true;
+        startAnalysis.textContent = "分析中";
+        appendRecord({
+          title: storyTitle.value.trim() || "未命名导入源",
+          note: sourceNote.value.trim() || "用户导入",
+          mode: modeData[activeMode].label,
+          status: "分析中",
+          count: `${countText(sourceText.value)} 字`
+        });
+        showToast("正在进入分析与校验");
+        window.setTimeout(() => {
+        window.location.href = "../../02 Analyzing/visual-drafts/analyzing-v1.html";
+        }, 820);
+      }
+
+      function routeHint(stage) {
+        setRoute(stage);
+        if (stage === "source") {
+          showToast("当前处于导入源");
+          return;
+        }
+        if (stage === "analysis") {
+          showToast("点击开始分析后进入分析与校验");
+          return;
+        }
+        if (stage === "result") {
+          showToast("分析完成后进入结果总览");
+          return;
+        }
+        showToast("结果审阅后进入候选选择");
+      }
+
+      document.querySelectorAll(".source-option").forEach((button) => {
+        button.addEventListener("click", () => {
+          activateMode(button.dataset.mode);
+          setRoute("source");
+        });
+      });
+
+      document.querySelectorAll("[data-route]").forEach((button) => {
+        button.addEventListener("click", () => routeHint(button.dataset.route));
+      });
+
+      kindSelect.addEventListener("change", () => {
+        updateMetrics("待分析");
+        showToast(`识别类型：${kindLabel()}`);
+      });
+
+      sourceText.addEventListener("input", () => updateMetrics());
+      storyTitle.addEventListener("input", () => updateMetrics("待分析"));
+      sourceNote.addEventListener("input", () => updateMetrics("待分析"));
+      filename.addEventListener("input", () => updateMetrics("待分析"));
+
+      chooseFile.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", (event) => handleFile(event.target.files?.[0]));
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.classList.add("dragging");
+        });
+      });
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.classList.remove("dragging");
+        });
+      });
+      dropZone.addEventListener("drop", (event) => handleFile(event.dataTransfer?.files?.[0]));
+
+      ledgerButton.addEventListener("click", openLedger);
+      closeLedger.addEventListener("click", closeLedgerPanel);
+      ledgerBackdrop.addEventListener("click", (event) => {
+        if (event.target === ledgerBackdrop) {
+          closeLedgerPanel();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && ledgerBackdrop.classList.contains("show")) {
+          closeLedgerPanel();
+        }
+      });
+
+      saveDraft.addEventListener("click", saveCurrentDraft);
+      startAnalysis.addEventListener("click", beginAnalysis);
+
+      try {
+        const savedDraft = JSON.parse(localStorage.getItem(draftKey) || "null");
+        if (savedDraft?.title) {
+          appendRecord({
+            title: savedDraft.title,
+            note: savedDraft.note,
+            mode: savedDraft.mode,
+            status: "本地草稿",
+            count: savedDraft.count
+          });
+        }
+      } catch (error) {
+        localStorage.removeItem(draftKey);
+      }
+
+      updateMetrics();
+    })();
+  </script>
+</body>
+</html>

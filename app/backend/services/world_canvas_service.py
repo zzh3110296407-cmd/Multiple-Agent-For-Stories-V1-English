@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import re
 from typing import Any
 
 from pydantic import BaseModel, ValidationError
@@ -1045,6 +1046,22 @@ class WorldCanvasService:
     ) -> WorldCanvas:
         timestamp = now_iso()
         canvas_data = dict(data)
+        if isinstance(canvas_data.get("world_canvas"), dict):
+            canvas_data = dict(canvas_data["world_canvas"])
+        required_story_fields = [
+            "scope",
+            "tone",
+            "history_summary",
+            "geography_summary",
+            "culture_summary",
+            "special_rules_summary",
+            "hard_rules",
+        ]
+        populated_story_fields = sum(
+            1 for key in required_story_fields if canvas_data.get(key)
+        )
+        if populated_story_fields < 5 or not canvas_data.get("hard_rules"):
+            raise StorageError("World Canvas model output failed schema validation.")
         canvas_data = self._normalize_agent_canvas_data(canvas_data)
         canvas_data["world_canvas_id"] = self._resolve_world_canvas_id(
             existing_canvas=existing_canvas,
@@ -1389,6 +1406,188 @@ class WorldCanvasService:
                 normalized.append({"name": name, "summary": name})
         return normalized
 
+    def _fallback_scope_label(self, prompt_text: str, default: str) -> str:
+        source = " ".join((prompt_text or "").split())
+        for pattern in [
+            r"(?:发生在|位于|围绕|关于)([\u4e00-\u9fffA-Za-z0-9·]{2,18}?)(?:的|，|。|,|\.|\s|$)",
+            r"([\u4e00-\u9fffA-Za-z0-9·]{0,10}(?:城市|小镇|村庄|学院|学校|社区|校区|实验区|治理区|长安|洛阳|杭州|星球|基地|殖民地|王国|江湖|宫殿|海岛|森林|港口|图书馆))",
+        ]:
+            match = re.search(pattern, source)
+            if match:
+                candidate = match.group(1).strip(" 的，。,.；;：:")
+                if 2 <= len(candidate) <= 18 and candidate not in {"一个", "一部", "故事", "小说", "世界"}:
+                    return candidate
+        return default
+
+    def _fallback_canvas_profile(self, prompt_text: str) -> dict[str, str]:
+        source = prompt_text or ""
+        lowered = source.lower()
+
+        def has_any(*terms: str) -> bool:
+            for term in terms:
+                needle = term.lower()
+                start = 0
+                while True:
+                    index = lowered.find(needle, start)
+                    if index < 0:
+                        break
+                    clause_start = max(
+                        lowered.rfind(delimiter, 0, index)
+                        for delimiter in ["。", "！", "？", "；", ";", "\n", ".", "!", "?"]
+                    ) + 1
+                    clause_prefix = lowered[clause_start:index]
+                    negation_markers = [
+                        "不要",
+                        "避免",
+                        "禁止",
+                        "排除",
+                        "不是",
+                        "并非",
+                        "不采用",
+                        "不使用",
+                        "without ",
+                        "not ",
+                    ]
+                    last_negation = max((clause_prefix.rfind(marker) for marker in negation_markers), default=-1)
+                    last_contrast = max(clause_prefix.rfind("而是"), clause_prefix.rfind("但"), clause_prefix.rfind("but "))
+                    if last_negation < 0 or last_contrast > last_negation:
+                        return True
+                    start = index + len(needle)
+            return False
+
+        if has_any("唐代", "唐朝", "盛唐", "中唐", "长安", "洛阳", "传奇", "志怪", "游侠", "女史", "胡商"):
+            scope = self._fallback_scope_label(source, "唐代主要行动区域")
+            return {
+                "scope": scope,
+                "tone": "典雅、奇诡、重视礼法与人物选择",
+                "structure_name": scope,
+                "structure_type": "historical_region",
+                "structure_summary": f"以{scope}为核心舞台，官私秩序、民间传闻、礼法压力和人物行动共同构成世界边界。",
+                "history_summary": "关键旧事应从项目前提和用户确认中展开，避免替换为固定古代模板。",
+                "geography_summary": "地点层级以用户输入中的城市、坊市、道观、驿馆或行动区域为准，后续可继续补充。",
+                "culture_summary": "礼法、人情、身份秩序和民间传闻共同约束角色选择。",
+                "special_rules_summary": "奇遇、异象或志怪元素必须有边界、代价和可追踪后果。",
+                "phenomenon_rule": "特殊现象或奇遇必须有明确触发条件、可见代价和叙事边界。",
+                "knowledge_rule": "角色获得关键信息必须来自行动、见闻、文书、证据或用户确认事实。",
+                "soft_rule": "世界细节应服务礼法压力、人物选择和章节冲突。",
+                "unknown_summary": "关键旧事或异象来源仍需在后续设定中确认。",
+                "unknown_question": "关键旧事或异象来自人为布局、民间传闻、旧案后果，还是更深层规则？",
+                "location_summary": "由项目前提指定并等待用户继续细化的唐代行动区域。",
+            }
+        if has_any("科技", "科幻", "人工智能", "AI", "算法", "数据中台", "审计", "机器人", "自动化", "公共服务", "technology", "sci-fi", "science fiction", "algorithm"):
+            scope = self._fallback_scope_label(source, "项目前提指定的科技或治理场域")
+            return {
+                "scope": scope,
+                "tone": "理性、清晰、保留人情温度与社会议题张力",
+                "structure_name": scope,
+                "structure_type": "speculative_system",
+                "structure_summary": f"以{scope}为核心舞台，技术系统、执行机构、具体个体和责任链共同构成冲突边界。",
+                "history_summary": "关键技术上线、制度调整或事故背景必须从项目前提和用户确认中展开。",
+                "geography_summary": "主要地点以用户输入中的城市、社区、校区、实验区、基地或系统节点为准。",
+                "culture_summary": "公共效率、技术透明、个人尊严和基层执行压力共同约束角色选择。",
+                "special_rules_summary": "技术、异常或推演机制必须有数据来源、权限边界、责任主体和可追踪后果。",
+                "phenomenon_rule": "技术或异常机制只能在明确数据来源、权限条件或模型调用边界内发生。",
+                "knowledge_rule": "角色获得关键信息必须来自日志、复核、行动、证据或用户确认事实。",
+                "soft_rule": "世界细节应服务技术边界、责任归属和人物选择。",
+                "unknown_summary": "关键机制、责任链或事故来源仍需在后续设定中确认。",
+                "unknown_question": "关键机制的来源是设计缺陷、权限滥用、历史事故，还是尚未公开的责任链？",
+                "location_summary": "由项目前提指定并等待用户继续细化的科技或治理场域。",
+            }
+        if has_any("爱情", "恋爱", "婚约", "重逢", "告白", "家庭", "亲情", "romance", "love"):
+            scope = self._fallback_scope_label(source, "关系变化发生的核心生活空间")
+            return {
+                "scope": scope,
+                "tone": "细腻、温柔、重视关系变化与选择代价",
+                "structure_name": scope,
+                "structure_type": "relationship_space",
+                "structure_summary": f"以{scope}为核心舞台，日常秩序、关系距离、旧事压力和人物选择共同构成世界边界。",
+                "history_summary": "关系旧事和情感裂痕必须从项目前提和用户确认中展开。",
+                "geography_summary": "主要地点以用户输入中的生活空间、工作场所或重逢地点为准。",
+                "culture_summary": "亲密关系、家庭期待、社会眼光和个人边界共同约束角色选择。",
+                "special_rules_summary": "情感转折必须来自行动、误解修正或价值选择，不能凭空和解。",
+                "phenomenon_rule": "关系状态变化必须有行动、对话、误解修正或价值选择支撑。",
+                "knowledge_rule": "角色理解彼此必须来自互动、共同经历或已确认旧事。",
+                "soft_rule": "世界细节应服务关系变化、情绪递进和选择代价。",
+                "unknown_summary": "关系裂痕或旧事来源仍需在后续设定中确认。",
+                "unknown_question": "关系裂痕来自误会、价值差异、家庭压力，还是未说出口的旧事？",
+                "location_summary": "由项目前提指定并等待用户继续细化的关系核心空间。",
+            }
+        if has_any("魔幻", "魔法", "奇幻", "低魔", "仙侠", "修真", "妖", "灵", "fantasy", "magic"):
+            scope = self._fallback_scope_label(source, "项目前提指定的幻想舞台")
+            return {
+                "scope": scope,
+                "tone": "奇诡、克制、重视规则代价",
+                "structure_name": scope,
+                "structure_type": "fantasy_domain",
+                "structure_summary": f"以{scope}为核心舞台，幻想规则、普通秩序、禁忌边界和人物选择共同构成世界边界。",
+                "history_summary": "幻想规则的旧源、禁忌或代价必须从项目前提和用户确认中展开。",
+                "geography_summary": "主要地点以用户输入中的城市、宗门、村庄、遗迹或边界区域为准。",
+                "culture_summary": "普通秩序、力量规则、禁忌代价和人情关系共同约束角色选择。",
+                "special_rules_summary": "魔法、异能或幻想规则必须有边界、代价和不可越权的限制。",
+                "phenomenon_rule": "幻想规则只能在明确触发条件、消耗或代价范围内发生。",
+                "knowledge_rule": "角色获得规则知识必须来自行动、传承、证据或用户确认事实。",
+                "soft_rule": "世界细节应服务规则代价、人物选择和章节冲突。",
+                "unknown_summary": "核心规则来源或禁忌边界仍需在后续设定中确认。",
+                "unknown_question": "核心规则来自自然秩序、旧契约、人为制造，还是被隐藏的历史后果？",
+                "location_summary": "由项目前提指定并等待用户继续细化的幻想舞台。",
+            }
+        if has_any("喜剧", "搞笑", "轻松", "荒诞", "日常", "comedy", "comic"):
+            scope = self._fallback_scope_label(source, "项目前提指定的日常行动空间")
+            return {
+                "scope": scope,
+                "tone": "轻快、清晰、用反差推动冲突",
+                "structure_name": scope,
+                "structure_type": "daily_comedy_space",
+                "structure_summary": f"以{scope}为核心舞台，日常规则、误会、反差行动和人物选择共同构成世界边界。",
+                "history_summary": "误会来源和反差前提必须从项目前提和用户确认中展开。",
+                "geography_summary": "主要地点以用户输入中的生活空间、工作场所或事件发生地为准。",
+                "culture_summary": "日常规则、社交压力和人物反差共同约束喜剧冲突。",
+                "special_rules_summary": "喜剧转折必须有因果和行动后果，不能只靠随机巧合推进。",
+                "phenomenon_rule": "误会或荒诞事件必须有可理解的触发条件和后续影响。",
+                "knowledge_rule": "角色获得关键信息必须来自互动、误会修正或用户确认事实。",
+                "soft_rule": "世界细节应服务节奏、反差和人物选择。",
+                "unknown_summary": "关键误会或荒诞事件的来源仍需在后续设定中确认。",
+                "unknown_question": "关键误会来自信息差、规则漏洞、关系隐瞒，还是环境反差？",
+                "location_summary": "由项目前提指定并等待用户继续细化的日常行动空间。",
+            }
+        if has_any("悬疑", "推理", "侦探", "案件", "谜团", "犯罪", "mystery", "detective", "crime", "thriller"):
+            scope = self._fallback_scope_label(source, "项目前提指定的调查舞台")
+            return {
+                "scope": scope,
+                "tone": "克制、紧张、重视因果与证据",
+                "structure_name": scope,
+                "structure_type": "investigation_space",
+                "structure_summary": f"以{scope}为核心舞台，线索、见证、信息差和行动风险共同构成世界边界。",
+                "history_summary": "关键旧案或遮蔽事实必须从项目前提和用户确认中展开。",
+                "geography_summary": "主要地点以用户输入中的案发地、调查地或相关区域为准。",
+                "culture_summary": "公开秩序、隐瞒压力、证据链和人物动机共同约束角色选择。",
+                "special_rules_summary": "线索、异常或犯罪事实必须有触发条件、证据链和可追踪后果。",
+                "phenomenon_rule": "关键异常或线索只能在明确触发条件下出现，并留下可追踪后果。",
+                "knowledge_rule": "角色获得关键信息必须来自行动、证据、见证或已确认记忆。",
+                "soft_rule": "世界细节应服务线索推进、因果清晰和角色动机。",
+                "unknown_summary": "核心遮蔽事实或关键来源仍需在后续设定中确认。",
+                "unknown_question": "核心遮蔽事实来自人为掩盖、旧事故、误导证词，还是更深层规则？",
+                "location_summary": "由项目前提指定并等待用户继续细化的调查舞台。",
+            }
+        scope = self._fallback_scope_label(source, "项目前提指定的核心舞台")
+        return {
+            "scope": scope,
+            "tone": "清晰、克制、随题材调整",
+            "structure_name": scope,
+            "structure_type": "story_stage",
+            "structure_summary": f"以{scope}为核心舞台，目标、阻力、人物选择和世界边界共同构成最小可运行设定。",
+            "history_summary": "关键旧事必须从项目前提和用户确认中展开，不能替换为演示故事或固定模板。",
+            "geography_summary": "主要地点以项目前提中的地点和后续确认信息为准。",
+            "culture_summary": "社会关系、组织压力和日常秩序需要服务项目前提中的核心冲突。",
+            "special_rules_summary": "所有特殊现象或关键规则都必须有触发条件、边界和可追踪后果。",
+            "phenomenon_rule": "关键规则或事件必须有明确触发条件、边界和可追踪后果。",
+            "knowledge_rule": "角色获得关键信息必须来自行动、证据、见闻或用户确认事实。",
+            "soft_rule": "世界细节应服务角色选择、章节冲突和后续连续性检查。",
+            "unknown_summary": "核心机制、关键旧事或主要阻力仍需在后续设定中确认。",
+            "unknown_question": "核心机制或主要阻力来自人物选择、组织压力、旧事后果，还是特殊规则？",
+            "location_summary": "由项目前提指定并等待用户继续细化的主要故事地点。",
+        }
+
     def _fallback_canvas_data_from_story_idea(
         self,
         *,
@@ -1401,6 +1600,7 @@ class WorldCanvasService:
         compact_prompt = " ".join(combined_prompt.split())
         story_direction = compact_prompt[:260] or "根据项目前提建立世界事实基础。"
         prompt_evidence = self._fallback_prompt_fidelity_evidence(source_story_idea)
+        profile = self._fallback_canvas_profile(compact_prompt)
         source = (
             "fallback_from_project_story_premise"
             if "ProjectStoryPremise" in source_story_idea
@@ -1409,12 +1609,12 @@ class WorldCanvasService:
         hard_rule_statements = [
             "世界画布必须保留当前项目的用户故事前提，不能替换为演示故事或模板故事。",
             f"世界画布必须保留以下项目前提证据：{prompt_evidence or story_direction}",
-            "特殊现象必须有明确触发条件和可追踪后果，不能随意出现。",
-            "角色获得关键信息必须来自行动、证据、见证或已确认记忆。",
+            profile["phenomenon_rule"],
+            profile["knowledge_rule"],
         ]
         soft_rule_statements = [
-            "叙事应保持因果清晰，优先保护项目前提、线索和角色动机的一致性。",
-            "世界细节应服务角色选择、章节冲突和后续连续性检查。",
+            "叙事应保持因果清晰，优先保护项目前提、世界规则和角色动机的一致性。",
+            profile["soft_rule"],
         ]
         hard_rules = [
             {
@@ -1449,29 +1649,29 @@ class WorldCanvasService:
             "project_id": self._current_project_id(),
             "status": "draft",
             "story_direction": story_direction,
-            "scope": "项目前提指定的核心舞台",
-            "tone": "悬疑、克制、重视因果与证据",
+            "scope": profile["scope"],
+            "tone": profile["tone"],
             "world_structure": {
                 "structure_id": "structure_root_001",
-                "name": "项目前提世界",
-                "structure_type": "other",
-                "summary": f"围绕项目前提建立最小可运行世界结构：{story_direction[:140]}",
+                "name": profile["structure_name"],
+                "structure_type": profile["structure_type"],
+                "summary": f"{profile['structure_summary']} 项目前提：{story_direction[:120]}",
                 "children": [],
             },
-            "history_summary": "关键历史事实必须从项目前提和后续用户确认中展开，不能替换为模板故事。",
-            "geography_summary": "主要地点以项目前提中的地点和后续确认信息为准。",
-            "culture_summary": "社会关系、组织压力和日常秩序需要服务项目前提中的核心冲突。",
-            "special_rules_summary": "所有特殊现象都必须有触发条件、边界和可追踪后果，并保留项目前提证据。",
+            "history_summary": profile["history_summary"],
+            "geography_summary": profile["geography_summary"],
+            "culture_summary": profile["culture_summary"],
+            "special_rules_summary": profile["special_rules_summary"],
             "hard_rules": hard_rules,
             "soft_rules": soft_rules,
             "unknown_rules": [
                 {
                     "unknown_rule_id": "unknown_fallback_origin_001",
-                    "summary": "核心异常或特殊规则的最终来源仍需在后续设定中确认。",
+                    "summary": profile["unknown_summary"],
                     "gap_type": "missing_origin",
-                    "why_it_matters": "来源会影响反派动机、历史真相和终局解释。",
+                    "why_it_matters": "来源会影响角色动机、章节冲突和终局解释。",
                     "related_rule_ids": [],
-                    "suggested_questions": ["核心异常来自人为制造、自然规则、旧事故，还是被隐藏的历史事实？"],
+                    "suggested_questions": [profile["unknown_question"]],
                     "severity": "medium",
                     "status": "open",
                 }
@@ -1480,7 +1680,7 @@ class WorldCanvasService:
             "user_confirmation_needed": [
                 "当前世界画布由项目前提和格式降级路径生成，请用户确认后再进入角色、框架和章节计划。"
             ],
-            "locations": [{"name": "核心舞台", "summary": "由项目前提指定并等待用户继续细化的主要故事地点。"}],
+            "locations": [{"name": profile["scope"], "summary": profile["location_summary"]}],
             "factions": [],
             "species": [],
             "source_story_idea": source_story_idea,

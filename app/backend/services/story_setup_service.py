@@ -384,8 +384,8 @@ class StorySetupService:
             ),
             creates_final_story_facts_now=False,
             requires_downstream_confirmation=True,
-            used_real_provider=False,
-            used_deterministic_fallback=True,
+            used_real_provider=intake.used_real_provider,
+            used_deterministic_fallback=intake.used_deterministic_fallback,
             safe_summary=(
                 "Story setup draft bundle created as suggestions only; downstream workspaces must confirm final facts."
             ),
@@ -798,10 +798,22 @@ class StorySetupService:
         return StorySetupCurrentState(
             project_id=effective_project_id,
             state_status=state_status,
+            controlled_prompt_text=(
+                self._controlled_prompt_text(current_prompt.controlled_prompt_text_ref)
+                if current_prompt
+                else ""
+            ),
             story_setup_prompt=current_prompt,
             story_setup_intake=current_intake,
             story_setup_draft_bundle=current_draft_bundle,
             story_setup_questions=current_questions,
+            controlled_question_answers={
+                question.story_setup_question_id: self._controlled_prompt_text(
+                    question.user_answer_ref
+                )
+                for question in current_questions
+                if question.user_answer_ref
+            },
             story_setup_decision=current_decision,
             story_setup_handoff=current_handoff,
             story_setup_safety_report=current_safety_report,
@@ -959,6 +971,18 @@ class StorySetupService:
             current_step="world_canvas_draft",
             status="story_setup_bootstrapped",
             now=now,
+        )
+        handoff = handoff.copy(
+            update={
+                "handoff_status": "applied",
+                "updated_at": now,
+            }
+        )
+        self._write_handoffs(
+            [
+                handoff if item.story_setup_handoff_id == handoff.story_setup_handoff_id else item
+                for item in self._read_handoffs()
+            ]
         )
 
         return StorySetupBootstrapResult(
@@ -1392,6 +1416,13 @@ class StorySetupService:
                 "驿馆",
                 "坊市",
                 "王朝",
+                "杭州",
+                "实验区",
+                "治理区",
+                "社区",
+                "校区",
+                "数据中台",
+                "公共服务",
             ]
         ):
             missing.append("world_scope")
@@ -1412,6 +1443,8 @@ class StorySetupService:
                 "thriller",
                 "epic",
                 "adventure",
+                "technology",
+                "governance",
             ]
         ) and not any(
             word in prompt_text
@@ -1447,14 +1480,37 @@ class StorySetupService:
                 "志怪",
                 "游侠",
                 "侠义",
+                "科技",
+                "理性",
+                "治理",
+                "社会议题",
             ]
         ):
             missing.append("tone")
         if not any(
-            word in lowered for word in ["protagonist", "hero", "girl", "boy", "detective"]
+            word in lowered for word in ["protagonist", "hero", "girl", "boy", "detective", "engineer", "auditor", "teacher"]
         ) and not any(
             word in prompt_text
-            for word in ["主角", "主人公", "少年", "少女", "男孩", "女孩", "林夏", "守灯人", "侦探", "学生", "骑士"]
+            for word in [
+                "主角",
+                "主人公",
+                "少年",
+                "少女",
+                "男孩",
+                "女孩",
+                "林夏",
+                "守灯人",
+                "侦探",
+                "学生",
+                "骑士",
+                "工程师",
+                "审计员",
+                "老师",
+                "教师",
+                "医生",
+                "职员",
+                "机器人",
+            ]
         ):
             missing.append("protagonist")
         if not any(
@@ -1471,6 +1527,17 @@ class StorySetupService:
                 "秘密",
                 "外星代码",
                 "代码",
+                "科技",
+                "人工智能",
+                "AI治理",
+                "算法",
+                "算法审计",
+                "数据中台",
+                "教育机器人",
+                "记忆备份",
+                "公共服务",
+                "自动化",
+                "可追溯",
                 "悬疑",
                 "选择",
                 "拯救",
@@ -1500,6 +1567,11 @@ class StorySetupService:
         )
         if model_analysis:
             return model_analysis
+        status = self.model_gateway.validate_model_config()
+        if status.configured and status.provider_type not in {None, "", "local"}:
+            raise StorySetupBlocked(
+                "真实模型未能完成故事设定分析，请重试。系统不会用内置规则结果冒充模型输出。"
+            )
         return fallback
 
     def _model_story_setup_analysis(
@@ -1523,6 +1595,8 @@ class StorySetupService:
                             "你是故事设定分析智能体。只输出一个 JSON 对象，不要输出 markdown。"
                             "根据用户输入自主判断故事类型、读者基调、核心冲突、主角功能、"
                             "待补充问题和每个问题的参考选项。不要套用固定题材；不要把所有题材都判成悬疑。"
+                            "用户明确要求排除的题材、意象或情节只能作为禁止约束，"
+                            "不得列入 detected_key_terms，也不得写入任何草案建议。"
                             "所有字段必须是安全、简短、面向创作工作台的草案建议，不写最终故事事实。"
                         ),
                     },
@@ -1560,7 +1634,8 @@ class StorySetupService:
                 options={
                     "temperature": 0.25,
                     "max_output_tokens": 1800,
-                    "timeout_seconds": 60,
+                    "timeout_seconds": 75,
+                    "max_attempts": 1,
                 },
                 project_id=project_id,
                 agent_role="system",
@@ -1817,12 +1892,7 @@ class StorySetupService:
             {
                 "question_type": "protagonist",
                 "question_text": f"关于「{protagonist_label or '主角'}」，第一阶段更应承担什么故事功能？",
-                "suggested_options": [
-                    "主动追寻真相或目标",
-                    "保护某个重要对象",
-                    "作为见证者逐步理解世界",
-                    "打破旧秩序并承受代价",
-                ],
+                "suggested_options": self._protagonist_options_for_genres(genres),
             }
         )
         specs.append(
@@ -1918,6 +1988,21 @@ class StorySetupService:
             return ["轻快喜剧", "荒诞讽刺", "温暖日常"]
         return ["严肃克制", "温暖治愈", "紧张推进"]
 
+    def _protagonist_options_for_genres(self, genres: list[str]) -> list[str]:
+        if any(tag in genres for tag in ["historical", "legend", "zhiguai", "wuxia"]):
+            return ["在礼法与侠义之间做选择", "承担奇遇带来的代价", "连接民间传闻与正式秩序"]
+        if "romance" in genres:
+            return ["主动修复关系裂痕", "在靠近与退让之间选择", "让关系变化推动主线"]
+        if "science_fiction" in genres:
+            return ["验证技术或异常规则的边界", "保护具体的人不被系统目标吞没", "在效率、责任与风险之间做选择"]
+        if any(tag in genres for tag in ["fantasy", "low_fantasy", "xianxia"]):
+            return ["承担规则代价", "保护重要对象", "在力量诱惑与底线之间选择"]
+        if any(tag in genres for tag in ["mystery", "crime", "thriller"]):
+            return ["主动追寻真相或目标", "保护关键证据或见证者", "在危险信息差中推进调查"]
+        if "comedy" in genres:
+            return ["制造误会并推动修正", "用反差行动打开局面", "在轻快冲突中完成选择"]
+        return ["主动推进核心目标", "保护某个重要对象", "作为见证者逐步理解世界"]
+
     def _conflict_options_for_genres(self, genres: list[str], terms: list[str]) -> list[str]:
         anchor = terms[0] if terms else "核心目标"
         if any(tag in genres for tag in ["historical", "legend", "zhiguai", "wuxia"]):
@@ -1925,7 +2010,7 @@ class StorySetupService:
         if "romance" in genres:
             return ["关系误解", "价值观冲突", f"围绕「{anchor}」的选择代价"]
         if "science_fiction" in genres:
-            return ["技术失控", "生存压力", f"围绕「{anchor}」的认知危机"]
+            return ["技术边界与责任归属", "公共效率与个体处境", f"围绕「{anchor}」的认知或治理危机"]
         if any(tag in genres for tag in ["fantasy", "low_fantasy", "xianxia", "wuxia"]):
             return ["规则代价", "旧秩序压迫", f"围绕「{anchor}」的禁忌选择"]
         if any(tag in genres for tag in ["mystery", "crime", "thriller"]):
@@ -1990,7 +2075,11 @@ class StorySetupService:
     def _detect_key_terms(self, text: str) -> list[str]:
         lowered = text.lower()
         terms: list[str] = []
-        terms.extend(self._extract_prompt_anchor_terms(text))
+        terms.extend(
+            term
+            for term in self._extract_prompt_anchor_terms(text)
+            if not self._keyword_is_negated(text, term)
+        )
         for keyword in [
             "Mars",
             "colony",
@@ -2047,7 +2136,7 @@ class StorySetupService:
             "明朗",
             "奇诡",
         ]:
-            if keyword.lower() in lowered or keyword in text:
+            if (keyword.lower() in lowered or keyword in text) and not self._keyword_is_negated(text, keyword):
                 terms.append(keyword)
         return self._dedupe(terms)[:20]
 
@@ -2061,6 +2150,8 @@ class StorySetupService:
             r"(?:码头|港口|灯塔|钟楼|塔|月亮|潮汐|彗星|记忆|邮差|船员|鲸|黑信|信|钟|姐姐|哥哥|"
             r"母亲|父亲|城市|小镇|村庄|王国|学院|学校|剧院|桥|列车|图书馆|档案馆|"
             r"森林|岛|河|海|花园|宫殿|基地|殖民地|代码|钥匙|契约|王冠|诅咒|梦境|"
+            r"杭州|实验区|治理区|社区|校区|数据中台|算法|算法审计|审计日志|追溯日志|"
+            r"教育机器人|机器人|记忆备份|公共服务|人工智能|AI治理|科技治理|"
             r"长安|洛阳|西市|东市|道观|驿馆|坊市|夜禁|玉佩|青玉佩|古镜|胡商|女史|遗书|文书|异象|奇遇)"
         )
         role_name_pattern = (
@@ -2091,6 +2182,37 @@ class StorySetupService:
                     if term:
                         terms.append(term)
         return self._dedupe(terms)[:10]
+
+    def _keyword_is_negated(self, text: str, keyword: str) -> bool:
+        source = text or ""
+        needle = keyword or ""
+        if not needle:
+            return False
+        lowered_source = source.lower()
+        lowered_needle = needle.lower()
+        starts: list[int] = []
+        cursor = 0
+        while True:
+            start = lowered_source.find(lowered_needle, cursor)
+            if start < 0:
+                break
+            starts.append(start)
+            cursor = start + max(1, len(lowered_needle))
+        if not starts:
+            return False
+
+        negation_markers = ["不要", "不能", "不是", "避免", "不写", "别写", "拒绝", "排除", "禁止", "不得"]
+        clause_boundaries = ["。", "！", "？", "；", ";", "\n", "但是", "但要", "而是", "却要"]
+        for start in starts:
+            clause_start = 0
+            for boundary in clause_boundaries:
+                boundary_index = source.rfind(boundary, 0, start)
+                if boundary_index >= 0:
+                    clause_start = max(clause_start, boundary_index + len(boundary))
+            prefix = source[clause_start:start]
+            if not any(marker in prefix for marker in negation_markers):
+                return False
+        return True
 
     def _clean_prompt_anchor_term(self, value: str) -> str:
         term = (value or "").strip(" ，。,.、；;：:（）()[]【】")
@@ -2175,6 +2297,9 @@ class StorySetupService:
             ("sci-fi", "science_fiction"),
             ("code", "science_fiction"),
             ("robot", "science_fiction"),
+            ("technology", "science_fiction"),
+            ("governance", "science_fiction"),
+            ("algorithm", "science_fiction"),
             ("romance", "romance"),
             ("love story", "romance"),
             ("comedy", "comedy"),
@@ -2221,10 +2346,21 @@ class StorySetupService:
             ("火星", "science_fiction"),
             ("殖民", "science_fiction"),
             ("科幻", "science_fiction"),
+            ("科技", "science_fiction"),
+            ("人工智能", "science_fiction"),
+            ("AI治理", "science_fiction"),
+            ("算法", "science_fiction"),
+            ("算法审计", "science_fiction"),
+            ("数据中台", "science_fiction"),
+            ("教育机器人", "science_fiction"),
+            ("记忆备份", "science_fiction"),
+            ("公共服务", "science_fiction"),
+            ("自动化", "science_fiction"),
+            ("可追溯", "science_fiction"),
             ("外星", "science_fiction"),
             ("代码", "science_fiction"),
         ]:
-            if keyword in lowered or keyword in text:
+            if (keyword in lowered or keyword in text) and not self._keyword_is_negated(text, keyword):
                 tags.append(tag)
         return self._dedupe(tags) or ["open_genre"]
 
@@ -2236,6 +2372,8 @@ class StorySetupService:
             ("warm", "warm"),
             ("comic", "light"),
             ("serious", "serious"),
+            ("rational", "serious"),
+            ("governance", "serious"),
             ("mystery", "suspense"),
             ("suspense", "suspense"),
             ("romantic", "romantic"),
@@ -2256,6 +2394,10 @@ class StorySetupService:
             ("轻松", "light"),
             ("轻快", "light"),
             ("严肃", "serious"),
+            ("理性", "serious"),
+            ("治理", "serious"),
+            ("社会议题", "serious"),
+            ("责任", "serious"),
             ("浪漫", "romantic"),
             ("甜", "romantic"),
             ("喜剧", "comedic"),
@@ -2281,7 +2423,7 @@ class StorySetupService:
             ("思辨", "speculative"),
             ("悬疑", "suspense"),
         ]:
-            if keyword in lowered or keyword in text:
+            if (keyword in lowered or keyword in text) and not self._keyword_is_negated(text, keyword):
                 tags.append(tag)
         return self._dedupe(tags) or ["tone_to_confirm"]
 
@@ -2291,7 +2433,9 @@ class StorySetupService:
         if "science_fiction" in genre_set:
             if "suspense" in normalized or "mystery" in genre_set:
                 normalized = ["sci_fi_suspense"] + [tone for tone in normalized if tone != "suspense"]
-            if not any(tone in normalized for tone in ["speculative", "cold_tech", "adventurous"]):
+            if "warm" in normalized and "serious" in normalized:
+                normalized.extend(["speculative"])
+            elif not any(tone in normalized for tone in ["speculative", "cold_tech", "adventurous"]):
                 normalized.extend(["speculative", "cold_tech"])
         if any(tag in genre_set for tag in ["historical", "legend", "zhiguai"]) and "strange" not in normalized:
             normalized.append("strange")
@@ -2600,7 +2744,11 @@ class StorySetupService:
         prompt: StorySetupPrompt,
         intake: StorySetupIntake,
     ) -> list[str]:
-        warnings = ["requires_downstream_confirmation", "deterministic_fallback_used"]
+        warnings = ["requires_downstream_confirmation"]
+        if intake.used_real_provider:
+            warnings.append("model_generated_story_setup_analysis")
+        if intake.used_deterministic_fallback:
+            warnings.append("deterministic_fallback_used")
         if prompt.needs_prompt_text_confirmation:
             warnings.append("prompt_text_confirmation_needed")
         warnings.extend([f"missing:{code}" for code in intake.missing_information_codes])

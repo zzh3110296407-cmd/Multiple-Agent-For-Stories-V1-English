@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色库与分级管理</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/character-spine-background-v1.png")'>
+    <header class="topbar">
+      <div>
+        <p class="crumb">主页 / 工作台 / 角色主轴 / 角色管理</p>
+        <h1>角色库与分级管理</h1>
+      </div>
+      <div class="top-actions">
+        <span class="badge sage">角色工作台</span>
+        <span class="badge">A/B/C/D</span>
+        <span class="badge warning">A 级受保护</span>
+      </div>
+    </header>
+
+    <section class="workspace-grid wide">
+      <aside class="panel tall">
+        <p class="eyebrow">角色筛选</p>
+        <h2>角色列表</h2>
+        <div class="tabs" role="tablist" aria-label="角色等级筛选">
+          <button class="tab-button active" type="button" data-tier="all">全部</button>
+          <button class="tab-button" type="button" data-tier="A">A</button>
+          <button class="tab-button" type="button" data-tier="B">B</button>
+          <button class="tab-button" type="button" data-tier="C">C</button>
+          <button class="tab-button" type="button" data-tier="D">D</button>
+        </div>
+        <div class="stats-grid" style="margin: 16px 0;">
+          <div class="stat"><span>A</span><strong>3</strong></div>
+          <div class="stat"><span>B</span><strong>7</strong></div>
+          <div class="stat"><span>C</span><strong>11</strong></div>
+          <div class="stat"><span>D</span><strong>18</strong></div>
+        </div>
+        <div class="scroll-area">
+          <div class="list" id="roleList" aria-label="角色列表"></div>
+        </div>
+      </aside>
+
+      <section class="panel tall">
+        <p class="eyebrow">当前角色</p>
+        <h2 id="roleName">当前角色</h2>
+        <p class="subtitle" id="roleSummary">角色档案会从当前项目后端数据同步。</p>
+        <div class="status-row" style="margin-bottom: 18px;">
+          <span class="badge sage" id="roleTier">A 级</span>
+          <span class="badge" id="roleStatus">confirmed</span>
+          <span class="badge warning" id="roleProtection">重大变化受保护</span>
+        </div>
+
+        <div class="split">
+          <article class="soft-panel">
+            <h3>基础编辑</h3>
+            <div class="form-grid">
+              <label class="field">
+                <span>角色名称</span>
+                <input id="editName" value="" aria-label="角色名称" />
+              </label>
+              <label class="field">
+                <span>故事职能</span>
+                <input id="editFunction" value="" aria-label="故事职能" />
+              </label>
+              <label class="field full">
+                <span>安全摘要</span>
+                <textarea id="editSummary" aria-label="安全摘要">角色摘要会从当前项目后端数据同步。</textarea>
+              </label>
+            </div>
+            <div class="button-row" style="margin-top: 12px;">
+              <button class="button primary" type="button" id="saveRole">保存编辑</button>
+              <button class="button" type="button" id="buildContext">构建上下文</button>
+            </div>
+          </article>
+
+          <article class="soft-panel">
+            <h3>分级与归档</h3>
+            <div class="form-grid">
+              <label class="field">
+                <span>调整到</span>
+                <select id="targetTier" aria-label="目标角色等级">
+                  <option>A</option><option>B</option><option>C</option><option>D</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>归档原因</span>
+                <input id="archiveReason" value="阶段性退场，保留为历史角色" aria-label="归档原因" />
+              </label>
+              <label class="field full">
+                <span>用户说明</span>
+                <textarea id="tierNote" aria-label="分级或归档说明">用户确认该变更只影响角色库，不直接改写已确认场景正文。</textarea>
+              </label>
+            </div>
+            <div class="button-row" style="margin-top: 12px;">
+              <button class="button" type="button" id="changeTier">调整分级</button>
+              <button class="button danger" type="button" id="archiveRole">归档角色</button>
+            </div>
+          </article>
+        </div>
+
+        <article class="soft-panel" style="margin-top: 14px;">
+          <h3>手动创建 B/C/D 角色</h3>
+          <div class="form-grid">
+            <label class="field"><span>名称</span><input id="newName" value="" aria-label="新角色名称" /></label>
+            <label class="field"><span>等级</span><select id="newTier" aria-label="新角色等级"><option>B</option><option>C</option><option>D</option></select></label>
+            <label class="field full"><span>职能与边界</span><textarea aria-label="新角色职能">写下新角色的故事职能、行动边界和记忆预算。</textarea></label>
+          </div>
+          <button class="button accent" type="button" id="createRole" style="margin-top: 12px;">创建角色</button>
+        </article>
+      </section>
+
+      <aside class="panel tall">
+        <p class="eyebrow">安全边界</p>
+        <h2>接入边界</h2>
+        <div class="timeline">
+          <div class="step current"><span class="step-dot">1</span><div><h4>A 级保护</h4><p class="muted">A-tier 不能在此页面降级或归档，需要走重大状态变化审阅。</p></div></div>
+          <div class="step"><span class="step-dot">2</span><div><h4>B/C/D 可管理</h4><p class="muted">允许创建、编辑、调整分级和归档，保留历史引用。</p></div></div>
+          <div class="step"><span class="step-dot">3</span><div><h4>不改正文</h4><p class="muted">角色库操作不直接改写世界、章节计划或场景正文。</p></div></div>
+        </div>
+        <div class="soft-panel" style="margin-top: 18px;">
+          <h3>动作反馈</h3>
+          <p class="muted" id="actionNote">选择角色后可编辑。A 级角色的危险操作会被拦截。</p>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="bottom-bar">
+      <span class="muted">角色库操作只影响角色事实，不直接改写世界、章节或场景正文。</span>
+      <button class="button primary" type="button">返回角色主轴</button>
+    </footer>
+  </main>
+
+  <script>
+    const roles = [
+      { name: "当前角色", tier: "A", status: "confirmed", summary: "角色档案会从当前项目后端数据同步。", fn: "主线角色" }
+    ];
+    const list = document.getElementById("roleList");
+    const note = document.getElementById("actionNote");
+    let selected = roles[0];
+
+    function render(filter = "all") {
+      list.innerHTML = "";
+      roles.filter((role) => filter === "all" || role.tier === filter).forEach((role) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = `item ${role === selected ? "selected" : ""}`;
+        item.innerHTML = `<div class="item-head"><strong>${role.name}</strong><span class="badge">${role.tier} 级</span></div><p>${role.summary}</p><small>${role.status} · ${role.fn}</small>`;
+        item.addEventListener("click", () => {
+          selected = role;
+          updateSelected();
+          render(filter);
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function updateSelected() {
+      document.getElementById("roleName").textContent = selected.name;
+      document.getElementById("roleSummary").textContent = selected.summary;
+      document.getElementById("roleTier").textContent = `${selected.tier} 级`;
+      document.getElementById("roleStatus").textContent = selected.status;
+      document.getElementById("roleProtection").textContent = selected.tier === "A" ? "重大变化受保护" : "可管理角色";
+      document.getElementById("editName").value = selected.name;
+      document.getElementById("editFunction").value = selected.fn;
+      document.getElementById("editSummary").value = selected.summary;
+      document.getElementById("targetTier").value = selected.tier;
+    }
+
+    document.querySelectorAll("[data-tier]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-tier]").forEach((tab) => tab.classList.remove("active"));
+        button.classList.add("active");
+        render(button.dataset.tier);
+      });
+    });
+    document.getElementById("changeTier").addEventListener("click", () => {
+      note.textContent = selected.tier === "A" ? "A 级角色不能在此页面降级，请进入重大状态变化审阅。" : `将把 ${selected.name} 调整为 ${document.getElementById("targetTier").value} 级。`;
+    });
+    document.getElementById("archiveRole").addEventListener("click", () => {
+      note.textContent = selected.tier === "A" ? "A 级角色不能在此页面归档。" : `将调用 archiveRole，原因：${document.getElementById("archiveReason").value}`;
+    });
+    document.getElementById("saveRole").addEventListener("click", () => note.textContent = `将保存 ${selected.name} 的基础信息。`);
+    document.getElementById("createRole").addEventListener("click", () => note.textContent = `将创建 ${document.getElementById("newTier").value} 级角色：${document.getElementById("newName").value || "未命名角色"}`);
+    document.getElementById("buildContext").addEventListener("click", () => note.textContent = "将进入角色上下文预览。");
+    render();
+  </script>
+</body>
+</html>

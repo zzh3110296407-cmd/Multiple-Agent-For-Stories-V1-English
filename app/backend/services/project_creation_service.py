@@ -32,6 +32,7 @@ from app.backend.models.project_creation import (
 )
 from app.backend.services.model_runtime_log_service import utc_now
 from app.backend.services.model_settings_service import ModelSettingsService
+from app.backend.services.active_project_story_data import story_data_dir_for_project
 from app.backend.storage.json_store import JsonStore, StorageError
 
 
@@ -523,8 +524,29 @@ class ProjectCreationService:
         legacy = self._legacy_project_shell()
         if legacy and all(project.project_id != legacy.project_id for project in projects):
             projects.append(legacy)
+        projects = [self._project_shell_with_runtime_progress(project) for project in projects]
         projects = sorted(projects, key=lambda item: (item.created_at or "", item.project_id))
         return ProjectRegistryResponse(projects=projects)
+
+    def _project_shell_with_runtime_progress(self, project: ProjectShell) -> ProjectShell:
+        project_file = story_data_dir_for_project(project.project_id, self.data_dir) / "project.json"
+        if not self.store.exists(project_file):
+            return project
+        try:
+            payload = self.store.read(project_file)
+        except StorageError:
+            return project
+        if not isinstance(payload, dict) or str(payload.get("project_id") or "") != project.project_id:
+            return project
+        return project.copy(
+            update={
+                "title": str(payload.get("title") or project.title),
+                "language": str(payload.get("language") or project.language),
+                "status": str(payload.get("status") or project.status),
+                "current_step": str(payload.get("current_step") or project.current_step),
+                "updated_at": str(payload.get("updated_at") or project.updated_at),
+            }
+        )
 
     def get_project(self, project_id: str) -> ProjectOpenSummary:
         project = self._get_project_shell(project_id)
@@ -854,6 +876,16 @@ class ProjectCreationService:
         *,
         project_id: str = "",
     ) -> ProjectCreationRequest | None:
+        if project_id:
+            decision_request_ids = {
+                decision.creation_request_id
+                for decision in decisions
+                if decision.created_project_id == project_id
+            }
+            for request in reversed(requests):
+                if request.creation_request_id in decision_request_ids:
+                    return request
+
         confirmed_request_ids = {
             decision.creation_request_id
             for decision in decisions
@@ -878,6 +910,7 @@ class ProjectCreationService:
             for request in reversed(requests):
                 if request.existing_project_id == project_id:
                     return request
+            return None
         return requests[-1] if requests else None
 
     def _latest_preferred_draft(

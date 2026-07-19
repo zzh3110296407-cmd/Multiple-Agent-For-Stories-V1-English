@@ -174,6 +174,8 @@ class SceneRoleCandidateSearchService:
                 continue
             if str(character.tier or "").upper() not in {"C", "D"}:
                 continue
+            if _is_placeholder_role_character(character):
+                continue
             characters.append(character)
         return characters
 
@@ -190,3 +192,29 @@ def _meaningful_tokens(text: str) -> list[str]:
         if len(clean) >= 3:
             tokens.append(clean)
     return tokens
+
+
+def _is_placeholder_role_character(character: Character) -> bool:
+    text = " ".join(
+        [
+            character.name,
+            character.profile.identity,
+            character.profile.description,
+        ]
+    ).casefold()
+    return any(
+        marker in text
+        for marker in (
+            "c local",
+            "d local",
+            "c role",
+            "d role",
+            "pending c-tier",
+            "pending d-tier",
+            "placeholder",
+            "not written to characters.json",
+            "\u672c\u5730\u89c1\u8bc1\u8005",
+            "\u4e34\u65f6\u5411\u5bfc",
+            "\u4e34\u65f6\u53c2\u4e0e\u8005",
+        )
+    )

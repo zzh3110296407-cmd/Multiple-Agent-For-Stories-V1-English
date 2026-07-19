@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>场景写作 / 连续性与记忆写入 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.95);
+      --paper-soft: rgba(238, 227, 208, 0.68);
+      --ink: #2f312b;
+      --muted: #71685e;
+      --quiet: #9a8f83;
+      --line: rgba(110, 86, 61, 0.19);
+      --line-strong: rgba(110, 86, 61, 0.32);
+      --bronze: #b48a78;
+      --bronze-deep: #8f675b;
+      --sage: #71806f;
+      --sage-deep: #53624f;
+      --blue-gray: #6f8182;
+      --blue-gray-deep: #536869;
+      --gold: #c7a66a;
+      --gold-deep: #9b7d47;
+      --danger: #a66f60;
+      --shadow: 0 26px 72px rgba(74, 53, 32, 0.18);
+      --soft-shadow: 0 14px 34px rgba(74, 53, 32, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.89), rgba(236, 231, 220, 0.66) 43%, rgba(236, 231, 220, 0.24)),
+        url("../../assets/scene-writing-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 17%, rgba(255, 248, 229, 0.54), transparent 30%),
+        radial-gradient(circle at 77% 22%, rgba(111, 129, 130, 0.15), transparent 33%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.24), rgba(180, 138, 120, 0.11));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1376px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 210px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .ghost-button,
+    .check-card,
+    .memory-card,
+    .impact-card,
+    .tab-button {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 12px 28px rgba(74, 53, 32, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .ghost-button,
+    .tab-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .ghost-button:hover,
+    .check-card:hover,
+    .memory-card:hover,
+    .impact-card:hover,
+    .tab-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 16px 34px rgba(74, 53, 32, 0.12);
+    }
+
+    .primary-button {
+      color: #fffaf2;
+      border-color: rgba(83, 104, 105, 0.48);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 16px 36px rgba(83, 104, 105, 0.22);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #789091, #536869);
+      box-shadow: 0 20px 42px rgba(83, 104, 105, 0.28);
+    }
+
+    .ghost-button.warning {
+      color: var(--bronze-deep);
+      border-color: rgba(180, 138, 120, 0.22);
+      background: rgba(255, 249, 241, 0.48);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(113, 128, 111, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .dot.pending {
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(199, 166, 106, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 520px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30332d;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(47, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #373832;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 374px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(238, 227, 208, 0.72)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 21px 30px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #30332d;
+      font-size: 26px;
+      line-height: 1.16;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.58;
+      font-weight: 520;
+    }
+
+    .write-chip {
+      flex: 0 0 168px;
+      align-self: start;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.7);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .write-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .write-chip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .review-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 318px minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 30px 14px;
+      overflow: hidden;
+    }
+
+    .check-column,
+    .memory-column {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .check-column {
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+    }
+
+    .section-card,
+    .memory-shell,
+    .detail-box {
+      border: 1px solid rgba(110, 86, 61, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+    }
+
+    .section-card {
+      padding: 14px;
+    }
+
+    .section-card h3,
+    .memory-shell h3,
+    .detail-box h3,
+    .side-panel h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-card p,
+    .detail-box p,
+    .side-panel p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .check-card {
+      width: 100%;
+      min-height: 68px;
+      padding: 12px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 10px;
+      box-shadow: none;
+    }
+
+    .check-card.active {
+      border-color: rgba(83, 104, 105, 0.36);
+      background: rgba(239, 244, 242, 0.62);
+      box-shadow: 0 14px 28px rgba(83, 104, 105, 0.12);
+    }
+
+    .check-card.warning-state {
+      border-color: rgba(199, 166, 106, 0.28);
+      background: rgba(255, 249, 235, 0.48);
+    }
+
+    .check-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      font-size: 15px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(83, 98, 79, 0.2);
+    }
+
+    .warning-state .check-mark {
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      box-shadow: 0 10px 22px rgba(155, 125, 71, 0.18);
+    }
+
+    .check-copy {
+      min-width: 0;
+    }
+
+    .check-copy strong {
+      display: block;
+      color: #353731;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .check-copy span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.36;
+    }
+
+    .note-card {
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 86, 61, 0.15);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .note-card strong {
+      display: block;
+      color: #3d3e38;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .note-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+    }
+
+    .memory-shell {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .memory-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab-button {
+      min-height: 34px;
+      padding: 0 13px;
+      color: var(--muted);
+      background: rgba(255, 252, 244, 0.42);
+      box-shadow: none;
+    }
+
+    .tab-button.active {
+      color: #fffaf2;
+      border-color: rgba(83, 104, 105, 0.42);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 14px 30px rgba(83, 104, 105, 0.2);
+    }
+
+    .plan-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(199, 166, 106, 0.16);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .memory-area {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      scrollbar-width: thin;
+    }
+
+    .memory-view {
+      display: none;
+      min-height: 100%;
+    }
+
+    .memory-view.active {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .memory-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .memory-stat {
+      min-height: 78px;
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 86, 61, 0.14);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(255, 248, 229, 0.48), transparent 34%),
+        rgba(255, 252, 244, 0.54);
+    }
+
+    .memory-stat span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .memory-stat strong {
+      display: block;
+      margin-top: 6px;
+      color: #353731;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .memory-stat small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.32;
+      font-weight: 560;
+    }
+
+    .memory-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .memory-card {
+      min-height: 124px;
+      padding: 15px;
+      text-align: left;
+      box-shadow: none;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 246, 0.86), rgba(250, 243, 230, 0.72));
+    }
+
+    .memory-card.active {
+      border-color: rgba(83, 104, 105, 0.36);
+      background:
+        radial-gradient(circle at 90% 12%, rgba(111, 129, 130, 0.12), transparent 34%),
+        linear-gradient(180deg, rgba(255, 253, 246, 0.92), rgba(239, 244, 242, 0.74));
+      box-shadow: 0 14px 28px rgba(83, 104, 105, 0.12);
+    }
+
+    .memory-card span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.13);
+      color: var(--bronze-deep);
+      font-size: 11px;
+      font-weight: 860;
+    }
+
+    .memory-card strong {
+      display: block;
+      margin-top: 10px;
+      color: #353731;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .memory-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+      font-weight: 520;
+    }
+
+    .detail-box {
+      padding: 15px;
+    }
+
+    .detail-box ul {
+      margin: 11px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .detail-box li {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    .detail-box li strong {
+      color: #3d3e38;
+      font-weight: 900;
+    }
+
+    .panel-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 13px 30px 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .side-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .side-head {
+      padding: 20px 22px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side-head h2 {
+      font-size: 24px;
+    }
+
+    .impact-list {
+      min-height: 0;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      padding: 14px 18px;
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .impact-card {
+      width: 100%;
+      padding: 11px 12px;
+      text-align: left;
+      box-shadow: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .impact-card.active {
+      border-color: rgba(83, 104, 105, 0.35);
+      background: rgba(239, 244, 242, 0.62);
+      box-shadow: 0 14px 28px rgba(83, 104, 105, 0.12);
+    }
+
+    .impact-card .impact-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .impact-card strong {
+      color: #383a34;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .impact-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.34;
+      font-weight: 520;
+    }
+
+    .mini-pill {
+      flex: 0 0 auto;
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .mini-pill.warning {
+      background: rgba(199, 166, 106, 0.16);
+      color: var(--gold-deep);
+    }
+
+    .mini-pill.danger {
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--danger);
+    }
+
+    .side-detail {
+      margin: 0 18px 13px;
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 86, 61, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .side-detail strong {
+      display: block;
+      color: #3a3b35;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .side-detail p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.46;
+    }
+
+    .confirm-box {
+      padding: 0 18px 18px;
+    }
+
+    .confirm-box label {
+      display: grid;
+      gap: 8px;
+      color: #4a443d;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 74px;
+      resize: vertical;
+      border: 1px solid rgba(110, 86, 61, 0.22);
+      border-radius: var(--radius);
+      outline: none;
+      color: #3f3933;
+      background: rgba(255, 252, 244, 0.62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.56;
+    }
+
+    textarea:focus {
+      border-color: rgba(83, 104, 105, 0.48);
+      box-shadow: 0 0 0 3px rgba(111, 129, 130, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 5;
+      min-width: 310px;
+      max-width: min(560px, calc(100vw - 40px));
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      background: rgba(255, 252, 244, 0.88);
+      color: #3f3933;
+      box-shadow: 0 18px 42px rgba(74, 53, 32, 0.18);
+      opacity: 0;
+      transform: translate(-50%, 14px);
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: min(100% - 34px, 920px);
+        min-height: calc(100vh - 34px);
+        height: auto;
+        margin: 17px auto;
+      }
+
+      .topbar,
+      .hero,
+      .layout,
+      .review-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-left: 0;
+      }
+
+      .summary-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .main-panel,
+      .side-panel,
+      .memory-shell {
+        min-height: auto;
+      }
+
+      .check-column,
+      .memory-area,
+      .impact-list {
+        overflow: visible;
+      }
+
+      .memory-summary-grid,
+      .memory-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 38px;
+      }
+
+      .topbar {
+        gap: 10px;
+      }
+
+      .summary-strip,
+      .memory-summary-grid,
+      .memory-card-grid,
+      .panel-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .memory-head,
+      .panel-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .review-body,
+      .panel-actions {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .write-chip {
+        flex: 0 0 auto;
+      }
+
+      .panel-actions {
+        display: grid;
+      }
+
+      .detail-box li {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button">返回修订正文</button>
+      <div class="crumb">主页 / 工作台 / 场景写作 / 连续性与记忆写入</div>
+      <div class="status-pill"><span class="dot"></span><span>模型已连接</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">连续性与记忆写入</h1>
+        <p>在场景正式进入后续流程前，确认它没有破坏既有事实，并决定哪些内容写入记忆系统。</p>
+      </div>
+      <div class="summary-strip" aria-label="场景确认摘要">
+        <div class="summary-item">
+          <span>当前场景</span>
+          <strong>场景 1 / 4</strong>
+        </div>
+        <div class="summary-item">
+          <span>连续性</span>
+          <strong id="continuitySummary">已通过</strong>
+        </div>
+        <div class="summary-item">
+          <span>记忆计划</span>
+          <strong id="planSummary">待确认</strong>
+        </div>
+        <div class="summary-item">
+          <span>写入状态</span>
+          <strong id="writeSummary">未写入</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="连续性与记忆计划主面板">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">确认层 / 等待写入</p>
+            <h2>钟楼证词的第一处裂缝</h2>
+            <p class="hint">当前修订候选已经准备好进入场景状态；这里用于确认连续性结果与记忆写入范围。</p>
+          </div>
+          <div class="write-chip" aria-live="polite">
+            <strong id="writeChipValue">0%</strong>
+            <span id="writeChipLabel">尚未写入</span>
+          </div>
+        </div>
+
+        <div class="review-body">
+          <aside class="check-column" aria-label="连续性复核">
+            <section class="section-card">
+              <h3>连续性复核</h3>
+              <p>只展示会影响确认的结论，不展示调试字段。</p>
+              <div class="check-list">
+                <button class="check-card active" data-check="world" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>世界事实</strong>
+                    <span>旧钟楼、档案室、火漆印章与已确认设定一致。</span>
+                  </span>
+                </button>
+                <button class="check-card" data-check="role" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>角色状态</strong>
+                    <span>林砚与薇拉的行动能力、已知信息没有越界。</span>
+                  </span>
+                </button>
+                <button class="check-card" data-check="chapter" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>章节目标</strong>
+                    <span>场景推进“证词缺口”目标，不提前揭露真相。</span>
+                  </span>
+                </button>
+                <button class="check-card warning-state" data-check="clue" type="button">
+                  <span class="check-mark">!</span>
+                  <span class="check-copy">
+                    <strong>开放线索</strong>
+                    <span>半枚火漆印章需要在后续场景继续承接。</span>
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            <section class="note-card" id="checkDetail">
+              <strong>世界事实已通过</strong>
+              <span>旧钟楼的地理位置、档案室权限、城市戒严规则均未被修改；本场景只新增证词缺口的观察结果。</span>
+            </section>
+
+            <section class="section-card">
+              <h3>写入边界</h3>
+              <p>写入只影响本场景产生的事实、状态和关系，不会自动改写已确认正文。</p>
+            </section>
+          </aside>
+
+          <section class="memory-column" aria-label="记忆写入计划">
+            <div class="memory-shell">
+              <div class="memory-head">
+                <div class="tabs" role="tablist" aria-label="记忆计划分类">
+                  <button class="tab-button active" data-tab="summary" type="button">计划摘要</button>
+                  <button class="tab-button" data-tab="records" type="button">记忆条目</button>
+                  <button class="tab-button" data-tab="dependencies" type="button">后续依赖</button>
+                </div>
+                <span class="plan-status" id="planStatus">等待用户确认</span>
+              </div>
+
+              <div class="memory-area">
+                <div class="memory-view active" data-view="summary">
+                  <div class="memory-summary-grid">
+                    <div class="memory-stat">
+                      <span>新增记忆</span>
+                      <strong>4</strong>
+                      <small>事件、状态、关系、物件线索</small>
+                    </div>
+                    <div class="memory-stat">
+                      <span>替代记忆</span>
+                      <strong>0</strong>
+                      <small>不覆盖既有确认事实</small>
+                    </div>
+                    <div class="memory-stat">
+                      <span>受影响角色</span>
+                      <strong>2</strong>
+                      <small>林砚、薇拉</small>
+                    </div>
+                    <div class="memory-stat">
+                      <span>后续依赖</span>
+                      <strong>1</strong>
+                      <small>印章线索需要承接</small>
+                    </div>
+                  </div>
+                  <div class="detail-box">
+                    <h3>写入计划概览</h3>
+                    <p>系统将把本场景确认后的结果写入场景记忆，并刷新下一场景可读取的上下文包。</p>
+                    <ul>
+                      <li><strong>事件</strong><span>林砚与薇拉在旧钟楼档案室发现证词共同缺口。</span></li>
+                      <li><strong>状态</strong><span>林砚开始怀疑证词缺口并非自然遗失。</span></li>
+                      <li><strong>关系</strong><span>薇拉在证据判断中的可信度上升。</span></li>
+                      <li><strong>线索</strong><span>半枚火漆印章被标记为后续必须承接的开放线索。</span></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="memory-view" data-view="records">
+                  <div class="memory-card-grid">
+                    <button class="memory-card active" data-memory="event" type="button">
+                      <span>事件记忆</span>
+                      <strong>旧钟楼证词缺口</strong>
+                      <p>两份证词在同一时间段出现空白，且空白边缘存在人为撕裂痕迹。</p>
+                    </button>
+                    <button class="memory-card" data-memory="state" type="button">
+                      <span>状态变化</span>
+                      <strong>林砚的判断推进</strong>
+                      <p>林砚从“偶然缺失”转向“有人安排缺口”的可能性判断。</p>
+                    </button>
+                    <button class="memory-card" data-memory="relation" type="button">
+                      <span>关系变化</span>
+                      <strong>薇拉可信度上升</strong>
+                      <p>薇拉对火漆和档案保存方式的判断被林砚采纳。</p>
+                    </button>
+                    <button class="memory-card" data-memory="object" type="button">
+                      <span>物件线索</span>
+                      <strong>半枚火漆印章</strong>
+                      <p>印章残片与档案封存记录相关，但本场景不解释其来源。</p>
+                    </button>
+                  </div>
+                  <div class="detail-box" id="memoryDetail">
+                    <h3>旧钟楼证词缺口</h3>
+                    <p>写入为事件级记忆，供下一场景读取。该记忆不直接判定幕后人物，只保存已观察到的事实。</p>
+                    <ul>
+                      <li><strong>对象</strong><span>scene / evidence / testimony_gap</span></li>
+                      <li><strong>可信度</strong><span>高，来自当前场景确认正文。</span></li>
+                      <li><strong>用途</strong><span>后续场景生成时作为线索承接依据。</span></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="memory-view" data-view="dependencies">
+                  <div class="detail-box">
+                    <h3>后续依赖</h3>
+                    <p>确认写入后，下一场景会读取新的场景记忆包；开放线索会进入后续场景提醒，但不会自动生成新正文。</p>
+                    <ul>
+                      <li><strong>下一场景</strong><span>需要保留火漆印章线索，不允许无解释消失。</span></li>
+                      <li><strong>角色记忆</strong><span>林砚保留“人为安排”的怀疑，薇拉保留档案保存判断。</span></li>
+                      <li><strong>章节计划</strong><span>仍以当前章路线为准，不因为写入动作改变章节目标。</span></li>
+                      <li><strong>回滚边界</strong><span>若拒绝写入，修订正文仍可返回审阅，不污染正式记忆。</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="panel-actions" aria-label="连续性与记忆动作">
+          <button class="soft-button" data-action="check" type="button">运行连续性检查</button>
+          <button class="soft-button" data-action="plan" type="button">生成记忆计划</button>
+          <button class="ghost-button warning" data-action="reject" type="button">拒绝写入</button>
+          <button class="primary-button" data-action="confirm" type="button">确认并写入</button>
+        </div>
+      </article>
+
+      <aside class="side-panel" aria-label="写入影响">
+        <div class="side-head">
+          <p class="eyebrow">写入影响</p>
+          <h2>本次确认会改变什么</h2>
+          <p>右侧只保留用户必须理解的影响范围。</p>
+        </div>
+
+        <div class="impact-list">
+          <button class="impact-card active" data-impact="state" type="button">
+            <span class="impact-top"><strong>当前状态</strong><span class="mini-pill">可写入</span></span>
+            <span>连续性已通过，记忆计划等待用户确认。</span>
+          </button>
+          <button class="impact-card" data-impact="newMemory" type="button">
+            <span class="impact-top"><strong>新记忆</strong><span class="mini-pill">4 条</span></span>
+            <span>写入事件、状态、关系和物件线索。</span>
+          </button>
+          <button class="impact-card" data-impact="dependency" type="button">
+            <span class="impact-top"><strong>后续依赖</strong><span class="mini-pill warning">需承接</span></span>
+            <span>下一场景需要读取火漆印章线索。</span>
+          </button>
+          <button class="impact-card" data-impact="reason" type="button">
+            <span class="impact-top"><strong>确认理由</strong><span class="mini-pill">可编辑</span></span>
+            <span>用户可留下确认说明，便于后续追溯。</span>
+          </button>
+          <button class="impact-card" data-impact="rollback" type="button">
+            <span class="impact-top"><strong>回滚边界</strong><span class="mini-pill danger">需谨慎</span></span>
+            <span>写入后应通过记忆计划或版本记录处理回滚。</span>
+          </button>
+        </div>
+
+        <div class="side-detail" id="impactDetail">
+          <strong>当前状态可写入</strong>
+          <p>页面当前代表连续性检查没有阻塞项，记忆计划已列出影响范围，但正式写入必须由用户点击确认。</p>
+        </div>
+
+        <div class="confirm-box">
+          <label>
+            写入确认说明
+            <textarea id="confirmInput" placeholder="例如：确认本场景写入事件记忆，并要求后续场景继续承接半枚火漆印章。"></textarea>
+          </label>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const checkDetails = {
+      world: {
+        title: "世界事实已通过",
+        text: "旧钟楼的地理位置、档案室权限、城市戒严规则均未被修改；本场景只新增证词缺口的观察结果。"
+      },
+      role: {
+        title: "角色状态已通过",
+        text: "林砚只依据当前可见证据做出怀疑，薇拉提供的是档案经验判断，没有获得超出角色视角的信息。"
+      },
+      chapter: {
+        title: "章节目标已通过",
+        text: "本场景推进证词缺口，不提前解释幕后动机，仍服务当前章的调查推进目标。"
+      },
+      clue: {
+        title: "开放线索需要承接",
+        text: "半枚火漆印章被保存为后续依赖。它不是阻塞项，但后续场景不能无解释忽略。"
+      }
+    };
+
+    const memoryDetails = {
+      event: {
+        title: "旧钟楼证词缺口",
+        body: "写入为事件级记忆，供下一场景读取。该记忆不直接判定幕后人物，只保存已观察到的事实。",
+        rows: [
+          ["对象", "scene / evidence / testimony_gap"],
+          ["可信度", "高，来自当前场景确认正文。"],
+          ["用途", "后续场景生成时作为线索承接依据。"]
+        ]
+      },
+      state: {
+        title: "林砚的判断推进",
+        body: "写入为角色状态记忆，代表林砚当前的推理倾向发生变化，但不等于真相已经确认。",
+        rows: [
+          ["对象", "character / lin_yan / suspicion_state"],
+          ["可信度", "中高，来自角色在场景内的判断。"],
+          ["用途", "后续对话和行动应保留该怀疑。"]
+        ]
+      },
+      relation: {
+        title: "薇拉可信度上升",
+        body: "写入为关系记忆，记录林砚对薇拉档案判断的信任变化。",
+        rows: [
+          ["对象", "relationship / lin_yan / vera"],
+          ["可信度", "中，随后续证据可继续变化。"],
+          ["用途", "影响后续协作语气和证据采信。"]
+        ]
+      },
+      object: {
+        title: "半枚火漆印章",
+        body: "写入为物件线索记忆，要求后续场景承接，但不在本场景解释来源。",
+        rows: [
+          ["对象", "object / wax_seal_fragment"],
+          ["可信度", "高，来自实体线索。"],
+          ["用途", "作为后续场景的开放线索和依赖提醒。"]
+        ]
+      }
+    };
+
+    const impactDetails = {
+      state: {
+        title: "当前状态可写入",
+        text: "页面当前代表连续性检查没有阻塞项，记忆计划已列出影响范围，但正式写入必须由用户点击确认。"
+      },
+      newMemory: {
+        title: "将新增 4 条记忆",
+        text: "新增内容会进入场景记忆包和相关角色记忆，不替代旧记忆，也不会自动修改章节计划。"
+      },
+      dependency: {
+        title: "后续依赖需要承接",
+        text: "半枚火漆印章会成为下一场景的开放线索提醒，避免后续正文遗忘这一证据。"
+      },
+      reason: {
+        title: "确认理由可追溯",
+        text: "用户填写的说明会随确认动作传给后端，用于记录为什么允许本次记忆写入。"
+      },
+      rollback: {
+        title: "写入后不做静默回滚",
+        text: "如果写入后发现问题，应通过记忆计划、修订候选或版本记录处理，避免直接污染已确认事实。"
+      }
+    };
+
+    const tabs = document.querySelectorAll("[data-tab]");
+    const views = document.querySelectorAll("[data-view]");
+    const checkCards = document.querySelectorAll("[data-check]");
+    const memoryCards = document.querySelectorAll("[data-memory]");
+    const impactCards = document.querySelectorAll("[data-impact]");
+    const checkDetail = document.getElementById("checkDetail");
+    const memoryDetail = document.getElementById("memoryDetail");
+    const impactDetail = document.getElementById("impactDetail");
+    const toast = document.getElementById("toast");
+    let toastTimer = null;
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("visible");
+      toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2200);
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const key = tab.dataset.tab;
+        tabs.forEach((item) => item.classList.toggle("active", item === tab));
+        views.forEach((view) => view.classList.toggle("active", view.dataset.view === key));
+      });
+    });
+
+    checkCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const detail = checkDetails[card.dataset.check];
+        checkCards.forEach((item) => item.classList.toggle("active", item === card));
+        checkDetail.innerHTML = `<strong>${detail.title}</strong><span>${detail.text}</span>`;
+      });
+    });
+
+    memoryCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const detail = memoryDetails[card.dataset.memory];
+        memoryCards.forEach((item) => item.classList.toggle("active", item === card));
+        memoryDetail.innerHTML = `
+          <h3>${detail.title}</h3>
+          <p>${detail.body}</p>
+          <ul>${detail.rows.map((row) => `<li><strong>${row[0]}</strong><span>${row[1]}</span></li>`).join("")}</ul>
+        `;
+      });
+    });
+
+    impactCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const detail = impactDetails[card.dataset.impact];
+        impactCards.forEach((item) => item.classList.toggle("active", item === card));
+        impactDetail.innerHTML = `<strong>${detail.title}</strong><p>${detail.text}</p>`;
+      });
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.action;
+        const continuitySummary = document.getElementById("continuitySummary");
+        const planSummary = document.getElementById("planSummary");
+        const writeSummary = document.getElementById("writeSummary");
+        const writeChipValue = document.getElementById("writeChipValue");
+        const writeChipLabel = document.getElementById("writeChipLabel");
+        const planStatus = document.getElementById("planStatus");
+
+        if (action === "check") {
+          continuitySummary.textContent = "已通过";
+          planStatus.textContent = "连续性已复核";
+          showToast("连续性检查已完成，没有发现阻塞项。");
+        }
+
+        if (action === "plan") {
+          planSummary.textContent = "已生成";
+          planStatus.textContent = "计划已生成";
+          showToast("记忆写入计划已生成，等待用户确认。");
+        }
+
+        if (action === "reject") {
+          writeSummary.textContent = "已拒绝";
+          writeChipValue.textContent = "0%";
+          writeChipLabel.textContent = "写入已拒绝";
+          planStatus.textContent = "写入已拒绝";
+          showToast("已拒绝本次记忆写入，正文仍可返回审阅。");
+        }
+
+        if (action === "confirm") {
+          planSummary.textContent = "已确认";
+          writeSummary.textContent = "已写入";
+          writeChipValue.textContent = "100%";
+          writeChipLabel.textContent = "记忆已写入";
+          planStatus.textContent = "确认并写入完成";
+          showToast("记忆计划已确认并写入，下一场景可读取新的上下文。");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

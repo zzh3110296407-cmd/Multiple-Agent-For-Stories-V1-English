@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最终输出 / 输出问题处理 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(237, 226, 207, 0.72);
+      --ink: #302f2a;
+      --muted: #71685f;
+      --quiet: #978c7f;
+      --line: rgba(105, 82, 58, 0.2);
+      --line-strong: rgba(105, 82, 58, 0.34);
+      --brass: #b4956f;
+      --brass-deep: #856947;
+      --sage: #767f6c;
+      --sage-deep: #59614f;
+      --clay: #b48a78;
+      --clay-deep: #8e6557;
+      --danger: #9b665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.84), rgba(236, 231, 220, 0.62) 43%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/final-output-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.58), transparent 31%),
+        radial-gradient(circle at 76% 28%, rgba(180, 149, 111, 0.13), transparent 34%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.24), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 230px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .status-pill,
+    .issue-button {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .issue-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+
+    .primary-button {
+      min-width: 178px;
+      border-color: rgba(89, 97, 79, 0.46);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #65705d, #806d50);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--clay-deep);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      min-height: 136px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      gap: 24px;
+      align-items: end;
+      padding: 8px 18px 2px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: #28312b;
+      font-size: 56px;
+      line-height: 1.05;
+      font-weight: 920;
+    }
+
+    .hero p {
+      max-width: 790px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.85;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-strip div {
+      min-height: 58px;
+      padding: 12px 14px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.52);
+      min-width: 0;
+    }
+
+    .summary-strip span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 820;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .summary-strip strong {
+      display: block;
+      margin-top: 7px;
+      color: #302f2a;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 24px;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-width: 0;
+      border: 1px solid rgba(255, 252, 244, 0.68);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(246, 238, 223, 0.8)),
+        rgba(255, 252, 244, 0.8);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .main-panel {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .panel-head h2,
+    .side-panel h2 {
+      margin: 0;
+      color: #302f2a;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .panel-head p,
+    .side-panel p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .flow-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .flow-step {
+      min-height: 62px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.5);
+      color: var(--muted);
+      opacity: 0.78;
+      min-width: 0;
+    }
+
+    .flow-step span {
+      display: block;
+      color: var(--quiet);
+      font-size: 10px;
+      font-weight: 860;
+      line-height: 1.1;
+    }
+
+    .flow-step strong {
+      display: block;
+      margin-top: 7px;
+      color: #5f574e;
+      font-size: 12px;
+      line-height: 1.25;
+      font-weight: 860;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .flow-step.current {
+      opacity: 1;
+      border-color: rgba(142, 101, 87, 0.36);
+      background: linear-gradient(135deg, rgba(180, 138, 120, 0.2), rgba(255, 252, 244, 0.8));
+    }
+
+    .issue-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .issue-list,
+    .detail-card,
+    .evidence-card,
+    .repair-card,
+    .notes-card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .issue-list {
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .issue-list h3,
+    .detail-card h3,
+    .evidence-card h3,
+    .repair-card h3,
+    .notes-card h3 {
+      margin: 0;
+      color: #302f2a;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .issue-buttons {
+      min-height: 0;
+      display: grid;
+      gap: 10px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .issue-button {
+      width: 100%;
+      min-height: 92px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .issue-button[aria-selected="true"] {
+      border-color: rgba(142, 101, 87, 0.42);
+      background: linear-gradient(135deg, rgba(180, 138, 120, 0.22), rgba(255, 252, 244, 0.78));
+      box-shadow: 0 16px 32px rgba(91, 63, 49, 0.13);
+    }
+
+    .issue-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fffaf0;
+      background: var(--clay-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .issue-button b {
+      display: block;
+      color: #332f2a;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 890;
+      overflow-wrap: anywhere;
+    }
+
+    .issue-button small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 540;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-stack {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .detail-card {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .issue-state-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .state-cell {
+      min-height: 70px;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 7px;
+      background: rgba(245, 238, 224, 0.56);
+      min-width: 0;
+    }
+
+    .state-cell span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 830;
+    }
+
+    .state-cell strong {
+      display: block;
+      margin-top: 8px;
+      color: #342f2a;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 890;
+      overflow-wrap: anywhere;
+    }
+
+    .issue-description {
+      margin: 0;
+      padding: 14px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.56);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.75;
+      font-weight: 540;
+    }
+
+    .lower-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.86fr);
+      gap: 16px;
+    }
+
+    .evidence-card,
+    .repair-card,
+    .notes-card {
+      padding: 16px;
+    }
+
+    .evidence-list,
+    .repair-list,
+    .notes-list,
+    .action-stack,
+    .check-list {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .evidence-item,
+    .repair-item,
+    .note-item,
+    .check-item {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .evidence-item b,
+    .repair-item b,
+    .note-item b,
+    .check-item b {
+      display: block;
+      color: #3b352f;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+      overflow-wrap: anywhere;
+    }
+
+    .evidence-item small,
+    .repair-item small,
+    .note-item small,
+    .check-item small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+      overflow-wrap: anywhere;
+    }
+
+    .tiny-dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--clay-deep);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.13);
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .action-stack .primary-button,
+    .action-stack .soft-button {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .diagnostic-card {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .diagnostic-card div {
+      min-height: 84px;
+      padding: 13px;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.54);
+      min-width: 0;
+    }
+
+    .diagnostic-card span {
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 830;
+      text-transform: uppercase;
+    }
+
+    .diagnostic-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #302f2a;
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      max-width: min(420px, calc(100vw - 56px));
+      padding: 13px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(55, 50, 43, 0.9);
+      color: #fffaf0;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 700;
+      box-shadow: 0 22px 54px rgba(30, 24, 16, 0.28);
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 180ms ease, opacity 180ms ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        width: min(980px, calc(100vw - 48px));
+      }
+
+      .hero,
+      .layout,
+      .issue-grid,
+      .lower-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        grid-template-rows: auto;
+      }
+
+      .issue-buttons {
+        max-height: 320px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: calc(100vw - 28px);
+        margin: 14px auto;
+        min-height: calc(100vh - 28px);
+        gap: 14px;
+      }
+
+      .topbar,
+      .hero,
+      .summary-strip,
+      .issue-state-row,
+      .diagnostic-card {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        gap: 10px;
+      }
+
+      .hero {
+        min-height: 0;
+        padding: 4px 4px 0;
+      }
+
+      .hero h1 {
+        font-size: 38px;
+      }
+
+      .hero p {
+        font-size: 13px;
+      }
+
+      .main-panel,
+      .side-panel {
+        padding: 15px;
+      }
+
+      .panel-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .flow-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .issue-list {
+        padding: 12px;
+      }
+
+      .issue-button {
+        min-height: 86px;
+      }
+
+      .issue-buttons {
+        max-height: none;
+        overflow-y: visible;
+      }
+
+      .toast {
+        right: 14px;
+        bottom: 14px;
+        max-width: calc(100vw - 28px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button" data-action="back-final">返回最终输出</button>
+      <div class="crumb">主页 / 工作台 / 最终输出 / 输出问题处理</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span>需要处理</div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">输出问题处理</h1>
+        <p>当最终输出被完成度阻塞、导出失败、下载失败或归档索引缺失时，用户在这里查看原因、影响范围和建议动作，并回到正确的修复入口。</p>
+      </div>
+      <div class="summary-strip" aria-label="问题摘要">
+        <div>
+          <span>当前问题</span>
+          <strong id="summaryIssue">下载校验异常</strong>
+        </div>
+        <div>
+          <span>影响范围</span>
+          <strong id="summaryScope">只影响下载</strong>
+        </div>
+        <div>
+          <span>推荐动作</span>
+          <strong id="summaryAction">重新下载</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-labelledby="issueTitle">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">Output Issue Resolution</span>
+            <h2 id="issueTitle">问题定位</h2>
+            <p>问题列表是可交互的。选择问题后，详情区会展示错误语义、证据来源和下一步处理入口。</p>
+          </div>
+          <button class="soft-button" type="button" data-action="copy-diagnostic">复制诊断信息</button>
+        </div>
+
+        <div class="flow-strip" aria-label="最终输出流程阶段">
+          <div class="flow-step"><span>01</span><strong>完成度检查</strong></div>
+          <div class="flow-step"><span>02</span><strong>成稿组装</strong></div>
+          <div class="flow-step"><span>03</span><strong>成稿审阅</strong></div>
+          <div class="flow-step"><span>04</span><strong>输出设置</strong></div>
+          <div class="flow-step"><span>05</span><strong>导出生成</strong></div>
+          <div class="flow-step"><span>06</span><strong>下载归档</strong></div>
+          <div class="flow-step current"><span>07</span><strong>问题处理</strong></div>
+        </div>
+
+        <div class="issue-grid">
+          <section class="issue-list" aria-labelledby="issueListTitle">
+            <h3 id="issueListTitle">问题类型</h3>
+            <div class="issue-buttons" role="listbox" aria-label="可选择的问题类型">
+              <button class="issue-button" type="button" role="option" aria-selected="true" data-issue="download">
+                <span class="issue-num">01</span>
+                <span>
+                  <b>下载校验异常</b>
+                  <small>格式不支持、快照未创建、正文 Hash 或字数校验不一致。</small>
+                </span>
+              </button>
+              <button class="issue-button" type="button" role="option" aria-selected="false" data-issue="readiness">
+                <span class="issue-num">02</span>
+                <span>
+                  <b>完成度阻塞</b>
+                  <small>最终故事包 readiness gate 未通过，仍存在用户动作或质量阻塞。</small>
+                </span>
+              </button>
+              <button class="issue-button" type="button" role="option" aria-selected="false" data-issue="export">
+                <span class="issue-num">03</span>
+                <span>
+                  <b>导出封装失败</b>
+                  <small>真实项目包未授权、场景未确认、正文缺失或安全审计失败。</small>
+                </span>
+              </button>
+              <button class="issue-button" type="button" role="option" aria-selected="false" data-issue="archive">
+                <span class="issue-num">04</span>
+                <span>
+                  <b>归档索引缺失</b>
+                  <small>下载成功但产品输出库没有找到对应 final story package view。</small>
+                </span>
+              </button>
+            </div>
+          </section>
+
+          <div class="detail-stack">
+            <section class="detail-card" aria-labelledby="selectedIssueTitle">
+              <div>
+                <span class="eyebrow" id="selectedIssueCode">FINAL_STORY_PACKAGE_DOWNLOAD_TEXT_HASH_MISMATCH</span>
+                <h3 id="selectedIssueTitle">下载校验异常</h3>
+              </div>
+              <div class="issue-state-row" aria-label="问题状态">
+                <div class="state-cell">
+                  <span>严重程度</span>
+                  <strong id="severity">中</strong>
+                </div>
+                <div class="state-cell">
+                  <span>影响范围</span>
+                  <strong id="impact">只影响当前下载请求</strong>
+                </div>
+                <div class="state-cell">
+                  <span>可恢复性</span>
+                  <strong id="recoverability">可重试</strong>
+                </div>
+              </div>
+              <p class="issue-description" id="issueDescription">
+                后端拒绝生成下载文件，因为当前快照中的正文校验信息与可下载文本不一致。界面不应继续展示“导出成功”，而应让用户返回输出设置重试，或刷新快照后再次下载。
+              </p>
+            </section>
+
+            <div class="lower-grid">
+              <section class="evidence-card" aria-labelledby="evidenceTitle">
+                <h3 id="evidenceTitle">证据与定位</h3>
+                <div class="evidence-list" id="evidenceList"></div>
+              </section>
+
+              <section class="repair-card" aria-labelledby="repairTitle">
+                <h3 id="repairTitle">处理路径</h3>
+                <div class="repair-list" id="repairList"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="side-panel" aria-labelledby="sideTitle">
+        <div>
+          <span class="eyebrow">Resolution Actions</span>
+          <h2 id="sideTitle">建议动作</h2>
+        </div>
+        <p id="sideDescription">优先选择能保留当前快照和输出设置的处理方式；只有完成度阻塞才需要回到前面的创作模块修复源数据。</p>
+
+        <div class="diagnostic-card" aria-label="诊断摘要">
+          <div>
+            <span>错误来源</span>
+            <strong id="sourceLabel">下载</strong>
+          </div>
+          <div>
+            <span>用户动作</span>
+            <strong id="userAction">重试</strong>
+          </div>
+          <div>
+            <span>事实写入</span>
+            <strong>无</strong>
+          </div>
+          <div>
+            <span>保留状态</span>
+            <strong id="preservedState">快照</strong>
+          </div>
+        </div>
+
+        <div class="check-list" aria-label="处理边界">
+          <div class="check-item">
+            <span class="tiny-dot" aria-hidden="true"></span>
+            <div>
+              <b>不自动修改故事事实</b>
+              <small>问题处理层只负责定位和引导，不直接改写世界、角色、章节或正文。</small>
+            </div>
+          </div>
+          <div class="check-item">
+            <span class="tiny-dot" aria-hidden="true"></span>
+            <div>
+              <b>保留用户上下文</b>
+              <small>返回输出设置或成稿审阅时，应保留当前格式、快照和导出记录。</small>
+            </div>
+          </div>
+          <div class="check-item">
+            <span class="tiny-dot" aria-hidden="true"></span>
+            <div>
+              <b>错误码可复制</b>
+              <small>用户可复制诊断信息，方便后续调试或提交反馈。</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-stack">
+          <button class="primary-button" type="button" id="primaryAction">重新下载</button>
+          <button class="soft-button" type="button" id="secondaryAction">返回输出设置</button>
+          <button class="soft-button" type="button" data-action="open-log">查看导出记录</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const issues = {
+      download: {
+        title: "下载校验异常",
+        code: "FINAL_STORY_PACKAGE_DOWNLOAD_TEXT_HASH_MISMATCH",
+        severity: "中",
+        impact: "只影响当前下载请求",
+        recoverability: "可重试",
+        summaryIssue: "下载校验异常",
+        summaryScope: "只影响下载",
+        summaryAction: "重新下载",
+        source: "下载",
+        userAction: "重试",
+        preserved: "快照",
+        primary: "重新下载",
+        secondary: "返回输出设置",
+        description: "后端拒绝生成下载文件，因为当前快照中的正文校验信息与可下载文本不一致。界面不应继续展示“导出成功”，而应让用户返回输出设置重试，或刷新快照后再次下载。",
+        evidence: [
+          ["接口", "GET /api/final-story-package/snapshots/{snapshot_id}/download?format=txt"],
+          ["常见错误", "FORMAT_UNSUPPORTED / SNAPSHOT_NOT_CREATED / TEXT_HASH_MISMATCH / TEXT_COUNT_MISMATCH"],
+          ["前端状态", "downloadFinalStoryPackageSnapshot(snapshotId, format) 进入 rejected 分支"]
+        ],
+        repairs: [
+          ["保留格式重试", "不改变故事包，只重新触发同一快照的下载请求。"],
+          ["返回输出设置", "让用户改选 TXT、Markdown 或 JSON 后再次尝试。"],
+          ["刷新快照详情", "重新读取 snapshot、sections、evidence index 与 safety audit。"]
+        ]
+      },
+      readiness: {
+        title: "完成度阻塞",
+        code: "FINAL_STORY_PACKAGE_GATE_READINESS_BLOCKED",
+        severity: "高",
+        impact: "阻止最终导出",
+        recoverability: "需回源修复",
+        summaryIssue: "完成度阻塞",
+        summaryScope: "阻止导出",
+        summaryAction: "回到完成度检查",
+        source: "完成度",
+        userAction: "修复",
+        preserved: "问题清单",
+        primary: "回到完成度检查",
+        secondary: "打开问题列表",
+        description: "最终故事包 readiness gate 发现仍有阻塞项，例如场景未确认、连续性需要用户动作，或质量校验未通过。该状态不能靠重新下载解决，需要回到对应模块处理源问题。",
+        evidence: [
+          ["接口", "GET /api/final-story-package/readiness 与 /readiness/{readiness_gate_id}/issues"],
+          ["常见错误", "scene_user_action / quality_blocking_issues / quality_not_passed"],
+          ["前端状态", "exportFinalStoryPackage 被 gate blocked 拒绝"]
+        ],
+        repairs: [
+          ["回到完成度检查", "展示阻塞项，并让用户选择具体来源模块。"],
+          ["跳转场景写作", "若问题来自场景或连续性，回到对应场景修复。"],
+          ["重新评估 readiness", "修复后再次调用 readiness/evaluate。"]
+        ]
+      },
+      export: {
+        title: "导出封装失败",
+        code: "FINAL_STORY_PACKAGE_EXPORT_COMPLETE_STORY_TEXT_MISSING",
+        severity: "高",
+        impact: "无法生成快照",
+        recoverability: "需重新封装",
+        summaryIssue: "导出封装失败",
+        summaryScope: "影响快照生成",
+        summaryAction: "返回成稿审阅",
+        source: "导出",
+        userAction: "重新封装",
+        preserved: "设置",
+        primary: "返回成稿审阅",
+        secondary: "重新组装成稿",
+        description: "导出服务无法创建最终故事包快照。可能是完整正文缺失、场景未确认、安全审计失败、真实项目包未授权，或当前 package type 与真实导出要求不匹配。",
+        evidence: [
+          ["接口", "POST /api/final-story-package/export"],
+          ["常见错误", "EXPORT_COMPLETE_STORY_TEXT_MISSING / EXPORT_SCENE_NOT_CONFIRMED / EXPORT_SAFETY_AUDIT_FAILED"],
+          ["前端状态", "exportFinalStoryPackage({ readinessGateId, exportFormat }) 失败"]
+        ],
+        repairs: [
+          ["返回成稿审阅", "确认正文、目录、角色表、世界摘要、事件线和锁定约束是否齐备。"],
+          ["重新组装成稿", "重新执行最终故事包封装，但不修改故事事实源。"],
+          ["查看安全审计", "若安全审计失败，打开 safety audit 查看具体阻塞。"]
+        ]
+      },
+      archive: {
+        title: "归档索引缺失",
+        code: "FINAL_STORY_PACKAGE_PRODUCT_VIEW_NOT_FOUND",
+        severity: "低",
+        impact: "不影响已下载文件",
+        recoverability: "可刷新",
+        summaryIssue: "归档索引缺失",
+        summaryScope: "只影响入口",
+        summaryAction: "刷新产品输出库",
+        source: "归档视图",
+        userAction: "刷新",
+        preserved: "下载结果",
+        primary: "刷新产品输出库",
+        secondary: "打开下载结果",
+        description: "最终文件可能已经下载成功，但产品输出库暂时没有返回对应 final story package view。该状态不代表故事包损坏，只影响用户从产品输出库再次进入该交付物。",
+        evidence: [
+          ["接口", "GET /api/product-artifacts/final-story-packages 与 /final-story-packages/{view_id}"],
+          ["常见错误", "FINAL_STORY_PACKAGE_PRODUCT_VIEW_NOT_FOUND / artifact entry missing"],
+          ["前端状态", "getFinalStoryPackageProductViews({ projectId }) 未找到当前 snapshot"]
+        ],
+        repairs: [
+          ["刷新产品输出库", "重新拉取 productArtifactLibrary.final_story_package_views。"],
+          ["返回下载结果", "若文件已成功下载，用户仍可从 06 页重新下载。"],
+          ["查看导出记录", "用 exportRunId 和 snapshotId 追踪是否完成索引。"]
+        ]
+      }
+    };
+
+    const fields = {
+      summaryIssue: document.getElementById("summaryIssue"),
+      summaryScope: document.getElementById("summaryScope"),
+      summaryAction: document.getElementById("summaryAction"),
+      code: document.getElementById("selectedIssueCode"),
+      title: document.getElementById("selectedIssueTitle"),
+      severity: document.getElementById("severity"),
+      impact: document.getElementById("impact"),
+      recoverability: document.getElementById("recoverability"),
+      description: document.getElementById("issueDescription"),
+      source: document.getElementById("sourceLabel"),
+      userAction: document.getElementById("userAction"),
+      preserved: document.getElementById("preservedState"),
+      primary: document.getElementById("primaryAction"),
+      secondary: document.getElementById("secondaryAction"),
+      evidence: document.getElementById("evidenceList"),
+      repairs: document.getElementById("repairList"),
+      toast: document.getElementById("toast")
+    };
+
+    let selectedKey = "download";
+    let toastTimer = null;
+
+    function showToast(message) {
+      fields.toast.textContent = message;
+      fields.toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => fields.toast.classList.remove("show"), 2200);
+    }
+
+    function renderList(target, rows) {
+      target.innerHTML = rows.map(([title, body]) => `
+        <div class="evidence-item">
+          <span class="tiny-dot" aria-hidden="true"></span>
+          <div>
+            <b>${title}</b>
+            <small>${body}</small>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function selectIssue(key) {
+      selectedKey = key;
+      const issue = issues[key];
+      fields.summaryIssue.textContent = issue.summaryIssue;
+      fields.summaryScope.textContent = issue.summaryScope;
+      fields.summaryAction.textContent = issue.summaryAction;
+      fields.code.textContent = issue.code;
+      fields.title.textContent = issue.title;
+      fields.severity.textContent = issue.severity;
+      fields.impact.textContent = issue.impact;
+      fields.recoverability.textContent = issue.recoverability;
+      fields.description.textContent = issue.description;
+      fields.source.textContent = issue.source;
+      fields.userAction.textContent = issue.userAction;
+      fields.preserved.textContent = issue.preserved;
+      fields.primary.textContent = issue.primary;
+      fields.secondary.textContent = issue.secondary;
+      renderList(fields.evidence, issue.evidence);
+      renderList(fields.repairs, issue.repairs);
+      document.querySelectorAll(".issue-button").forEach((button) => {
+        button.setAttribute("aria-selected", String(button.dataset.issue === key));
+      });
+    }
+
+    document.querySelectorAll(".issue-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectIssue(button.dataset.issue);
+        showToast(`已切换到：${issues[button.dataset.issue].title}`);
+      });
+    });
+
+    fields.primary.addEventListener("click", () => {
+      showToast(`执行建议动作：${issues[selectedKey].primary}`);
+    });
+
+    fields.secondary.addEventListener("click", () => {
+      showToast(`执行次级动作：${issues[selectedKey].secondary}`);
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const action = button.dataset.action;
+        if (action === "copy-diagnostic") {
+          const issue = issues[selectedKey];
+          const text = `${issue.title} / ${issue.code} / ${issue.impact}`;
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast("诊断信息已复制");
+          } catch (error) {
+            showToast("当前环境无法写入剪贴板，诊断信息已显示在页面中");
+          }
+          return;
+        }
+        const messages = {
+          "back-final": "返回最终输出：正式接入时回到最终输出当前状态。",
+          "open-log": "查看导出记录：读取 getFinalStoryPackageExportRuns()。"
+        };
+        showToast(messages[action] || "交互已触发");
+      });
+    });
+
+    selectIssue(selectedKey);
+  </script>
+</body>
+</html>

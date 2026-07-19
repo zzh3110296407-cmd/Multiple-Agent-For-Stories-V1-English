@@ -1,0 +1,1398 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最终输出 / 导出生成中 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(237, 226, 207, 0.72);
+      --ink: #302f2a;
+      --muted: #71685f;
+      --quiet: #978c7f;
+      --line: rgba(105, 82, 58, 0.2);
+      --line-strong: rgba(105, 82, 58, 0.34);
+      --brass: #b4956f;
+      --brass-deep: #856947;
+      --sage: #767f6c;
+      --sage-deep: #59614f;
+      --clay: #b48a78;
+      --danger: #9b665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.84), rgba(236, 231, 220, 0.62) 43%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/final-output-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.58), transparent 31%),
+        radial-gradient(circle at 74% 28%, rgba(180, 149, 111, 0.13), transparent 35%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.22), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 230px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .status-pill,
+    .step-row {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .step-row:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+
+    .primary-button {
+      min-width: 178px;
+      border-color: rgba(89, 97, 79, 0.46);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+
+    .primary-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px rgba(71, 52, 31, 0.08);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(118, 127, 108, 0.14);
+      flex: 0 0 auto;
+      animation: dotPulse 1800ms ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%,
+      100% {
+        box-shadow: 0 0 0 5px rgba(118, 127, 108, 0.14);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(118, 127, 108, 0.08);
+      }
+    }
+
+    .hero {
+      min-height: 136px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      gap: 24px;
+      align-items: end;
+      padding: 8px 18px 2px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: #28312b;
+      font-size: 56px;
+      line-height: 1.05;
+      font-weight: 920;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.85;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-strip div {
+      min-height: 58px;
+      padding: 12px 14px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .summary-strip span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 820;
+      text-transform: uppercase;
+    }
+
+    .summary-strip strong {
+      display: block;
+      margin-top: 7px;
+      color: #302f2a;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 24px;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.68);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.87), rgba(246, 238, 223, 0.78)),
+        rgba(255, 252, 244, 0.8);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .main-panel {
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px;
+      align-items: center;
+      gap: 16px;
+      padding: 26px 26px 20px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .panel-head h2 {
+      margin: 8px 0 0;
+      color: #302f2a;
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 920;
+    }
+
+    .panel-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .stage-card {
+      min-height: 62px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(180, 149, 111, 0.24);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b4c3a;
+      font-size: 13px;
+      font-weight: 860;
+      text-align: center;
+    }
+
+    .stage-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .flow-strip {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0;
+      padding: 0 26px 18px;
+    }
+
+    .flow-strip::before {
+      content: "";
+      position: absolute;
+      left: 44px;
+      right: 44px;
+      top: 15px;
+      height: 1px;
+      background: rgba(105, 82, 58, 0.18);
+    }
+
+    .flow-item {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      display: grid;
+      justify-items: start;
+      gap: 10px;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .flow-item span {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.78);
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .flow-item strong {
+      color: inherit;
+      font-weight: 820;
+    }
+
+    .flow-item.current {
+      color: #373c34;
+    }
+
+    .flow-item.current span {
+      border-color: rgba(89, 97, 79, 0.4);
+      background: var(--sage-deep);
+      color: #fffaf0;
+    }
+
+    .generation-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 18px;
+      padding: 0 26px 22px;
+      overflow: hidden;
+    }
+
+    .visual-panel,
+    .process-panel {
+      min-width: 0;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      overflow: hidden;
+    }
+
+    .section-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.1);
+    }
+
+    .section-head h3 {
+      margin: 6px 0 0;
+      color: #302f2a;
+      font-size: 21px;
+      line-height: 1.2;
+      font-weight: 910;
+    }
+
+    .section-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .export-stage {
+      position: relative;
+      min-height: 462px;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .export-stage::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.16), rgba(180, 149, 111, 0.08)),
+        repeating-linear-gradient(135deg, rgba(105, 82, 58, 0.035) 0 1px, transparent 1px 18px);
+      pointer-events: none;
+    }
+
+    .document-area {
+      position: relative;
+      z-index: 1;
+      min-height: 284px;
+      display: grid;
+      place-items: center;
+    }
+
+    .sheet-stack {
+      position: relative;
+      width: min(320px, 78%);
+      height: 236px;
+    }
+
+    .sheet {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.95), rgba(239, 229, 211, 0.86)),
+        rgba(255, 252, 244, 0.9);
+      box-shadow: 0 20px 44px rgba(71, 52, 31, 0.14);
+    }
+
+    .sheet.back {
+      transform: translate(22px, 18px) rotate(2.4deg);
+      opacity: 0.55;
+    }
+
+    .sheet.mid {
+      transform: translate(11px, 9px) rotate(1deg);
+      opacity: 0.76;
+    }
+
+    .sheet.front {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 20px;
+      animation: sheetLift 2800ms ease-in-out infinite;
+    }
+
+    @keyframes sheetLift {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    .sheet-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #3a3832;
+      font-size: 14px;
+      font-weight: 920;
+    }
+
+    .format-mark {
+      color: var(--brass-deep);
+      font-size: 13px;
+      font-weight: 920;
+    }
+
+    .text-lines {
+      display: grid;
+      align-content: center;
+      gap: 10px;
+    }
+
+    .text-lines i {
+      display: block;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(105, 82, 58, 0.14);
+      overflow: hidden;
+    }
+
+    .text-lines i::before {
+      content: "";
+      display: block;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(118, 127, 108, 0), rgba(118, 127, 108, 0.34), rgba(118, 127, 108, 0));
+      animation: scanLine 1600ms ease-in-out infinite;
+    }
+
+    .text-lines i:nth-child(2)::before {
+      animation-delay: 180ms;
+    }
+
+    .text-lines i:nth-child(3)::before {
+      animation-delay: 360ms;
+    }
+
+    @keyframes scanLine {
+      0% {
+        transform: translateX(-120%);
+      }
+      100% {
+        transform: translateX(270%);
+      }
+    }
+
+    .sheet-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .progress-card {
+      position: relative;
+      z-index: 1;
+      padding: 18px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .progress-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: end;
+    }
+
+    .progress-head span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .progress-head strong {
+      color: #302f2a;
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 930;
+    }
+
+    .progress-shell {
+      overflow: hidden;
+      height: 10px;
+      margin-top: 14px;
+      border-radius: 999px;
+      background: rgba(105, 82, 58, 0.12);
+    }
+
+    .progress-bar {
+      width: 18%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--brass));
+      transition: width 420ms ease;
+    }
+
+    .progress-note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 560;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .step-row {
+      width: 100%;
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      text-align: left;
+    }
+
+    .step-row.done {
+      border-color: rgba(118, 127, 108, 0.2);
+      background: rgba(255, 252, 244, 0.52);
+    }
+
+    .step-row.active {
+      border-color: rgba(180, 149, 111, 0.38);
+      background: rgba(245, 237, 219, 0.72);
+    }
+
+    .step-icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      background: rgba(255, 252, 244, 0.74);
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 920;
+    }
+
+    .step-row.done .step-icon {
+      background: rgba(118, 127, 108, 0.16);
+      color: var(--sage-deep);
+    }
+
+    .step-row.active .step-icon {
+      background: var(--sage-deep);
+      color: #fffaf0;
+    }
+
+    .step-row strong {
+      display: block;
+      color: #302f2a;
+      font-size: 14px;
+      line-height: 1.3;
+      font-weight: 900;
+    }
+
+    .step-row span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 540;
+    }
+
+    .step-state {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .detail-box {
+      margin: 0 16px 16px;
+      min-height: 108px;
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .detail-box strong {
+      display: block;
+      color: #302f2a;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .detail-box p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .output-summary {
+      margin: 0 26px 20px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      overflow: hidden;
+    }
+
+    .output-summary-head {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.1);
+    }
+
+    .output-summary-head h3 {
+      margin: 6px 0 0;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 910;
+    }
+
+    .output-summary-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px 16px 18px;
+    }
+
+    .summary-item,
+    .side-card,
+    .log-item {
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .summary-item {
+      min-width: 0;
+      min-height: 78px;
+      padding: 13px 14px;
+    }
+
+    .summary-item span,
+    .side-card span,
+    .log-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.25;
+      font-weight: 780;
+    }
+
+    .summary-item strong,
+    .side-card strong,
+    .log-item strong {
+      display: block;
+      margin-top: 6px;
+      color: #34332e;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .action-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 18px 26px 24px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .action-bar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 18px;
+    }
+
+    .side-card h3 {
+      margin: 6px 0 0;
+      color: #302f2a;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 910;
+    }
+
+    .side-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .guard-list,
+    .log-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .guard-row {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      min-height: 54px;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.45);
+    }
+
+    .guard-mark {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(118, 127, 108, 0.16);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .guard-row strong {
+      margin-top: 0;
+    }
+
+    .log-list {
+      max-height: 210px;
+      overflow: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(129, 99, 72, 0.4) rgba(255, 252, 244, 0.34);
+    }
+
+    .log-item {
+      padding: 12px 13px;
+    }
+
+    .log-item strong {
+      margin-top: 4px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      min-width: 220px;
+      max-width: min(360px, calc(100vw - 48px));
+      padding: 15px 18px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.92);
+      color: #403934;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        width: min(1000px, calc(100vw - 48px));
+      }
+
+      .hero,
+      .layout,
+      .generation-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        min-height: auto;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: min(100vw - 16px, 520px);
+        min-height: calc(100vh - 16px);
+        margin: 8px auto;
+        gap: 12px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .back-button,
+      .status-pill {
+        width: 100%;
+      }
+
+      .crumb {
+        white-space: normal;
+        font-size: 12px;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 8px 0 0;
+      }
+
+      .hero h1 {
+        font-size: 38px;
+      }
+
+      .hero p {
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .summary-strip,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .action-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .flow-strip,
+      .generation-grid,
+      .action-bar {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .flow-strip {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .flow-strip::before {
+        left: 31px;
+        right: auto;
+        top: 15px;
+        bottom: 34px;
+        width: 1px;
+        height: auto;
+      }
+
+      .flow-item {
+        grid-template-columns: 32px minmax(0, 1fr);
+        align-items: center;
+        justify-items: start;
+      }
+
+      .flow-item span {
+        grid-column: 1;
+      }
+
+      .flow-item strong {
+        grid-column: 2;
+      }
+
+      .export-stage {
+        min-height: 430px;
+        padding: 16px;
+      }
+
+      .export-stage::before {
+        inset: 16px;
+      }
+
+      .sheet-stack {
+        width: min(280px, 84%);
+        height: 226px;
+      }
+
+      .step-row {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+
+      .step-state {
+        grid-column: 2;
+      }
+
+      .output-summary {
+        margin-left: 16px;
+        margin-right: 16px;
+      }
+
+      .side-panel {
+        padding: 16px;
+      }
+
+      .toast {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button" id="backButton">返回设置</button>
+      <div class="crumb">主页 / 工作台 / 最终输出 / 导出生成中</div>
+      <div class="status-pill" aria-label="当前页面状态">
+        <span class="dot"></span>
+        <span id="topStatus">正在生成</span>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">导出生成中</h1>
+        <p>系统正在从已确认的最终故事快照中生成交付文件。此过程只读取快照和审计信息，不会修改正文、设定、角色或插件运行数据。</p>
+      </div>
+      <div class="summary-strip" aria-label="导出摘要">
+        <div>
+          <span>导出格式</span>
+          <strong>TXT 正文文件</strong>
+        </div>
+        <div>
+          <span>正文规模</span>
+          <strong>128,640 字符</strong>
+        </div>
+        <div>
+          <span>快照状态</span>
+          <strong>已锁定</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="导出生成过程">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">EXPORT BUILD IN PROGRESS</p>
+            <h2>正在生成交付文件</h2>
+            <p>前端正在等待下载接口返回文件内容。若下载失败，用户应返回输出设置页保留当前格式并重试。</p>
+          </div>
+          <div class="stage-card">
+            <span>当前阶段</span>
+            导出生成
+          </div>
+        </div>
+
+        <div class="flow-strip" role="list" aria-label="最终输出阶段">
+          <div class="flow-item" role="listitem">
+            <span>01</span>
+            <strong>完成度检查</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>02</span>
+            <strong>成稿组装</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>03</span>
+            <strong>成稿审阅</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>04</span>
+            <strong>输出设置</strong>
+          </div>
+          <div class="flow-item current" role="listitem" aria-current="step">
+            <span>05</span>
+            <strong>导出生成</strong>
+          </div>
+        </div>
+
+        <div class="generation-grid">
+          <section class="visual-panel" aria-labelledby="visualTitle">
+            <div class="section-head">
+              <p class="eyebrow">LIVE PACKAGE BUILD</p>
+              <h3 id="visualTitle">文件正在封装</h3>
+              <p>生成动画表示下载请求正在进行。正式接入时进度来自前端 promise 状态和可用的后端反馈。</p>
+            </div>
+            <div class="export-stage">
+              <div class="document-area" aria-hidden="true">
+                <div class="sheet-stack">
+                  <div class="sheet back"></div>
+                  <div class="sheet mid"></div>
+                  <div class="sheet front">
+                    <div class="sheet-title">
+                      <span>Final Story</span>
+                      <span class="format-mark">TXT</span>
+                    </div>
+                    <div class="text-lines">
+                      <i></i>
+                      <i></i>
+                      <i></i>
+                      <i></i>
+                      <i></i>
+                    </div>
+                    <div class="sheet-footer">
+                      <span>Hash matched</span>
+                      <span>128,640 chars</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="progress-card">
+                <div class="progress-head">
+                  <div>
+                    <span>生成进度</span>
+                    <strong id="progressValue">18%</strong>
+                  </div>
+                  <span id="progressStatus">读取快照</span>
+                </div>
+                <div class="progress-shell">
+                  <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <p class="progress-note" id="progressNote">正在请求已确认的 FinalStoryPackageSnapshot，并锁定本次下载格式。</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="process-panel" aria-labelledby="processTitle">
+            <div class="section-head">
+              <p class="eyebrow">BACKEND STEPS</p>
+              <h3 id="processTitle">生成链路</h3>
+              <p>点击任一步骤可查看交接时需要对齐的接口行为。当前动态稿会自动推进到“触发浏览器下载”前。</p>
+            </div>
+            <div class="step-list">
+              <button class="step-row active" type="button" data-step="snapshot">
+                <span class="step-icon">01</span>
+                <span>
+                  <strong>读取快照</strong>
+                  <span>根据 snapshot_id 获取最终故事包。</span>
+                </span>
+                <span class="step-state">进行中</span>
+              </button>
+              <button class="step-row" type="button" data-step="validate">
+                <span class="step-icon">02</span>
+                <span>
+                  <strong>校验正文</strong>
+                  <span>确认字符数、Hash 和真实项目包状态。</span>
+                </span>
+                <span class="step-state">等待</span>
+              </button>
+              <button class="step-row" type="button" data-step="build">
+                <span class="step-icon">03</span>
+                <span>
+                  <strong>组装文件</strong>
+                  <span>按 TXT / Markdown / JSON 规则生成内容。</span>
+                </span>
+                <span class="step-state">等待</span>
+              </button>
+              <button class="step-row" type="button" data-step="download">
+                <span class="step-icon">04</span>
+                <span>
+                  <strong>准备下载</strong>
+                  <span>读取 filename、media type 和 byte size。</span>
+                </span>
+                <span class="step-state">等待</span>
+              </button>
+            </div>
+            <div class="detail-box" id="detailBox">
+              <strong>读取快照</strong>
+              <p>调用 downloadFinalStoryPackageSnapshot(snapshotId, "txt") 后，后端会先确认当前项目可以访问该快照，并拒绝跨项目、fixture 或未创建状态的快照。</p>
+            </div>
+          </section>
+        </div>
+
+        <section class="output-summary" aria-labelledby="summaryTitle">
+          <div class="output-summary-head">
+            <p class="eyebrow">OUTPUT PAYLOAD</p>
+            <h3 id="summaryTitle">本次生成对象</h3>
+            <p>这些字段用于前端展示、错误恢复和后续交付完成页，不会写回故事事实。</p>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span>Snapshot ID</span>
+              <strong>final_story_package_snapshot_117eebfbb2</strong>
+            </div>
+            <div class="summary-item">
+              <span>Download format</span>
+              <strong>txt</strong>
+            </div>
+            <div class="summary-item">
+              <span>Expected filename</span>
+              <strong>..._final_story.txt</strong>
+            </div>
+            <div class="summary-item">
+              <span>Media type</span>
+              <strong>text/plain; charset=utf-8</strong>
+            </div>
+          </div>
+        </section>
+
+        <div class="action-bar">
+          <p id="actionNote">导出生成中请保持当前页面。完成后浏览器会开始下载，下一页可展示交付结果。</p>
+          <button class="soft-button" type="button" id="settingsButton">返回输出设置</button>
+          <button class="primary-button" type="button" id="completeButton" disabled>等待生成完成</button>
+        </div>
+      </article>
+
+      <aside class="side-panel" aria-label="导出生成侧栏">
+        <section class="side-card">
+          <p class="eyebrow">RUNTIME GUARD</p>
+          <h3>运行边界</h3>
+          <p>该过程只负责下载文件，不创建新的故事事实，也不写入插件运行目录。</p>
+          <div class="guard-list">
+            <div class="guard-row">
+              <span class="guard-mark">✓</span>
+              <div>
+                <span>只读快照</span>
+                <strong>读取 FinalStoryPackageSnapshot。</strong>
+              </div>
+            </div>
+            <div class="guard-row">
+              <span class="guard-mark">✓</span>
+              <div>
+                <span>格式受限</span>
+                <strong>当前仅允许 txt / markdown / json。</strong>
+              </div>
+            </div>
+            <div class="guard-row">
+              <span class="guard-mark">✓</span>
+              <div>
+                <span>失败可恢复</span>
+                <strong>保留格式选择并返回设置重试。</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">LIVE LOG</p>
+          <h3>生成日志</h3>
+          <p>日志用于让用户知道等待原因。正式接入时不要暴露堆栈、路径或敏感字段。</p>
+          <div class="log-list" id="logList">
+            <div class="log-item">
+              <span>INIT</span>
+              <strong>等待下载任务提交。</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">NEXT</p>
+          <h3>完成后</h3>
+          <p>下载成功后进入交付完成页，展示文件名、格式、大小和重新下载入口。失败时保留错误提示并返回输出设置页。</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const steps = {
+      snapshot: {
+        title: "读取快照",
+        detail: "调用 downloadFinalStoryPackageSnapshot(snapshotId, \"txt\") 后，后端会先确认当前项目可以访问该快照，并拒绝跨项目、fixture 或未创建状态的快照。",
+      },
+      validate: {
+        title: "校验正文",
+        detail: "后端会校验 complete_story_text 是否存在、正文 Hash 是否匹配、字符数是否等于 complete_story_text_char_count。",
+      },
+      build: {
+        title: "组装文件",
+        detail: "TXT 直接输出完整正文；Markdown 会加入基础快照元信息；JSON 会加入快照、预览分区、证据索引和安全审计摘要。",
+      },
+      download: {
+        title: "准备下载",
+        detail: "fetch 返回 blob 后，前端读取 Content-Disposition 中的文件名并触发浏览器下载。成功后进入交付完成页。",
+      },
+    };
+
+    const progressBar = document.querySelector("#progressBar");
+    const progressValue = document.querySelector("#progressValue");
+    const progressStatus = document.querySelector("#progressStatus");
+    const progressNote = document.querySelector("#progressNote");
+    const topStatus = document.querySelector("#topStatus");
+    const stepRows = Array.from(document.querySelectorAll(".step-row"));
+    const detailBox = document.querySelector("#detailBox");
+    const logList = document.querySelector("#logList");
+    const completeButton = document.querySelector("#completeButton");
+    const actionNote = document.querySelector("#actionNote");
+    const toast = document.querySelector("#toast");
+
+    const progressFrames = [
+      { value: 18, key: "snapshot", status: "读取快照", note: "正在请求已确认的 FinalStoryPackageSnapshot，并锁定本次下载格式。", log: "已向下载接口提交 snapshot_id。" },
+      { value: 38, key: "validate", status: "校验正文", note: "正在校验正文 Hash、字符数和真实项目包状态。", log: "正文 Hash 与字符数校验中。" },
+      { value: 62, key: "build", status: "组装 TXT", note: "正在根据 txt 格式生成纯文本正文文件。", log: "TXT 内容正在写入下载响应。" },
+      { value: 84, key: "download", status: "准备下载", note: "正在等待浏览器接收文件名、media type 和 blob 内容。", log: "即将触发浏览器下载。" },
+    ];
+
+    let frameIndex = 0;
+    let toastTimer = null;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function setStep(key) {
+      const activeIndex = progressFrames.findIndex((frame) => frame.key === key);
+      stepRows.forEach((row, index) => {
+        const rowKey = row.dataset.step;
+        row.classList.toggle("active", rowKey === key);
+        row.classList.toggle("done", index < activeIndex);
+        const state = row.querySelector(".step-state");
+        if (index < activeIndex) {
+          state.textContent = "完成";
+        } else if (rowKey === key) {
+          state.textContent = "进行中";
+        } else {
+          state.textContent = "等待";
+        }
+      });
+      const step = steps[key];
+      detailBox.innerHTML = `<strong>${step.title}</strong><p>${step.detail}</p>`;
+    }
+
+    function addLog(text) {
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      const item = document.createElement("div");
+      item.className = "log-item";
+      item.innerHTML = `<span>${time}</span><strong>${text}</strong>`;
+      logList.prepend(item);
+    }
+
+    function applyFrame(frame) {
+      progressBar.style.width = `${frame.value}%`;
+      progressValue.textContent = `${frame.value}%`;
+      progressStatus.textContent = frame.status;
+      progressNote.textContent = frame.note;
+      setStep(frame.key);
+      addLog(frame.log);
+    }
+
+    stepRows.forEach((row) => {
+      row.addEventListener("click", () => {
+        setStep(row.dataset.step);
+        showToast(`已查看：${steps[row.dataset.step].title}`);
+      });
+    });
+
+    document.querySelector("#backButton").addEventListener("click", () => {
+      showToast("将返回输出设置页。");
+    });
+
+    document.querySelector("#settingsButton").addEventListener("click", () => {
+      showToast("将返回输出设置页。");
+    });
+
+    completeButton.addEventListener("click", () => {
+      if (completeButton.disabled) return;
+      showToast("将进入交付结果页。");
+    });
+
+    progressBar.style.width = "0%";
+    progressValue.textContent = "0%";
+    progressStatus.textContent = "等待后端";
+    progressNote.textContent = "正在读取最终故事包快照。只有后端确认快照可用后，页面才会开放下一步。";
+    topStatus.textContent = "正在读取";
+    setStep("snapshot");
+  </script>
+</body>
+</html>

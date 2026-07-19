@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>设置 / 外观与主题 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 252, 244, 0.82);
+      --paper-strong: rgba(255, 252, 244, 0.92);
+      --paper-soft: rgba(255, 252, 244, 0.46);
+      --ink: #302f2a;
+      --muted: #6f665d;
+      --quiet: #968a7d;
+      --line: rgba(105, 82, 58, 0.16);
+      --line-strong: rgba(105, 82, 58, 0.32);
+      --accent: #80684e;
+      --accent-soft: #b48a78;
+      --support: #737d69;
+      --support-deep: #56614f;
+      --shadow: 0 28px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      letter-spacing: 0;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.54), rgba(236, 231, 220, 0.3) 48%, rgba(236, 231, 220, 0.1)),
+        url("../../assets/settings-background-v1.png") center / cover no-repeat;
+    }
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 249, 232, 0.44), transparent 34%),
+        radial-gradient(circle at 78% 22%, rgba(180, 149, 111, 0.12), transparent 36%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.1), rgba(121, 94, 65, 0.1));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 226px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .button,
+    .nav-item,
+    .theme-card,
+    .preset,
+    .ghost-button,
+    .minor-button {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    .button,
+    .ghost-button,
+    .minor-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .button:hover,
+    .nav-item:hover,
+    .theme-card:hover,
+    .preset:hover,
+    .ghost-button:hover,
+    .minor-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+    .primary {
+      min-width: 154px;
+      border-color: rgba(86, 97, 79, 0.48);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--support-deep), var(--accent));
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #63705c, #8b7358);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(38px, 3.8vw, 54px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.72);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+    .theme-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+    .theme-strip div,
+    .metric,
+    .field,
+    .preview-stat {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .theme-strip span,
+    .metric span,
+    .field span,
+    .theme-card span,
+    .preview-stat span,
+    .ambient-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .theme-strip strong,
+    .metric strong,
+    .field strong,
+    .theme-card strong,
+    .preview-stat strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 216px minmax(0, 1fr) 344px;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .nav-panel {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+    .nav-item {
+      width: 100%;
+      min-height: 58px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+    }
+    .nav-item.active {
+      border-color: rgba(86, 97, 79, 0.44);
+      background: rgba(255, 252, 244, 0.86);
+      box-shadow: 0 18px 40px rgba(71, 52, 31, 0.12);
+    }
+    .nav-symbol {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(180, 149, 111, 0.16);
+      color: #6f5a42;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .nav-item.active .nav-symbol {
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--support-deep), var(--accent));
+    }
+    .nav-copy strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-copy span {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .main-panel {
+      min-height: 650px;
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto auto auto auto;
+      align-content: start;
+      gap: 16px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 840;
+    }
+    h2, h3 {
+      margin: 0;
+      color: #33322c;
+      letter-spacing: 0;
+    }
+    h2 {
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+    h3 {
+      font-size: 16px;
+      line-height: 1.28;
+      font-weight: 900;
+    }
+    .subtle {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+    .badge {
+      flex: 0 0 auto;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(86, 97, 79, 0.24);
+      border-radius: 999px;
+      color: var(--support-deep);
+      background: rgba(248, 245, 235, 0.78);
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .theme-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .theme-card {
+      min-width: 0;
+      min-height: 158px;
+      padding: 14px;
+      text-align: left;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      position: relative;
+    }
+    .theme-card.active {
+      border-color: rgba(86, 97, 79, 0.48);
+      background: rgba(255, 252, 244, 0.86);
+      box-shadow: 0 20px 44px rgba(71, 52, 31, 0.14);
+    }
+    .theme-card p {
+      margin: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 12px;
+      line-height: 1.48;
+      font-weight: 520;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card-top strong {
+      margin-top: 0;
+      font-size: 16px;
+    }
+    .card-status {
+      flex: 0 0 auto;
+      min-height: 26px;
+      padding: 0 9px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      background: rgba(255, 252, 244, 0.58);
+      color: #665d54;
+      font-size: 11px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .palette-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .swatch {
+      width: 26px;
+      height: 26px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 252, 244, 0.72);
+      box-shadow: 0 9px 18px rgba(71, 52, 31, 0.15);
+    }
+
+    .editor {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .editor-card {
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.54);
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .color-field {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .color-field > span > span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .color-field > span > strong {
+      display: block;
+      margin-top: 4px;
+      color: #383730;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .color-field input[type="color"] {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      overflow: hidden;
+      border: 2px solid rgba(255, 252, 244, 0.9);
+      border-radius: 50%;
+      background: transparent;
+    }
+    .color-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .color-field input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+    .slider-line {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .slider-line label {
+      display: grid;
+      gap: 8px;
+      color: #3d3932;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .slider-line input {
+      width: 100%;
+      accent-color: var(--support-deep);
+    }
+    .toggle-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+    }
+    .switch {
+      width: 46px;
+      height: 26px;
+      position: relative;
+      flex: 0 0 auto;
+    }
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      inset: 0;
+    }
+    .switch span {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(111, 102, 93, 0.26);
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      transition: background 180ms ease;
+    }
+    .switch span::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 2px;
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: 0 4px 10px rgba(71, 52, 31, 0.18);
+      transition: transform 180ms ease;
+    }
+    .switch input:checked + span {
+      background: rgba(86, 97, 79, 0.72);
+    }
+    .switch input:checked + span::before {
+      transform: translateX(20px);
+    }
+    .preset-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+    .preset {
+      min-height: 42px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 820;
+    }
+    .preset-palette {
+      display: flex;
+      gap: 4px;
+    }
+    .preset-palette i {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: block;
+      border: 1px solid rgba(255, 252, 244, 0.8);
+    }
+
+    .side-panel {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-self: stretch;
+    }
+    .side-card {
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+    }
+    .preview-window {
+      overflow: hidden;
+      margin-top: 12px;
+      min-height: 268px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      background: linear-gradient(135deg, var(--preview-bg, #ece7dc), var(--preview-paper, #e9ddbf));
+      position: relative;
+      padding: 18px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+    .preview-window::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 16% 18%, rgba(255,255,255,0.36), transparent 36%);
+      opacity: 0.85;
+    }
+    .mock-page {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 12px;
+    }
+    .mock-title {
+      width: 70%;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--preview-ink, #56614f);
+    }
+    .mock-card {
+      padding: 14px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, var(--mock-alpha, 0.68));
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      display: grid;
+      gap: 10px;
+    }
+    .mock-line {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(48, 47, 42, 0.2);
+    }
+    .mock-line.short { width: 58%; }
+    .mock-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .mock-action {
+      height: 28px;
+      flex: 1;
+      border-radius: var(--radius);
+      background: var(--preview-accent, #80684e);
+      opacity: 0.82;
+    }
+    .preview-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .ambient-card {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .ambient-row {
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .ambient-row strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 860;
+      margin-bottom: 4px;
+    }
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding-top: 2px;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 6;
+      max-width: min(560px, calc(100vw - 36px));
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.7);
+      border-radius: var(--radius);
+      background: rgba(51, 47, 40, 0.9);
+      color: #fffaf0;
+      box-shadow: 0 18px 44px rgba(44, 32, 20, 0.24);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 620;
+      transform: translate(-50%, 24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace { width: min(1000px, calc(100vw - 44px)); }
+      .hero,
+      .layout,
+      .editor {
+        grid-template-columns: 1fr;
+      }
+      .nav-panel {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .side-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .side-card:first-child {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: calc(100vw - 28px);
+        min-height: calc(100vh - 28px);
+        margin: 14px auto;
+        gap: 14px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        gap: 14px;
+        padding-left: 0;
+      }
+      h1 { font-size: 38px; }
+      .layout {
+        display: flex;
+        flex-direction: column;
+      }
+      .main-panel { order: 1; }
+      .nav-panel {
+        order: 2;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .side-panel {
+        order: 3;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .side-card:first-child {
+        grid-column: auto;
+      }
+      .theme-strip,
+      .metrics,
+      .theme-grid,
+      .field-grid,
+      .side-panel,
+      .preview-stats {
+        grid-template-columns: 1fr;
+      }
+      .main-panel {
+        padding: 16px;
+        min-height: auto;
+      }
+      .panel-header {
+        display: grid;
+      }
+      .preview-window {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding: 14px;
+      }
+      .preset {
+        grid-template-columns: 1fr;
+        justify-items: start;
+      }
+      .preset-palette {
+        flex-wrap: wrap;
+      }
+      .theme-card {
+        min-height: 144px;
+      }
+      .action-bar {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .button,
+      .minor-button,
+      .ghost-button,
+      .primary {
+        width: 100%;
+      }
+      .backdrop {
+        background-position: 58% center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="button" type="button" data-action="返回设置总览">返回总览</button>
+      <div class="crumb">主页 / 当前项目 / 设置 / 外观与主题</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">默认主题</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">外观与主题</h1>
+        <p>管理网站式工作台的默认色调、面板质感和主题预览。故事氛围自动换肤作为后期能力保留入口。</p>
+      </div>
+      <div class="theme-strip" aria-label="当前主题摘要">
+        <div>
+          <span>当前主题</span>
+          <strong id="themeName">羊皮卷莫兰迪</strong>
+        </div>
+        <div>
+          <span>面板质感</span>
+          <strong id="panelOpacityLabel">柔和玻璃</strong>
+        </div>
+        <div>
+          <span>故事氛围</span>
+          <strong id="ambientLabel">手动选择</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <nav class="panel nav-panel" aria-label="设置分类">
+        <button class="nav-item" type="button" data-target="设置总览">
+          <span class="nav-symbol">01</span>
+          <span class="nav-copy"><strong>设置总览</strong><span>环境状态入口</span></span>
+        </button>
+        <button class="nav-item active" type="button" data-target="外观与主题">
+          <span class="nav-symbol">02</span>
+          <span class="nav-copy"><strong>外观与主题</strong><span>色卡与预览</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="模型配置">
+          <span class="nav-symbol">03</span>
+          <span class="nav-copy"><strong>模型配置</strong><span>模型档案</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="当前模型">
+          <span class="nav-symbol">04</span>
+          <span class="nav-copy"><strong>当前模型</strong><span>健康检查</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="密钥与安全">
+          <span class="nav-symbol">05</span>
+          <span class="nav-copy"><strong>密钥与安全</strong><span>引用与策略</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="创作偏好">
+          <span class="nav-symbol">06</span>
+          <span class="nav-copy"><strong>创作偏好</strong><span>默认语言容量</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="帮助与引导">
+          <span class="nav-symbol">07</span>
+          <span class="nav-copy"><strong>帮助与引导</strong><span>新手提示</span></span>
+        </button>
+      </nav>
+
+      <section class="panel main-panel" aria-label="外观与主题设置">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Appearance</p>
+            <h2>主题色卡与质感</h2>
+            <p class="subtle">默认主题保持简约。用户自定义主题只改变 UI 外观，不改变故事事实或工作流状态。</p>
+          </div>
+          <span class="badge" id="themeBadge">saved</span>
+        </div>
+
+        <div class="metrics" aria-label="主题指标">
+          <div class="metric">
+            <span>Palette</span>
+            <strong id="paletteMetric">5 色</strong>
+          </div>
+          <div class="metric">
+            <span>Contrast</span>
+            <strong>正文清晰</strong>
+          </div>
+          <div class="metric">
+            <span>Motion</span>
+            <strong id="motionMetric">柔和</strong>
+          </div>
+          <div class="metric">
+            <span>Adaptive</span>
+            <strong id="adaptiveMetric">预留</strong>
+          </div>
+        </div>
+
+        <div class="theme-grid" aria-label="主题方案">
+          <button class="theme-card active" type="button" data-theme="parchment">
+            <div class="card-top">
+              <span><span>Default</span><strong>羊皮卷莫兰迪</strong></span>
+              <span class="card-status">默认</span>
+            </div>
+            <p>温和、陈旧、故事感强，作为项目默认主题。</p>
+            <div class="palette-row" aria-hidden="true">
+              <i class="swatch" style="background:#ece7dc"></i>
+              <i class="swatch" style="background:#e9ddbf"></i>
+              <i class="swatch" style="background:#b48a78"></i>
+              <i class="swatch" style="background:#737d69"></i>
+              <i class="swatch" style="background:#80684e"></i>
+            </div>
+          </button>
+
+          <button class="theme-card" type="button" data-theme="warm">
+            <div class="card-top">
+              <span><span>Warm</span><strong>炉火篇章</strong></span>
+              <span class="card-status">可选</span>
+            </div>
+            <p>更暖、更柔，适合温和章节或舒缓创作阶段。</p>
+            <div class="palette-row" aria-hidden="true">
+              <i class="swatch" style="background:#eee3cf"></i>
+              <i class="swatch" style="background:#dcc6a5"></i>
+              <i class="swatch" style="background:#c39a83"></i>
+              <i class="swatch" style="background:#90715d"></i>
+              <i class="swatch" style="background:#69584b"></i>
+            </div>
+          </button>
+
+          <button class="theme-card" type="button" data-theme="cold">
+            <div class="card-top">
+              <span><span>Cold</span><strong>冷雾篇章</strong></span>
+              <span class="card-status">可选</span>
+            </div>
+            <p>冷清、低饱和，适合悬疑、孤独或寒冷场景。</p>
+            <div class="palette-row" aria-hidden="true">
+              <i class="swatch" style="background:#e4e2d8"></i>
+              <i class="swatch" style="background:#c8cec5"></i>
+              <i class="swatch" style="background:#8d9a93"></i>
+              <i class="swatch" style="background:#6f8182"></i>
+              <i class="swatch" style="background:#565f5d"></i>
+            </div>
+          </button>
+
+          <button class="theme-card" type="button" data-theme="custom">
+            <div class="card-top">
+              <span><span>Custom</span><strong>自定义色卡</strong></span>
+              <span class="card-status">编辑中</span>
+            </div>
+            <p>用户可以在下方调整颜色，并实时查看界面预览。</p>
+            <div class="palette-row" aria-hidden="true" id="customSwatches">
+              <i class="swatch" style="background:#ece7dc"></i>
+              <i class="swatch" style="background:#e9ddbf"></i>
+              <i class="swatch" style="background:#b48a78"></i>
+              <i class="swatch" style="background:#737d69"></i>
+              <i class="swatch" style="background:#80684e"></i>
+            </div>
+          </button>
+        </div>
+
+        <div class="editor">
+          <section class="editor-card" aria-label="自定义色卡编辑">
+            <p class="eyebrow">Palette Editor</p>
+            <h3>自定义色卡</h3>
+            <p class="subtle">色卡需要保持低饱和、低刺激，保证长时间创作时不压迫文字阅读。</p>
+            <div class="field-grid">
+              <label class="color-field">
+                <input type="color" value="#ece7dc" data-color="bg" aria-label="背景色" />
+                <span><span>背景</span><strong>#ECE7DC</strong></span>
+              </label>
+              <label class="color-field">
+                <input type="color" value="#e9ddbf" data-color="paper" aria-label="纸张色" />
+                <span><span>纸张</span><strong>#E9DDBF</strong></span>
+              </label>
+              <label class="color-field">
+                <input type="color" value="#b48a78" data-color="accentSoft" aria-label="柔和强调色" />
+                <span><span>强调</span><strong>#B48A78</strong></span>
+              </label>
+              <label class="color-field">
+                <input type="color" value="#737d69" data-color="support" aria-label="辅助色" />
+                <span><span>辅助</span><strong>#737D69</strong></span>
+              </label>
+              <label class="color-field">
+                <input type="color" value="#80684e" data-color="accent" aria-label="主按钮色" />
+                <span><span>主按钮</span><strong>#80684E</strong></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="editor-card" aria-label="质感和动效">
+            <p class="eyebrow">Surface</p>
+            <h3>质感与动效</h3>
+            <div class="slider-line">
+              <label>
+                面板通透度 <span id="opacityText">68%</span>
+                <input id="opacitySlider" type="range" min="48" max="86" value="68" />
+              </label>
+              <label>
+                转场柔和度 <span id="motionText">柔和</span>
+                <input id="motionSlider" type="range" min="1" max="3" value="2" />
+              </label>
+            </div>
+            <div class="toggle-line" style="margin-top:14px">
+              <div>
+                <strong>故事氛围自动主题</strong>
+                <p class="subtle" style="margin-top:4px">后期由智能体分析章节氛围后切换 UI 色调。</p>
+              </div>
+              <label class="switch">
+                <input id="adaptiveToggle" type="checkbox" />
+                <span aria-hidden="true"></span>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-bar">
+          <button class="ghost-button" type="button" id="resetButton">恢复默认</button>
+          <button class="minor-button" type="button" id="previewButton">更新预览</button>
+          <button class="button primary" type="button" id="applyButton">应用主题</button>
+        </div>
+      </section>
+
+      <aside class="panel side-panel" aria-label="主题预览和预留能力">
+        <section class="side-card">
+          <p class="eyebrow">Live Preview</p>
+          <h3>实时预览</h3>
+          <div class="preview-window" id="previewWindow">
+            <div class="mock-page">
+              <div class="mock-title"></div>
+              <div class="mock-card">
+                <div class="mock-line"></div>
+                <div class="mock-line short"></div>
+                <div class="mock-actions">
+                  <div class="mock-action"></div>
+                  <div class="mock-action" style="opacity:.38"></div>
+                </div>
+              </div>
+              <div class="mock-card" style="width:78%">
+                <div class="mock-line"></div>
+                <div class="mock-line short"></div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-stats">
+            <div class="preview-stat"><span>Readability</span><strong>稳定</strong></div>
+            <div class="preview-stat"><span>Density</span><strong>适中</strong></div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">Presets</p>
+          <h3>快速色调</h3>
+          <div class="preset-list">
+            <button class="preset" type="button" data-theme="parchment">
+              <span>默认故事感</span>
+              <span class="preset-palette"><i style="background:#ece7dc"></i><i style="background:#e9ddbf"></i><i style="background:#b48a78"></i></span>
+            </button>
+            <button class="preset" type="button" data-theme="warm">
+              <span>温暖篇章</span>
+              <span class="preset-palette"><i style="background:#eee3cf"></i><i style="background:#dcc6a5"></i><i style="background:#c39a83"></i></span>
+            </button>
+            <button class="preset" type="button" data-theme="cold">
+              <span>冷清篇章</span>
+              <span class="preset-palette"><i style="background:#e4e2d8"></i><i style="background:#c8cec5"></i><i style="background:#6f8182"></i></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">Future</p>
+          <h3>故事氛围主题</h3>
+          <div class="ambient-card">
+            <div class="ambient-row">
+              <strong>温和章节</strong>
+              <span>界面偏暖，背景和面板保持柔和。</span>
+            </div>
+            <div class="ambient-row">
+              <strong>冷清章节</strong>
+              <span>过场时旧面板淡出，新色调随粉尘显现。</span>
+            </div>
+            <div class="ambient-row">
+              <strong>高危章节</strong>
+              <span>仅增强氛围，不影响正文判断和按钮可读性。</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const themes = {
+      parchment: {
+        name: "羊皮卷莫兰迪",
+        bg: "#ece7dc",
+        paper: "#e9ddbf",
+        accentSoft: "#b48a78",
+        support: "#737d69",
+        accent: "#80684e"
+      },
+      warm: {
+        name: "炉火篇章",
+        bg: "#eee3cf",
+        paper: "#dcc6a5",
+        accentSoft: "#c39a83",
+        support: "#90715d",
+        accent: "#69584b"
+      },
+      cold: {
+        name: "冷雾篇章",
+        bg: "#e4e2d8",
+        paper: "#c8cec5",
+        accentSoft: "#8d9a93",
+        support: "#6f8182",
+        accent: "#565f5d"
+      }
+    };
+
+    const toast = document.getElementById("toast");
+    const previewWindow = document.getElementById("previewWindow");
+    const themeName = document.getElementById("themeName");
+    const themeBadge = document.getElementById("themeBadge");
+    const topStatus = document.getElementById("topStatus");
+    const opacitySlider = document.getElementById("opacitySlider");
+    const opacityText = document.getElementById("opacityText");
+    const motionSlider = document.getElementById("motionSlider");
+    const motionText = document.getElementById("motionText");
+    const adaptiveToggle = document.getElementById("adaptiveToggle");
+    const adaptiveMetric = document.getElementById("adaptiveMetric");
+    const ambientLabel = document.getElementById("ambientLabel");
+    const motionMetric = document.getElementById("motionMetric");
+    const panelOpacityLabel = document.getElementById("panelOpacityLabel");
+    let activeTheme = "parchment";
+    let toastTimer = null;
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("show");
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    const settingsRoutes = {
+      "设置总览": "../../01 Settings Overview/visual-drafts/settings-overview-v1.html",
+      "外观与主题": "../../02 Appearance And Theme/visual-drafts/settings-appearance-theme-v1.html",
+      "模型配置": "../../03 Model Configuration/visual-drafts/settings-model-configuration-v1.html",
+      "当前模型": "../../04 Current Model And Health Check/visual-drafts/settings-current-model-health-v1.html",
+      "密钥与安全": "../../05 Secrets And Security/visual-drafts/settings-secrets-security-v1.html",
+      "创作偏好": "../../06 Creative Preferences/visual-drafts/settings-creative-preferences-v1.html"
+    };
+
+    function openSettingsTarget(target, currentTarget, currentLabel) {
+      if (target === currentTarget) {
+        showToast("当前已在" + currentLabel + "。");
+        return;
+      }
+      const route = settingsRoutes[target];
+      if (route) {
+        window.location.href = route;
+        return;
+      }
+      showToast("「" + target + "」尚未设计。");
+    }
+
+    function colorsFromInputs() {
+      const colors = {};
+      document.querySelectorAll("input[type='color']").forEach((input) => {
+        colors[input.dataset.color] = input.value;
+      });
+      return colors;
+    }
+
+    function applyColors(colors, name) {
+      previewWindow.style.setProperty("--preview-bg", colors.bg);
+      previewWindow.style.setProperty("--preview-paper", colors.paper);
+      previewWindow.style.setProperty("--preview-accent", colors.accent);
+      previewWindow.style.setProperty("--preview-ink", colors.support);
+      document.documentElement.style.setProperty("--accent", colors.accent);
+      document.documentElement.style.setProperty("--accent-soft", colors.accentSoft);
+      document.documentElement.style.setProperty("--support", colors.support);
+      document.documentElement.style.setProperty("--support-deep", colors.support);
+      themeName.textContent = name;
+      topStatus.textContent = name;
+      document.getElementById("customSwatches").querySelectorAll(".swatch").forEach((swatch, index) => {
+        swatch.style.background = [colors.bg, colors.paper, colors.accentSoft, colors.support, colors.accent][index];
+      });
+    }
+
+    function setTheme(themeId) {
+      const theme = themes[themeId];
+      activeTheme = themeId;
+      document.querySelectorAll(".theme-card").forEach((card) => {
+        card.classList.toggle("active", card.dataset.theme === themeId);
+      });
+      if (theme) {
+        document.querySelector("[data-color='bg']").value = theme.bg;
+        document.querySelector("[data-color='paper']").value = theme.paper;
+        document.querySelector("[data-color='accentSoft']").value = theme.accentSoft;
+        document.querySelector("[data-color='support']").value = theme.support;
+        document.querySelector("[data-color='accent']").value = theme.accent;
+        document.querySelectorAll(".color-field strong").forEach((strong, index) => {
+          strong.textContent = [theme.bg, theme.paper, theme.accentSoft, theme.support, theme.accent][index].toUpperCase();
+        });
+        applyColors(theme, theme.name);
+      } else {
+        applyColors(colorsFromInputs(), "自定义色卡");
+      }
+      themeBadge.textContent = "preview";
+      showToast("已切换到「" + themeName.textContent + "」预览。");
+    }
+
+    document.querySelectorAll("[data-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.target;
+        openSettingsTarget(target, "外观与主题", "外观与主题");
+      });
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => showToast(button.dataset.action + "。"));
+    });
+
+    document.querySelectorAll("[data-theme]").forEach((button) => {
+      button.addEventListener("click", () => setTheme(button.dataset.theme));
+    });
+
+    document.querySelectorAll("input[type='color']").forEach((input) => {
+      input.addEventListener("input", () => {
+        activeTheme = "custom";
+        input.parentElement.querySelector("strong").textContent = input.value.toUpperCase();
+        document.querySelectorAll(".theme-card").forEach((card) => {
+          card.classList.toggle("active", card.dataset.theme === "custom");
+        });
+        applyColors(colorsFromInputs(), "自定义色卡");
+        themeBadge.textContent = "editing";
+      });
+    });
+
+    opacitySlider.addEventListener("input", () => {
+      const value = opacitySlider.value;
+      opacityText.textContent = value + "%";
+      previewWindow.style.setProperty("--mock-alpha", String(Number(value) / 100));
+      panelOpacityLabel.textContent = Number(value) >= 72 ? "清晰面板" : "柔和玻璃";
+      themeBadge.textContent = "editing";
+    });
+
+    motionSlider.addEventListener("input", () => {
+      const labels = { "1": "克制", "2": "柔和", "3": "丝滑" };
+      motionText.textContent = labels[motionSlider.value];
+      motionMetric.textContent = labels[motionSlider.value];
+      themeBadge.textContent = "editing";
+    });
+
+    adaptiveToggle.addEventListener("change", () => {
+      adaptiveMetric.textContent = adaptiveToggle.checked ? "预览开启" : "预留";
+      ambientLabel.textContent = adaptiveToggle.checked ? "预览模式" : "手动选择";
+      showToast(adaptiveToggle.checked ? "已开启故事氛围主题预览；正式能力后续接入智能体。" : "已关闭故事氛围主题预览。");
+    });
+
+    document.getElementById("resetButton").addEventListener("click", () => {
+      opacitySlider.value = 68;
+      opacitySlider.dispatchEvent(new Event("input"));
+      motionSlider.value = 2;
+      motionSlider.dispatchEvent(new Event("input"));
+      adaptiveToggle.checked = false;
+      adaptiveToggle.dispatchEvent(new Event("change"));
+      setTheme("parchment");
+      themeBadge.textContent = "saved";
+      showToast("已恢复默认主题。");
+    });
+
+    document.getElementById("previewButton").addEventListener("click", () => {
+      const name = activeTheme === "custom" ? "自定义色卡" : themeName.textContent;
+      applyColors(colorsFromInputs(), name);
+      showToast("预览已更新。");
+    });
+
+    document.getElementById("applyButton").addEventListener("click", () => {
+      themeBadge.textContent = "saved";
+      showToast("主题已应用。后续 Codes 接入时写入用户外观偏好。");
+    });
+  </script>
+</body>
+</html>

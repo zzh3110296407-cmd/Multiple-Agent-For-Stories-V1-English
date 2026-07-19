@@ -401,7 +401,7 @@ class StoryProgressService:
             )
             preparation.scene_count_proposal = request.scene_count
         plan_response = self.chapter_plan_service.confirm_chapter_plan(
-            "Confirm next chapter plan and scene count for story progress transition."
+            "用户确认使用下一章节计划和幕数；如果模型服务暂不可用，接受当前保守草案继续进入下一章场景写作。"
         )
         if plan_response.draft is None or plan_response.draft.status != "confirmed":
             raise StorageError(

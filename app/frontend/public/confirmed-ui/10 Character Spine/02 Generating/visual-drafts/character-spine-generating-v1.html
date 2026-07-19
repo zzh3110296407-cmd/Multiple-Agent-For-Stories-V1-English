@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>角色主轴 / 生成中 V1</title>
+  <style>
+    :root {
+      --ink: #27312b;
+      --muted: #746d61;
+      --faint: rgba(39, 49, 43, 0.58);
+      --line: rgba(84, 72, 58, 0.2);
+      --line-strong: rgba(84, 72, 58, 0.34);
+      --paper: rgba(248, 241, 227, 0.84);
+      --paper-solid: #fbf6ea;
+      --paper-soft: rgba(236, 225, 205, 0.66);
+      --sage: #63786e;
+      --sage-dark: #4c6259;
+      --sage-soft: rgba(99, 120, 110, 0.14);
+      --clay: #af7d70;
+      --clay-dark: #926359;
+      --gold: #b69a64;
+      --shadow: 0 24px 70px rgba(55, 39, 25, 0.22);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+      color: var(--ink);
+      background: #e2d5c3;
+      overflow-x: hidden;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 36px 60px 54px;
+      isolation: isolate;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(242, 234, 219, 0.9) 0%, rgba(242, 234, 219, 0.68) 45%, rgba(242, 234, 219, 0.25) 100%),
+        url("assets/character-spine-background-v1.png") center / cover no-repeat;
+    }
+
+    .page::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 22% 18%, rgba(255, 251, 239, 0.76), transparent 30%),
+        linear-gradient(180deg, rgba(251, 246, 235, 0.08), rgba(89, 69, 49, 0.2));
+      pointer-events: none;
+    }
+
+    .shell {
+      max-width: 1540px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .back-button,
+    .primary-button,
+    .ghost-button,
+    .stage-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(250, 246, 235, 0.74);
+      color: var(--ink);
+      font-weight: 800;
+      box-shadow: 0 12px 32px rgba(61, 48, 35, 0.1);
+      transition: transform 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+    }
+
+    .back-button {
+      width: 138px;
+    }
+
+    .back-button:hover,
+    .ghost-button:hover,
+    .stage-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 243, 0.9);
+      box-shadow: 0 18px 40px rgba(61, 48, 35, 0.16);
+    }
+
+    .crumbs {
+      color: rgba(39, 49, 43, 0.64);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status-pill {
+      min-width: 174px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      border-radius: var(--radius);
+      background: rgba(246, 240, 229, 0.66);
+      box-shadow: 0 12px 34px rgba(61, 48, 35, 0.12);
+      color: #4f5f57;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(99, 120, 110, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .dot.pulse {
+      animation: pulseDot 1.8s ease-in-out infinite;
+    }
+
+    .dot.warn {
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(182, 154, 100, 0.15);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 470px;
+      align-items: end;
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #27312b;
+      font-size: 64px;
+      line-height: 0.96;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .lead {
+      max-width: 930px;
+      margin: 14px 0 0;
+      color: rgba(39, 49, 43, 0.7);
+      font-size: 17px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(247, 240, 225, 0.54);
+      box-shadow: 0 16px 40px rgba(61, 48, 35, 0.12);
+    }
+
+    .stage-button {
+      min-height: 46px;
+      border-color: transparent;
+      background: transparent;
+      color: rgba(39, 49, 43, 0.48);
+      box-shadow: none;
+    }
+
+    .stage-button.active {
+      background: var(--sage);
+      color: #fffdf5;
+      box-shadow: 0 14px 28px rgba(65, 84, 76, 0.28);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 355px;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .main-card,
+    .side-card {
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(240, 228, 207, 0.68)),
+        var(--paper);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .main-card {
+      overflow: hidden;
+    }
+
+    .main-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 148px;
+      gap: 20px;
+      align-items: start;
+      padding: 30px 36px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--clay-dark);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    h2 {
+      margin: 0;
+      color: #27312b;
+      font-size: 34px;
+      line-height: 1.16;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .section-copy {
+      margin: 12px 0 0;
+      color: rgba(39, 49, 43, 0.66);
+      font-size: 15px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .phase-stamp {
+      min-height: 126px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 239, 0.46);
+      text-align: center;
+    }
+
+    .phase-stamp strong {
+      display: block;
+      color: var(--sage-dark);
+      font-size: 31px;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .phase-stamp span {
+      display: block;
+      margin-top: 6px;
+      color: rgba(39, 49, 43, 0.58);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .work-area {
+      display: grid;
+      grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+      gap: 24px;
+      padding: 26px 36px 30px;
+    }
+
+    .panel {
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 242, 0.58);
+      box-shadow: 0 18px 44px rgba(61, 48, 35, 0.08);
+    }
+
+    .prompt-card {
+      min-height: 100%;
+      padding: 22px;
+    }
+
+    .prompt-card h3,
+    .process-board h3,
+    .preview-grid h3,
+    .side-card h3 {
+      margin: 0;
+      color: #263029;
+      font-size: 25px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .prompt-body {
+      min-height: 220px;
+      margin-top: 18px;
+      padding: 22px;
+      border: 1px solid rgba(84, 72, 58, 0.24);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 253, 247, 0.78), rgba(239, 228, 209, 0.42));
+      color: rgba(39, 49, 43, 0.78);
+      font-size: 17px;
+      line-height: 2;
+      font-weight: 800;
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mini-card {
+      min-height: 86px;
+      padding: 14px 14px 13px;
+      border: 1px solid rgba(84, 72, 58, 0.18);
+      border-radius: var(--radius);
+      background: rgba(250, 246, 235, 0.62);
+    }
+
+    .mini-card span,
+    .step-card span,
+    .preview-card span {
+      display: block;
+      color: rgba(39, 49, 43, 0.52);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mini-card strong,
+    .preview-card strong {
+      display: block;
+      margin-top: 8px;
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .mini-card strong {
+      white-space: nowrap;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .primary-button,
+    .ghost-button {
+      min-height: 52px;
+      padding: 0 20px;
+    }
+
+    .primary-button {
+      border-color: rgba(99, 120, 110, 0.22);
+      background: var(--sage);
+      color: #fffdf5;
+      box-shadow: 0 14px 28px rgba(65, 84, 76, 0.25);
+    }
+
+    .primary-button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.68;
+      filter: saturate(0.7);
+    }
+
+    .process-board {
+      position: relative;
+      min-height: 100%;
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .process-board::before {
+      content: "";
+      position: absolute;
+      inset: 64px 18px 18px;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(rgba(84, 72, 58, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(84, 72, 58, 0.06) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, transparent, black 16%, black 84%, transparent);
+      pointer-events: none;
+    }
+
+    .process-board > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .pulse-map {
+      position: relative;
+      height: 214px;
+      margin-top: 18px;
+      border: 1px solid rgba(84, 72, 58, 0.22);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 32% 46%, rgba(99, 120, 110, 0.22), transparent 28%),
+        linear-gradient(135deg, rgba(255, 253, 248, 0.72), rgba(238, 225, 204, 0.44));
+      overflow: hidden;
+    }
+
+    .pulse-map::before,
+    .pulse-map::after {
+      content: "";
+      position: absolute;
+      left: 18%;
+      right: 9%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(99, 120, 110, 0.52), rgba(175, 125, 112, 0.38), transparent);
+      transform-origin: left center;
+      animation: threadSweep 5.2s ease-in-out infinite;
+    }
+
+    .pulse-map::before {
+      top: 42%;
+      transform: rotate(9deg);
+    }
+
+    .pulse-map::after {
+      top: 60%;
+      transform: rotate(-6deg);
+      animation-delay: 1.4s;
+    }
+
+    .node {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: rgba(255, 253, 246, 0.82);
+      border: 1px solid rgba(84, 72, 58, 0.16);
+      color: rgba(39, 49, 43, 0.75);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+      box-shadow: 0 16px 34px rgba(61, 48, 35, 0.12);
+      animation: nodeBreathe 3.8s ease-in-out infinite;
+    }
+
+    .node.main {
+      left: 12%;
+      top: 30%;
+      width: 94px;
+      height: 94px;
+      background: var(--sage);
+      color: #fffdf5;
+      animation-delay: 0s;
+    }
+
+    .node.one {
+      right: 20%;
+      top: 18%;
+      animation-delay: 0.5s;
+    }
+
+    .node.two {
+      right: 30%;
+      bottom: 18%;
+      animation-delay: 1s;
+    }
+
+    .node.three {
+      right: 11%;
+      bottom: 25%;
+      animation-delay: 1.5s;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .step-card {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) 82px;
+      gap: 12px;
+      align-items: center;
+      min-height: 76px;
+      padding: 13px;
+      border: 1px solid rgba(84, 72, 58, 0.18);
+      border-radius: var(--radius);
+      background: rgba(250, 246, 235, 0.68);
+      animation: liftIn 650ms ease both;
+    }
+
+    .step-card:nth-child(2) {
+      animation-delay: 120ms;
+    }
+
+    .step-card:nth-child(3) {
+      animation-delay: 240ms;
+    }
+
+    .step-card:nth-child(4) {
+      animation-delay: 360ms;
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(99, 120, 110, 0.16);
+      color: var(--sage-dark);
+      font-weight: 900;
+    }
+
+    .step-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(84, 72, 58, 0.14);
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      height: 100%;
+      width: 64%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), #a58f66);
+      animation: loadingBar 4.8s ease-in-out infinite;
+    }
+
+    .step-card:nth-child(2) .progress i {
+      animation-delay: 0.5s;
+    }
+
+    .step-card:nth-child(3) .progress i {
+      animation-delay: 1s;
+    }
+
+    .step-card:nth-child(4) .progress i {
+      animation-delay: 1.5s;
+    }
+
+    .preview-grid {
+      padding: 0 36px 34px;
+    }
+
+    .preview-grid h3 {
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+
+    .preview-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .preview-card {
+      min-height: 116px;
+      padding: 16px;
+      border: 1px solid rgba(84, 72, 58, 0.18);
+      border-radius: var(--radius);
+      background: rgba(250, 246, 235, 0.56);
+    }
+
+    .skeleton-line {
+      height: 8px;
+      margin-top: 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(99, 120, 110, 0.12), rgba(255, 253, 246, 0.76), rgba(99, 120, 110, 0.12));
+      background-size: 220% 100%;
+      animation: shimmer 2.3s linear infinite;
+    }
+
+    .skeleton-line.short {
+      width: 68%;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 22px;
+    }
+
+    .side-card p {
+      margin: 10px 0 0;
+      color: rgba(39, 49, 43, 0.66);
+      font-size: 14px;
+      line-height: 1.75;
+      font-weight: 700;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .status-item {
+      min-height: 46px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .status-item em {
+      color: rgba(39, 49, 43, 0.52);
+      font-style: normal;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .next-box {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid rgba(84, 72, 58, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 246, 0.64);
+      color: rgba(39, 49, 43, 0.7);
+      font-size: 14px;
+      line-height: 1.8;
+      font-weight: 800;
+    }
+
+    .overall {
+      margin-top: 18px;
+      border: 1px solid rgba(84, 72, 58, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 246, 0.58);
+      overflow: hidden;
+    }
+
+    .overall-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px 10px;
+      color: rgba(39, 49, 43, 0.7);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .overall-bar {
+      height: 9px;
+      background: rgba(84, 72, 58, 0.13);
+    }
+
+    .overall-bar i {
+      display: block;
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--sage), var(--clay));
+      transition: width 650ms ease;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 10;
+      max-width: 360px;
+      padding: 14px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 241, 0.92);
+      box-shadow: 0 18px 44px rgba(61, 48, 35, 0.18);
+      color: rgba(39, 49, 43, 0.76);
+      font-size: 14px;
+      line-height: 1.6;
+      font-weight: 800;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes pulseDot {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(99, 120, 110, 0.12);
+      }
+      50% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 9px rgba(99, 120, 110, 0.08);
+      }
+    }
+
+    @keyframes threadSweep {
+      0%, 100% {
+        opacity: 0.34;
+        filter: blur(0px);
+      }
+      50% {
+        opacity: 0.84;
+        filter: blur(0.2px);
+      }
+    }
+
+    @keyframes nodeBreathe {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes liftIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes loadingBar {
+      0%, 100% {
+        width: 42%;
+      }
+      50% {
+        width: 88%;
+      }
+    }
+
+    @keyframes shimmer {
+      from {
+        background-position: 220% 0;
+      }
+      to {
+        background-position: -220% 0;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .page {
+        padding: 28px 28px 44px;
+      }
+
+      .hero,
+      .layout,
+      .work-area {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-strip {
+        max-width: none;
+      }
+
+      .preview-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 20px 16px 34px;
+      }
+
+      .topbar,
+      .main-head,
+      .meta-row,
+      .action-row,
+      .preview-cards {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 48px;
+      }
+
+      .main-head,
+      .work-area,
+      .preview-grid {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .stage-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="shell">
+      <nav class="topbar" aria-label="页面导航">
+        <button class="back-button" type="button">返回入口</button>
+        <div class="crumbs">主页 / 当前项目 / 角色主轴</div>
+        <div class="status-pill"><span class="dot pulse"></span><span id="topStatus">草案生成中</span></div>
+      </nav>
+
+      <section class="hero" aria-labelledby="pageTitle">
+        <div>
+          <h1 id="pageTitle">角色主轴</h1>
+          <p class="lead">角色构想已经进入生成流程，系统会整理为可审阅、可修订、可确认的角色草案、关系草案和叙事承重点。</p>
+        </div>
+        <div class="stage-strip" aria-label="角色主轴阶段">
+          <button class="stage-button" type="button">生成入口</button>
+          <button class="stage-button active" type="button">生成草案</button>
+          <button class="stage-button" type="button">审阅确认</button>
+          <button class="stage-button" type="button">角色底座</button>
+        </div>
+      </section>
+
+      <section class="layout">
+        <article class="main-card" aria-labelledby="generationTitle">
+          <header class="main-head">
+            <div>
+              <p class="eyebrow">角色草案生成中</p>
+              <h2 id="generationTitle">角色正在从构想里浮现</h2>
+              <p class="section-copy">正在把用户写下的角色方向整理成档案、关系、承重点和需要确认的问题。</p>
+            </div>
+            <div class="phase-stamp" aria-label="当前状态">
+              <div>
+                <strong id="phaseWord">生成中</strong>
+                <span id="phaseHint">等待草案成形</span>
+              </div>
+            </div>
+          </header>
+
+          <div class="work-area">
+            <section class="panel prompt-card" aria-labelledby="promptTitle">
+              <p class="eyebrow">已接收构想</p>
+              <h3 id="promptTitle">A 级角色</h3>
+              <div class="prompt-body">
+                角色构想将从当前项目输入中读取。生成完成前不会写入正式角色事实。
+              </div>
+              <div class="meta-row">
+                <div class="mini-card">
+                  <span>来源</span>
+                  <strong>用户构想</strong>
+                </div>
+                <div class="mini-card">
+                  <span>等级</span>
+                  <strong>A 级</strong>
+                </div>
+                <div class="mini-card">
+                  <span>写入</span>
+                  <strong>草案</strong>
+                </div>
+              </div>
+              <div class="action-row">
+                <button class="ghost-button" type="button" data-toast="已保留当前构想，可返回入口调整。">返回修改</button>
+                <button class="primary-button" type="button" id="reviewButton" disabled>等待草案</button>
+              </div>
+            </section>
+
+            <section class="panel process-board" aria-labelledby="processTitle">
+              <p class="eyebrow">生成面板</p>
+              <h3 id="processTitle">关系与承重点</h3>
+              <div class="pulse-map" aria-label="角色关系生成示意">
+                <div class="node main">角色<br />核心</div>
+                <div class="node one">秘密</div>
+                <div class="node two">关系</div>
+                <div class="node three">世界<br />事实</div>
+              </div>
+              <div class="step-list" aria-label="生成进度">
+                <div class="step-card">
+                  <div class="step-number">1</div>
+                  <div>
+                    <strong>档案轮廓</strong>
+                    <span>身份、气质、目标</span>
+                  </div>
+                  <div class="progress"><i></i></div>
+                </div>
+                <div class="step-card">
+                  <div class="step-number">2</div>
+                  <div>
+                    <strong>关系草案</strong>
+                    <span>信任、隐瞒、欠债</span>
+                  </div>
+                  <div class="progress"><i></i></div>
+                </div>
+                <div class="step-card">
+                  <div class="step-number">3</div>
+                  <div>
+                    <strong>叙事承重点</strong>
+                    <span>推动、阻碍、转向</span>
+                  </div>
+                  <div class="progress"><i></i></div>
+                </div>
+                <div class="step-card">
+                  <div class="step-number">4</div>
+                  <div>
+                    <strong>确认问题</strong>
+                    <span>缺口、冲突、重复</span>
+                  </div>
+                  <div class="progress"><i></i></div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="preview-grid" aria-labelledby="resultTitle">
+            <h3 id="resultTitle">草案即将形成</h3>
+            <div class="preview-cards">
+              <article class="preview-card">
+                <span>角色档案</span>
+                <strong>身份 / 状态 / 记忆</strong>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </article>
+              <article class="preview-card">
+                <span>关系草案</span>
+                <strong>连接与张力</strong>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </article>
+              <article class="preview-card">
+                <span>叙事功能</span>
+                <strong>承重与转向</strong>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </article>
+              <article class="preview-card">
+                <span>审阅问题</span>
+                <strong>待确认内容</strong>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </article>
+            </div>
+          </section>
+        </article>
+
+        <aside class="side-stack" aria-label="生成状态与边界">
+          <section class="side-card">
+            <h3>生成状态</h3>
+            <p>当前只形成草案，不会直接写入正式角色事实。</p>
+            <div class="status-list">
+              <div class="status-item"><span class="dot"></span><strong>世界画布已确认</strong><em>可读</em></div>
+              <div class="status-item"><span class="dot"></span><strong>模型已就绪</strong><em>可用</em></div>
+              <div class="status-item"><span class="dot"></span><strong>A/B/C/D 等级</strong><em>已选</em></div>
+              <div class="status-item"><span class="dot pulse"></span><strong>角色草案</strong><em id="draftState">生成中</em></div>
+            </div>
+            <div class="overall" aria-label="整体进度">
+              <div class="overall-top">
+                <span>整体进度</span>
+                <span id="percentText">38%</span>
+              </div>
+              <div class="overall-bar"><i id="overallFill"></i></div>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>写入边界</h3>
+            <p>生成过程只整理角色草案，确认前不改变世界事实、章节计划或场景正文。</p>
+            <div class="status-list">
+              <div class="status-item"><span class="dot"></span><strong>不修改世界事实</strong><em>保护</em></div>
+              <div class="status-item"><span class="dot"></span><strong>不写入章节</strong><em>隔离</em></div>
+              <div class="status-item"><span class="dot warn"></span><strong>关系需审阅</strong><em>确认</em></div>
+              <div class="status-item"><span class="dot warn"></span><strong>缺口需处理</strong><em>待定</em></div>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>下一步</h3>
+            <p>草案形成后进入审阅页，用户再决定修订、确认或处理缺口。</p>
+            <div class="next-box" id="nextBox">草案还在生成中。</div>
+          </section>
+        </aside>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const toast = document.getElementById("toast");
+    const reviewButton = document.getElementById("reviewButton");
+    const percentText = document.getElementById("percentText");
+    const overallFill = document.getElementById("overallFill");
+    const topStatus = document.getElementById("topStatus");
+    const phaseWord = document.getElementById("phaseWord");
+    const phaseHint = document.getElementById("phaseHint");
+    const draftState = document.getElementById("draftState");
+    const nextBox = document.getElementById("nextBox");
+
+    let percent = 38;
+    overallFill.style.width = `${percent}%`;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    document.querySelectorAll("[data-toast]").forEach((button) => {
+      button.addEventListener("click", () => showToast(button.dataset.toast));
+    });
+
+    reviewButton.addEventListener("click", () => {
+      if (!reviewButton.disabled) {
+        showToast("草案已准备进入审阅页。");
+      }
+    });
+
+    const progressTimer = window.setInterval(() => {
+      if (percentText.dataset.mafsBackendBound === "true" || percentText.dataset.mafsBackendRendered === "true") {
+        window.clearInterval(progressTimer);
+        return;
+      }
+      percent = Math.min(100, percent + 7);
+      percentText.textContent = `${percent}%`;
+      overallFill.style.width = `${percent}%`;
+      if (percent >= 94) {
+        topStatus.textContent = "准备审阅";
+        phaseWord.textContent = "已成形";
+        phaseHint.textContent = "等待审阅";
+        draftState.textContent = "已成形";
+        nextBox.textContent = "草案已形成，可以进入草案审阅。";
+        reviewButton.textContent = "进入草案审阅";
+        reviewButton.disabled = false;
+      }
+      if (percent >= 100) {
+        window.clearInterval(progressTimer);
+      }
+    }, 1200);
+  </script>
+</body>
+</html>

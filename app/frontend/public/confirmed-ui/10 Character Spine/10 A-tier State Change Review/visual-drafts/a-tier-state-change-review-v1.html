@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A-tier 重大状态变化审阅</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/character-spine-background-v1.png")'>
+    <header class="topbar">
+      <div>
+        <p class="crumb">主页 / 工作台 / 角色主轴 / A-tier 状态审阅</p>
+        <h1>A-tier 重大状态变化审阅</h1>
+      </div>
+      <div class="top-actions">
+        <span class="badge warning">待确认 3</span>
+        <span class="badge sage">强确认</span>
+      </div>
+    </header>
+
+    <section class="workspace-grid wide">
+      <aside class="panel tall">
+        <p class="eyebrow">PENDING QUEUE</p>
+        <h2>待审阅变化</h2>
+        <div class="list" id="changeList"></div>
+      </aside>
+
+      <section class="panel tall">
+        <p class="eyebrow">CHANGE DETAIL</p>
+        <h2 id="changeTitle">伊莱恩目标变化</h2>
+        <p class="subtitle" id="changeSummary">从追查失忆事件，转为主动保护钟楼证人并隐瞒部分线索。</p>
+        <div class="status-row" style="margin-bottom: 18px;">
+          <span class="badge warning" id="changeRisk">影响未来章节</span>
+          <span class="badge">requires_strong_confirmation</span>
+          <span class="badge sage">A 级主轴</span>
+        </div>
+
+        <div class="split">
+          <article class="soft-panel">
+            <h3>影响范围</h3>
+            <div class="timeline" id="impactList">
+              <div class="step current"><span class="step-dot">1</span><div><h4>角色目标</h4><p class="muted">长期目标与短期行动策略发生变化。</p></div></div>
+              <div class="step"><span class="step-dot">2</span><div><h4>关系张力</h4><p class="muted">与洛闻的信息信任关系降低。</p></div></div>
+              <div class="step"><span class="step-dot">3</span><div><h4>场景提示</h4><p class="muted">后续场景必须保留隐瞒行为的后果。</p></div></div>
+            </div>
+          </article>
+          <article class="soft-panel">
+            <h3>确认说明</h3>
+            <label class="field">
+              <span>用户确认文本</span>
+              <textarea id="confirmNote" aria-label="A-tier 状态变化确认说明">我确认该变化会影响主角团长期走向，并允许后续章节读取此状态。</textarea>
+            </label>
+            <div class="button-row" style="margin-top: 12px;">
+              <button class="button primary" id="confirmChange" type="button">确认变化</button>
+              <button class="button danger" id="rejectChange" type="button">拒绝变化</button>
+            </div>
+          </article>
+        </div>
+
+        <article class="soft-panel" style="margin-top: 14px;">
+          <h3>新提案入口</h3>
+          <div class="form-grid">
+            <label class="field"><span>目标角色</span><input value="伊莱恩" aria-label="目标角色" /></label>
+            <label class="field"><span>变化类型</span><select aria-label="变化类型"><option>长期目标变化</option><option>关系状态变化</option><option>身份揭示</option></select></label>
+            <label class="field full"><span>提案摘要</span><textarea aria-label="提案摘要">用户希望将主角的动机从追查转为主动保护某个证人。</textarea></label>
+          </div>
+          <button class="button accent" id="proposeChange" type="button" style="margin-top: 12px;">提交新提案</button>
+        </article>
+      </section>
+
+      <aside class="panel tall">
+        <p class="eyebrow">DECISION BOUNDARY</p>
+        <h2>强确认边界</h2>
+        <div class="item selected">
+          <strong>为什么独立成页</strong>
+          <p>A 级角色是主线承重角色，重大状态变化会影响下游 Framework、章节计划和场景上下文。</p>
+        </div>
+        <div class="item">
+          <strong>确认后</strong>
+          <p>写入角色状态变更记录，并允许后续上下文读取。</p>
+        </div>
+        <div class="item">
+          <strong>拒绝后</strong>
+          <p>保留审计记录，不改变角色状态，不影响已确认正文。</p>
+        </div>
+        <p class="muted" id="actionNote" style="margin-top: 16px;">请选择一个待审阅变化。</p>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const changes = [
+      { title: "伊莱恩目标变化", risk: "影响未来章节", summary: "从追查失忆事件，转为主动保护钟楼证人并隐瞒部分线索。" },
+      { title: "主角团信任裂缝", risk: "影响关系线", summary: "洛闻发现伊莱恩隐瞒证词，后续对话需要保留戒备。" },
+      { title: "身份揭示候选", risk: "需要延后", summary: "主角可能与旧城契约有血缘关联，但证据不足，建议拒绝或延后。" }
+    ];
+    const list = document.getElementById("changeList");
+    const note = document.getElementById("actionNote");
+    let current = changes[0];
+    function render() {
+      list.innerHTML = "";
+      changes.forEach((change) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `item ${change === current ? "selected" : ""}`;
+        button.innerHTML = `<div class="item-head"><strong>${change.title}</strong><span class="badge warning">${change.risk}</span></div><p>${change.summary}</p>`;
+        button.addEventListener("click", () => {
+          current = change;
+          document.getElementById("changeTitle").textContent = change.title;
+          document.getElementById("changeSummary").textContent = change.summary;
+          document.getElementById("changeRisk").textContent = change.risk;
+          note.textContent = `正在审阅：${change.title}`;
+          render();
+        });
+        list.appendChild(button);
+      });
+    }
+    document.getElementById("confirmChange").addEventListener("click", () => note.textContent = `将调用 confirmRoleStateChange：${current.title}`);
+    document.getElementById("rejectChange").addEventListener("click", () => note.textContent = `将调用 rejectRoleStateChange：${current.title}`);
+    document.getElementById("proposeChange").addEventListener("click", () => note.textContent = "将调用 proposeRoleStateChange 创建新的待审阅变化。");
+    render();
+  </script>
+</body>
+</html>

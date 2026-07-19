@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最终输出 / 下载与归档 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(237, 226, 207, 0.72);
+      --ink: #302f2a;
+      --muted: #71685f;
+      --quiet: #978c7f;
+      --line: rgba(105, 82, 58, 0.2);
+      --line-strong: rgba(105, 82, 58, 0.34);
+      --brass: #b4956f;
+      --brass-deep: #856947;
+      --sage: #767f6c;
+      --sage-deep: #59614f;
+      --blue-gray: #738284;
+      --clay: #b48a78;
+      --danger: #9b665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.82), rgba(236, 231, 220, 0.62) 43%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/final-output-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.58), transparent 31%),
+        radial-gradient(circle at 76% 28%, rgba(180, 149, 111, 0.13), transparent 34%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.22), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 230px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .download-button,
+    .status-pill {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .download-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .download-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+
+    .primary-button {
+      min-width: 178px;
+      border-color: rgba(89, 97, 79, 0.46);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #65705d, #806d50);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(118, 127, 108, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      min-height: 136px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      gap: 24px;
+      align-items: end;
+      padding: 8px 18px 2px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: #28312b;
+      font-size: 56px;
+      line-height: 1.05;
+      font-weight: 920;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.85;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-strip div {
+      min-height: 58px;
+      padding: 12px 14px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.52);
+      min-width: 0;
+    }
+
+    .summary-strip span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 820;
+      text-transform: uppercase;
+    }
+
+    .summary-strip strong {
+      display: block;
+      margin-top: 7px;
+      color: #302f2a;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 24px;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.68);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(246, 238, 223, 0.8)),
+        rgba(255, 252, 244, 0.8);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .main-panel {
+      min-width: 0;
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .panel-head h2,
+    .side-panel h2 {
+      margin: 0;
+      color: #302f2a;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .panel-head p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .flow-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .flow-step {
+      min-height: 62px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.5);
+      color: var(--muted);
+      opacity: 0.78;
+      min-width: 0;
+    }
+
+    .flow-step span {
+      display: block;
+      color: var(--quiet);
+      font-size: 10px;
+      font-weight: 860;
+      line-height: 1.1;
+    }
+
+    .flow-step strong {
+      display: block;
+      margin-top: 7px;
+      color: #5f574e;
+      font-size: 12px;
+      line-height: 1.25;
+      font-weight: 860;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .flow-step.done {
+      opacity: 1;
+      background: rgba(255, 252, 244, 0.68);
+    }
+
+    .flow-step.current {
+      opacity: 1;
+      border-color: rgba(89, 97, 79, 0.36);
+      background: linear-gradient(135deg, rgba(89, 97, 79, 0.18), rgba(255, 252, 244, 0.8));
+    }
+
+    .delivery-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+      gap: 16px;
+    }
+
+    .file-card,
+    .archive-card,
+    .timeline-card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.58);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .file-card {
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .file-hero {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+    }
+
+    .file-icon {
+      width: 76px;
+      height: 88px;
+      border: 1px solid rgba(133, 105, 71, 0.32);
+      border-radius: 7px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.96), rgba(225, 211, 187, 0.92));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 30px rgba(71, 52, 31, 0.12);
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 0 14px;
+      color: var(--brass-deep);
+      font-size: 15px;
+      font-weight: 940;
+    }
+
+    .file-icon::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 24px;
+      height: 24px;
+      border-left: 1px solid rgba(133, 105, 71, 0.26);
+      border-bottom: 1px solid rgba(133, 105, 71, 0.26);
+      border-radius: 0 6px 0 6px;
+      background: rgba(236, 231, 220, 0.9);
+    }
+
+    .file-title {
+      min-width: 0;
+    }
+
+    .file-title h3 {
+      margin: 0;
+      color: #302f2a;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 920;
+    }
+
+    .file-title p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .filename {
+      margin: 0;
+      padding: 14px 15px;
+      border: 1px solid rgba(105, 82, 58, 0.18);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.72);
+      color: #413a33;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .file-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .meta-cell {
+      min-height: 70px;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 7px;
+      background: rgba(245, 238, 224, 0.56);
+      min-width: 0;
+    }
+
+    .meta-cell span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 830;
+    }
+
+    .meta-cell strong {
+      display: block;
+      margin-top: 8px;
+      color: #342f2a;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 890;
+      overflow-wrap: anywhere;
+    }
+
+    .download-box {
+      align-self: end;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .download-button {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 252, 244, 0.62);
+    }
+
+    .download-button.active {
+      border-color: rgba(89, 97, 79, 0.38);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 14px 30px rgba(67, 65, 49, 0.2);
+    }
+
+    .details-stack {
+      display: grid;
+      grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .archive-card,
+    .timeline-card {
+      padding: 16px;
+    }
+
+    .archive-card h3,
+    .timeline-card h3 {
+      margin: 0 0 12px;
+      color: #302f2a;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .archive-list,
+    .timeline-list,
+    .check-list,
+    .action-stack {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .archive-item,
+    .timeline-item,
+    .check-item {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .archive-item b,
+    .timeline-item b,
+    .check-item b {
+      display: block;
+      color: #3b352f;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+      overflow-wrap: anywhere;
+    }
+
+    .archive-item small,
+    .timeline-item small,
+    .check-item small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+      overflow-wrap: anywhere;
+    }
+
+    .tiny-dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(118, 127, 108, 0.13);
+    }
+
+    .timeline-item {
+      grid-template-columns: 68px minmax(0, 1fr);
+    }
+
+    .timeline-item time {
+      color: var(--brass-deep);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 860;
+    }
+
+    .side-panel {
+      min-width: 0;
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .side-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.75;
+      font-weight: 540;
+    }
+
+    .metric-card {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric-card div {
+      min-height: 84px;
+      padding: 13px;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.54);
+      min-width: 0;
+    }
+
+    .metric-card span {
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 830;
+      text-transform: uppercase;
+    }
+
+    .metric-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #302f2a;
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .side-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .side-actions .soft-button,
+    .side-actions .primary-button {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      max-width: min(420px, calc(100vw - 56px));
+      padding: 13px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(55, 50, 43, 0.9);
+      color: #fffaf0;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 700;
+      box-shadow: 0 22px 54px rgba(30, 24, 16, 0.28);
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 180ms ease, opacity 180ms ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        width: min(980px, calc(100vw - 48px));
+      }
+
+      .hero,
+      .layout,
+      .delivery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: calc(100vw - 28px);
+        margin: 14px auto;
+        min-height: calc(100vh - 28px);
+        gap: 14px;
+      }
+
+      .topbar,
+      .hero,
+      .summary-strip,
+      .file-meta,
+      .download-box,
+      .metric-card {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        gap: 10px;
+      }
+
+      .hero {
+        min-height: 0;
+        padding: 4px 4px 0;
+      }
+
+      .hero h1 {
+        font-size: 38px;
+      }
+
+      .hero p {
+        font-size: 13px;
+      }
+
+      .main-panel,
+      .side-panel {
+        padding: 15px;
+      }
+
+      .panel-head {
+        display: grid;
+      }
+
+      .flow-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .file-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .file-icon {
+        width: 64px;
+        height: 76px;
+      }
+
+      .timeline-item {
+        grid-template-columns: 54px minmax(0, 1fr);
+      }
+
+      .toast {
+        right: 14px;
+        bottom: 14px;
+        max-width: calc(100vw - 28px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button" data-action="back-output">返回生成</button>
+      <div class="crumb">主页 / 工作台 / 最终输出 / 下载与归档</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span>交付完成</div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">下载与归档</h1>
+        <p>最终故事包已经完成下载封装。此页保留重新下载入口，并展示产品输出库中的归档索引，方便用户回到作品集或继续管理交付物。</p>
+      </div>
+      <div class="summary-strip" aria-label="导出摘要">
+        <div>
+          <span>下载格式</span>
+          <strong id="summaryFormat">TXT 正文文件</strong>
+        </div>
+        <div>
+          <span>文件大小</span>
+          <strong id="summarySize">252 KB</strong>
+        </div>
+        <div>
+          <span>归档状态</span>
+          <strong>已入库</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-labelledby="deliveryTitle">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">Final Package Delivery</span>
+            <h2 id="deliveryTitle">交付结果</h2>
+            <p>下载动作已经触发，最终故事包同时出现在产品输出库和当前项目的可追溯交付记录中。</p>
+          </div>
+          <button class="soft-button" type="button" data-action="copy-name">复制文件名</button>
+        </div>
+
+        <div class="flow-strip" aria-label="最终输出流程阶段">
+          <div class="flow-step done"><span>01</span><strong>完成度检查</strong></div>
+          <div class="flow-step done"><span>02</span><strong>成稿组装</strong></div>
+          <div class="flow-step done"><span>03</span><strong>成稿审阅</strong></div>
+          <div class="flow-step done"><span>04</span><strong>输出设置</strong></div>
+          <div class="flow-step done"><span>05</span><strong>导出生成</strong></div>
+          <div class="flow-step current"><span>06</span><strong>下载归档</strong></div>
+        </div>
+
+        <div class="delivery-grid">
+          <section class="file-card" aria-labelledby="fileTitle">
+            <div class="file-hero">
+              <div class="file-icon" id="fileIcon" aria-hidden="true">TXT</div>
+              <div class="file-title">
+                <h3 id="fileTitle">最终故事文件</h3>
+                <p id="fileSubline">text/plain; charset=utf-8 / 可重复下载，不会修改故事事实。</p>
+              </div>
+            </div>
+
+            <p class="filename" id="filename">phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story.txt</p>
+
+            <div class="file-meta">
+              <div class="meta-cell">
+                <span>Snapshot ID</span>
+                <strong>117eebfbb2</strong>
+              </div>
+              <div class="meta-cell">
+                <span>Export Run</span>
+                <strong>20260704 / 21:46</strong>
+              </div>
+              <div class="meta-cell">
+                <span>Package Type</span>
+                <strong>正式项目</strong>
+              </div>
+            </div>
+
+            <div class="download-box" aria-label="重新下载格式">
+              <button class="download-button active" type="button" data-format="txt">下载 TXT</button>
+              <button class="download-button" type="button" data-format="markdown">下载 Markdown</button>
+              <button class="download-button" type="button" data-format="json">下载 JSON</button>
+            </div>
+          </section>
+
+          <div class="details-stack">
+            <section class="archive-card" aria-labelledby="archiveTitle">
+              <h3 id="archiveTitle">归档索引</h3>
+              <div class="archive-list">
+                <div class="archive-item">
+                  <span class="tiny-dot" aria-hidden="true"></span>
+                  <div>
+                    <b>产品输出库条目</b>
+                    <small>artifact_entry_final_story_package_snapshot_117eebfbb2</small>
+                  </div>
+                </div>
+                <div class="archive-item">
+                  <span class="tiny-dot" aria-hidden="true"></span>
+                  <div>
+                    <b>最终故事包视图</b>
+                    <small>final_story_package_view_project_current_story</small>
+                  </div>
+                </div>
+                <div class="archive-item">
+                  <span class="tiny-dot" aria-hidden="true"></span>
+                  <div>
+                    <b>只读交付边界</b>
+                    <small>归档记录来自导出结果与产品输出库索引，不写回世界事实、角色事实或章节计划。</small>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="timeline-card" aria-labelledby="timelineTitle">
+              <h3 id="timelineTitle">交付记录</h3>
+              <div class="timeline-list" id="timelineList">
+                <div class="timeline-item">
+                  <time>21:46</time>
+                  <div>
+                    <b>文件下载已触发</b>
+                    <small>浏览器收到 TXT blob，并按 Content-Disposition 写入文件名。</small>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <time>21:46</time>
+                  <div>
+                    <b>最终包已索引</b>
+                    <small>产品输出库可通过 final story package view 读取当前快照。</small>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <time>21:47</time>
+                  <div>
+                    <b>安全摘要可查看</b>
+                    <small>可继续打开产品输出库查看权威标识、预览和安全摘要。</small>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <aside class="side-panel" aria-labelledby="sideTitle">
+        <div>
+          <span class="eyebrow">Delivery Summary</span>
+          <h2 id="sideTitle">交付摘要</h2>
+        </div>
+        <p>这里承接 05 导出生成页的成功结果。用户可以重新下载不同格式，也可以进入产品输出库查看已归档的最终故事包。</p>
+
+        <div class="metric-card" aria-label="交付指标">
+          <div>
+            <span>正文规模</span>
+            <strong>126,884 字</strong>
+          </div>
+          <div>
+            <span>章节数量</span>
+            <strong>12 章</strong>
+          </div>
+          <div>
+            <span>导出格式</span>
+            <strong id="metricFormat">TXT</strong>
+          </div>
+          <div>
+            <span>快照状态</span>
+            <strong>Confirmed</strong>
+          </div>
+        </div>
+
+        <div class="check-list" aria-label="可用入口与边界">
+          <div class="check-item">
+            <span class="tiny-dot" aria-hidden="true"></span>
+            <div>
+              <b>可重新下载</b>
+              <small>支持 TXT、Markdown、JSON 三种格式重新触发下载请求。</small>
+            </div>
+          </div>
+          <div class="check-item">
+            <span class="tiny-dot" aria-hidden="true"></span>
+            <div>
+              <b>可进入产品输出库</b>
+              <small>打开已归档条目，查看权威标识、预览和安全摘要。</small>
+            </div>
+          </div>
+          <div class="check-item">
+            <span class="tiny-dot" aria-hidden="true"></span>
+            <div>
+              <b>不会反向改写</b>
+              <small>下载与归档是输出层行为，不影响故事事实源。</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-actions">
+          <button class="primary-button" type="button" data-action="open-library">打开产品输出库</button>
+          <button class="soft-button" type="button" data-action="open-collection">返回作品集索引</button>
+          <button class="soft-button" type="button" data-action="back-settings">返回输出设置</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const formats = {
+      txt: {
+        label: "TXT 正文文件",
+        icon: "TXT",
+        metric: "TXT",
+        filename: "phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story.txt",
+        media: "text/plain; charset=utf-8",
+        size: "252 KB"
+      },
+      markdown: {
+        label: "Markdown 文稿",
+        icon: "MD",
+        metric: "Markdown",
+        filename: "phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story.md",
+        media: "text/markdown; charset=utf-8",
+        size: "268 KB"
+      },
+      json: {
+        label: "JSON 快照",
+        icon: "JSON",
+        metric: "JSON",
+        filename: "phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_full.json",
+        media: "application/json; charset=utf-8",
+        size: "412 KB"
+      }
+    };
+
+    const toast = document.getElementById("toast");
+    const filename = document.getElementById("filename");
+    const fileIcon = document.getElementById("fileIcon");
+    const fileSubline = document.getElementById("fileSubline");
+    const summaryFormat = document.getElementById("summaryFormat");
+    const summarySize = document.getElementById("summarySize");
+    const metricFormat = document.getElementById("metricFormat");
+    const timelineList = document.getElementById("timelineList");
+    let toastTimer = null;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function appendRecord(title, detail) {
+      const item = document.createElement("div");
+      item.className = "timeline-item";
+      item.innerHTML = `
+        <time>现在</time>
+        <div>
+          <b>${title}</b>
+          <small>${detail}</small>
+        </div>
+      `;
+      timelineList.prepend(item);
+      const records = timelineList.querySelectorAll(".timeline-item");
+      records.forEach((record, index) => {
+        if (index > 4) record.remove();
+      });
+    }
+
+    function selectFormat(format) {
+      const current = formats[format];
+      filename.textContent = current.filename;
+      fileIcon.textContent = current.icon;
+      fileSubline.textContent = `${current.media} / 可重复下载，不会修改故事事实。`;
+      summaryFormat.textContent = current.label;
+      summarySize.textContent = current.size;
+      metricFormat.textContent = current.metric;
+
+      document.querySelectorAll(".download-button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.format === format);
+      });
+
+      showToast(`已触发 ${current.metric} 重新下载`);
+      appendRecord(`${current.metric} 重新下载已触发`, `请求 downloadFinalStoryPackageSnapshot(snapshotId, "${format}")。`);
+    }
+
+    document.querySelectorAll("[data-format]").forEach((button) => {
+      button.addEventListener("click", () => selectFormat(button.dataset.format));
+    });
+
+    document.querySelector("[data-action='copy-name']").addEventListener("click", async () => {
+      const text = filename.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("文件名已复制");
+      } catch (error) {
+        showToast("当前环境无法写入剪贴板，文件名已显示在主卡片中");
+      }
+      appendRecord("复制文件名", text);
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      const action = button.dataset.action;
+      if (action === "copy-name") return;
+      button.addEventListener("click", () => {
+        const messages = {
+          "back-output": "返回导出生成页：正式接入时回到 05 状态或上一步路由。",
+          "open-library": "打开产品输出库：读取 final_story_package_views 与 artifact entry。",
+          "open-collection": "返回作品集索引：正式接入时进入当前项目所在作品集。",
+          "back-settings": "返回输出设置：保留快照与格式选择，允许重新导出。"
+        };
+        showToast(messages[action] || "交互已触发");
+        appendRecord(button.textContent.trim(), messages[action] || "交互已触发。");
+      });
+    });
+  </script>
+</body>
+</html>

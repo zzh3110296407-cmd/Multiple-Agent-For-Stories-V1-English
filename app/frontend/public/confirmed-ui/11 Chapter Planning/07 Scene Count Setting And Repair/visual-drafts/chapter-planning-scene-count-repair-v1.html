@@ -1,0 +1,1622 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 场景数设置与修复 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --ink: #28312b;
+      --muted: #756b60;
+      --quiet: #9b8d7f;
+      --line: rgba(116, 92, 66, 0.2);
+      --line-strong: rgba(116, 92, 66, 0.32);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --paper: rgba(255, 252, 244, 0.62);
+      --paper-strong: rgba(255, 252, 244, 0.86);
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92), rgba(236, 231, 220, 0.62) 47%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.36), rgba(176, 138, 107, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1400px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr) 172px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .chapter-card,
+    .icon-button,
+    .count-option,
+    .step-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .chapter-card:hover,
+    .icon-button:hover,
+    .count-option:hover,
+    .step-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 790px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 14px;
+      line-height: 1.62;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 560px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 354px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 20px 28px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .summary-grid {
+      min-width: 470px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-item {
+      min-height: 58px;
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 8px;
+      color: #3c4039;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .chapter-strip {
+      min-width: 0;
+      overflow: hidden;
+      padding: 12px 28px 11px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.24);
+    }
+
+    .chapter-strip-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .chapter-strip-head strong {
+      color: #3d4039;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .chapter-strip-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .rail-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .icon-button {
+      width: 34px;
+      height: 30px;
+      min-height: 30px;
+      padding: 0;
+      color: var(--blue-gray-deep);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .chapter-scroll {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      padding: 4px 2px 13px;
+      cursor: grab;
+      user-select: none;
+      overscroll-behavior-x: contain;
+    }
+
+    .chapter-scroll.dragging {
+      cursor: grabbing;
+    }
+
+    .chapter-track {
+      display: flex;
+      gap: 10px;
+      width: max-content;
+      min-width: 100%;
+      transform: translateX(0);
+      transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      will-change: transform;
+    }
+
+    .chapter-scroll.dragging .chapter-track {
+      transition: none;
+    }
+
+    .chapter-card {
+      flex: 0 0 142px;
+      min-height: 64px;
+      padding: 9px 11px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.68);
+    }
+
+    .chapter-card.active {
+      transform: translateY(-2px);
+      border-color: rgba(180, 138, 120, 0.48);
+      background: rgba(255, 249, 235, 0.92);
+      box-shadow: 0 18px 36px rgba(142, 103, 91, 0.16);
+    }
+
+    .chapter-card.needs-work {
+      border-color: rgba(180, 138, 120, 0.34);
+    }
+
+    .chapter-card strong {
+      display: block;
+      color: #343932;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chapter-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.32;
+      font-weight: 560;
+    }
+
+    .track-position {
+      position: relative;
+      height: 6px;
+      margin: 6px 4px 0;
+      border-radius: 999px;
+      background: rgba(116, 92, 66, 0.12);
+      overflow: hidden;
+    }
+
+    .track-thumb {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue-gray), var(--bronze));
+      transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1), width 220ms ease;
+    }
+
+    .work-body {
+      min-height: 0;
+      padding: 16px 28px 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr);
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .work-card {
+      min-height: 0;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 84% 12%, rgba(200, 168, 104, 0.1), transparent 34%),
+        rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .work-card-head {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(116, 92, 66, 0.14);
+    }
+
+    .work-card-head h3 {
+      margin: 0;
+      color: #343932;
+      font-size: 18px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .work-card-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.58;
+      font-weight: 520;
+    }
+
+    .scene-count-area {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 124px minmax(0, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .count-control {
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.58);
+      display: grid;
+      grid-template-rows: 34px minmax(0, 1fr) 34px;
+      overflow: hidden;
+    }
+
+    .step-button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 0;
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: none;
+      color: var(--blue-gray-deep);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .count-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 104px;
+    }
+
+    .count-display strong {
+      color: #30362f;
+      font-size: 50px;
+      line-height: 0.9;
+      font-weight: 900;
+    }
+
+    .count-display span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 820;
+    }
+
+    .count-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 10px;
+    }
+
+    .select-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 132px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .select-shell {
+      position: relative;
+    }
+
+    .select-shell button {
+      width: 100%;
+      min-height: 44px;
+      text-align: left;
+      padding: 0 14px;
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.62);
+      color: #3d4039;
+      font-size: 13px;
+      font-weight: 820;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .select-shell button::after {
+      content: "";
+      position: absolute;
+      right: 15px;
+      top: 18px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--blue-gray-deep);
+      border-bottom: 2px solid var(--blue-gray-deep);
+      transform: rotate(45deg);
+      transition: transform 180ms ease;
+    }
+
+    .select-shell.open button::after {
+      transform: rotate(225deg);
+      top: 22px;
+    }
+
+    .count-menu {
+      position: absolute;
+      z-index: 8;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background: rgba(255, 252, 244, 0.94);
+      box-shadow: 0 20px 46px rgba(75, 55, 34, 0.18);
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .select-shell.open .count-menu {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .count-option {
+      min-height: 32px;
+      padding: 0;
+      border-color: rgba(116, 92, 66, 0.12);
+      box-shadow: none;
+      background: rgba(255, 252, 244, 0.58);
+      color: var(--muted);
+    }
+
+    .count-option.active {
+      color: #fffaf2;
+      border-color: rgba(180, 138, 120, 0.32);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+    }
+
+    .save-status {
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.18);
+      background: rgba(239, 244, 242, 0.54);
+      color: var(--blue-gray-deep);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 760;
+    }
+
+    .impact-card {
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.52);
+    }
+
+    .impact-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 840;
+    }
+
+    .impact-card strong {
+      display: block;
+      margin-top: 7px;
+      color: #3d4039;
+      font-size: 14px;
+      line-height: 1.42;
+      font-weight: 900;
+    }
+
+    .scene-beads {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .scene-bead {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fffaf2;
+      background: var(--blue-gray);
+      font-size: 11px;
+      font-weight: 900;
+      box-shadow: 0 0 0 6px rgba(111, 126, 131, 0.1);
+    }
+
+    .repair-body {
+      min-height: 0;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .repair-status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .repair-stat {
+      min-height: 50px;
+      padding: 9px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .repair-stat span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 840;
+    }
+
+    .repair-stat strong {
+      display: block;
+      margin-top: 6px;
+      color: #3d4039;
+      font-size: 16px;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .reference-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .reference-item {
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(180, 138, 120, 0.26);
+      background: rgba(255, 246, 236, 0.58);
+    }
+
+    .reference-item.fixed {
+      border-color: rgba(111, 123, 104, 0.24);
+      background: rgba(241, 246, 240, 0.58);
+    }
+
+    .reference-item strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .reference-item span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.38;
+      font-weight: 540;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tag {
+      flex: 0 0 auto;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--bronze-deep);
+      font-size: 11px;
+      font-weight: 860;
+    }
+
+    .reference-item.fixed .tag {
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 28px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(142, 103, 91, 0.31);
+    }
+
+    .primary-button.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 16px 36px rgba(86, 98, 79, 0.22);
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .state-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(180, 138, 120, 0.14);
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .state-pill.ready {
+      background: rgba(111, 123, 104, 0.14);
+      color: var(--sage-deep);
+    }
+
+    .health-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .health-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .health-item.warn {
+      border-color: rgba(180, 138, 120, 0.28);
+      background: rgba(255, 246, 236, 0.58);
+    }
+
+    .health-item.ready {
+      border-color: rgba(111, 123, 104, 0.22);
+      background: rgba(241, 246, 240, 0.56);
+    }
+
+    .health-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .health-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(116, 92, 66, 0.12);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .health-item.warn .mini-dot {
+      background: rgba(180, 138, 120, 0.16);
+      color: var(--bronze-deep);
+    }
+
+    .health-item.ready .mini-dot {
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+    }
+
+    .handoff-card {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .handoff-card strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .handoff-card p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .work-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 112px;
+      }
+
+      .summary-grid {
+        min-width: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .side-panel {
+        min-height: 520px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .chapter-strip,
+      .work-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .summary-grid,
+      .scene-count-area,
+      .repair-status,
+      .select-row {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回路线审阅</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 场景数设置与修复</div>
+      <div class="model-pill"><span class="status-dot"></span><span id="top-state">待处理</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>设置当前章场景数，处理章节计划里失效的角色引用，让章节计划可以进入确认或后续场景写作。</p>
+      </div>
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">当前章 Framework</button>
+        <button class="stage-button" type="button">章节路线</button>
+        <button class="stage-button active" type="button">场景数与修复</button>
+        <button class="stage-button" type="button">确认计划</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <header class="panel-head">
+          <div>
+            <p class="eyebrow">场景数设置 / 修复</p>
+            <h2 id="work-title">第 6 章 · 旧贵族回信</h2>
+            <p class="hint" id="work-hint">该章缺少场景数，同时存在角色引用需要自动修复。</p>
+          </div>
+          <div class="summary-grid" aria-label="当前章节状态摘要">
+            <div class="summary-item">
+              <span>章节状态</span>
+              <strong id="summary-status">待补齐</strong>
+            </div>
+            <div class="summary-item">
+              <span>推荐场景数</span>
+              <strong id="summary-recommended">5 场景</strong>
+            </div>
+            <div class="summary-item">
+              <span>已选场景数</span>
+              <strong id="summary-selected">未设置</strong>
+            </div>
+            <div class="summary-item">
+              <span>引用状态</span>
+              <strong id="summary-repair">2 条待修复</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="chapter-strip" aria-label="章节选择">
+          <div class="chapter-strip-head">
+            <div>
+              <strong>选择章节</strong>
+              <span>点击章节卡片切换设置对象，拖动轨道查看更多章节。</span>
+            </div>
+            <div class="rail-controls">
+              <button class="icon-button" id="chapter-prev" type="button" aria-label="向左移动章节轨道">‹</button>
+              <button class="icon-button" id="chapter-next" type="button" aria-label="向右移动章节轨道">›</button>
+            </div>
+          </div>
+          <div class="chapter-scroll" id="chapter-scroll" tabindex="0">
+            <div class="chapter-track" id="chapter-track"></div>
+          </div>
+          <div class="track-position" aria-hidden="true">
+            <div class="track-thumb" id="track-thumb"></div>
+          </div>
+        </section>
+
+        <div class="work-body">
+          <section class="work-card" aria-labelledby="scene-count-title">
+            <div class="work-card-head">
+              <h3 id="scene-count-title">场景数</h3>
+              <p id="scene-count-note">场景数用于后续场景写作的生成边界。</p>
+            </div>
+            <div class="scene-count-area">
+              <div class="count-control" aria-label="场景数步进器">
+                <button class="step-button" id="count-plus" type="button" aria-label="增加场景数">+</button>
+                <div class="count-display">
+                  <strong id="count-value">5</strong>
+                  <span>场景</span>
+                </div>
+                <button class="step-button" id="count-minus" type="button" aria-label="减少场景数">−</button>
+              </div>
+
+              <div class="count-panel">
+                <div class="select-row">
+                  <div class="select-shell" id="count-select-shell">
+                    <button id="count-select-button" type="button" aria-expanded="false">选择 1 - 20 场景</button>
+                    <div class="count-menu" id="count-menu" aria-label="场景数选项"></div>
+                  </div>
+                  <div class="save-status" id="save-status">尚未保存</div>
+                </div>
+
+                <div class="impact-card">
+                  <span>当前影响</span>
+                  <strong id="impact-title">第 6 章会生成 5 个场景节点</strong>
+                  <div class="scene-beads" id="scene-beads" aria-label="场景节点预览"></div>
+                </div>
+
+            </div>
+          </section>
+
+          <section class="work-card" aria-labelledby="repair-title">
+            <div class="work-card-head">
+              <h3 id="repair-title">角色引用修复</h3>
+              <p id="repair-note">修复章节计划里已经失效的 supporting role 引用。</p>
+            </div>
+            <div class="repair-body">
+              <div class="repair-status" aria-label="修复摘要">
+                <div class="repair-stat">
+                  <span>待修复</span>
+                  <strong id="repair-pending">2</strong>
+                </div>
+                <div class="repair-stat">
+                  <span>已移除</span>
+                  <strong id="repair-removed">0</strong>
+                </div>
+                <div class="repair-stat">
+                  <span>阻塞</span>
+                  <strong id="repair-blocking">0</strong>
+                </div>
+              </div>
+
+              <div class="reference-list" id="reference-list"></div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="action-note">先保存场景数；如果存在失效角色引用，执行自动修复后再确认章节计划。</p>
+          <div class="button-group">
+            <button class="soft-button" id="repair-button" type="button">自动修复引用</button>
+            <button class="soft-button" id="save-count-button" type="button">保存场景数</button>
+            <button class="primary-button" id="confirm-button" type="button">确认章节计划</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="验证状态">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">验证状态</p>
+            <h2 id="side-title">需要处理</h2>
+          </div>
+          <span class="state-pill" id="state-pill">未完成</span>
+        </div>
+
+        <div class="health-list">
+          <div class="health-item warn" id="health-scene">
+            <strong><span class="mini-dot">1</span>场景数</strong>
+            <p id="health-scene-copy">第 6 章还没有保存场景数。</p>
+          </div>
+          <div class="health-item warn" id="health-repair">
+            <strong><span class="mini-dot">2</span>角色引用</strong>
+            <p id="health-repair-copy">存在 2 条 supporting role 引用需要修复。</p>
+          </div>
+          <div class="health-item ready">
+            <strong><span class="mini-dot">3</span>章节路线</strong>
+            <p>章节路线草案可用，当前页面不会改写路线文本。</p>
+          </div>
+          <div class="health-item">
+            <strong><span class="mini-dot">4</span>确认条件</strong>
+            <p id="health-confirm-copy">场景数和引用修复完成后，确认按钮进入可用状态。</p>
+          </div>
+        </div>
+
+        <div class="handoff-card">
+          <strong>后续动作</strong>
+          <p>处理完成后进入确认计划。确认后，场景写作会读取当前章 brief 和已保存的场景数。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const chapters = [
+      { index: 1, title: "港口晚宴", status: "已承接", scenes: 4, recommended: 4, repair: 0 },
+      { index: 2, title: "失踪巡夜人", status: "已承接", scenes: 5, recommended: 5, repair: 0 },
+      { index: 3, title: "钟楼证词", status: "当前章", scenes: 5, recommended: 5, repair: 0 },
+      { index: 4, title: "潮汐禁区", status: "草案", scenes: 5, recommended: 5, repair: 0 },
+      { index: 5, title: "商会账本", status: "草案", scenes: 4, recommended: 4, repair: 1 },
+      { index: 6, title: "旧贵族回信", status: "待补齐", scenes: null, recommended: 5, repair: 2 },
+      { index: 7, title: "队伍裂缝", status: "草案", scenes: 5, recommended: 5, repair: 0 },
+      { index: 8, title: "协议影子", status: "需确认", scenes: 6, recommended: 6, repair: 0 },
+      { index: 9, title: "港口封锁", status: "草案", scenes: 5, recommended: 5, repair: 0 },
+      { index: 10, title: "沉默审判", status: "草案", scenes: 5, recommended: 5, repair: 1 },
+      { index: 11, title: "协议真相", status: "草案", scenes: 6, recommended: 6, repair: 0 },
+      { index: 12, title: "潮声之后", status: "终章草案", scenes: 5, recommended: 5, repair: 0 }
+    ];
+
+    const repairReferences = [
+      {
+        path: "current_chapter_brief.participating_character_ids",
+        name: "旧贵族信使",
+        meta: "角色状态已归档，不能继续作为章节参与角色。",
+      },
+      {
+        path: "chapter_routes[6].supporting_role_refs",
+        name: "港口守门人",
+        meta: "角色层级与当前章节功能不匹配，需要移出 supporting role 引用。",
+      }
+    ];
+
+    const chapterTrack = document.getElementById("chapter-track");
+    const chapterScroll = document.getElementById("chapter-scroll");
+    const trackThumb = document.getElementById("track-thumb");
+    const chapterPrev = document.getElementById("chapter-prev");
+    const chapterNext = document.getElementById("chapter-next");
+    const workTitle = document.getElementById("work-title");
+    const workHint = document.getElementById("work-hint");
+    const summaryStatus = document.getElementById("summary-status");
+    const summaryRecommended = document.getElementById("summary-recommended");
+    const summarySelected = document.getElementById("summary-selected");
+    const summaryRepair = document.getElementById("summary-repair");
+    const countValue = document.getElementById("count-value");
+    const countSelectShell = document.getElementById("count-select-shell");
+    const countSelectButton = document.getElementById("count-select-button");
+    const countMenu = document.getElementById("count-menu");
+    const countPlus = document.getElementById("count-plus");
+    const countMinus = document.getElementById("count-minus");
+    const saveStatus = document.getElementById("save-status");
+    const impactTitle = document.getElementById("impact-title");
+    const sceneBeads = document.getElementById("scene-beads");
+    const referenceList = document.getElementById("reference-list");
+    const repairPending = document.getElementById("repair-pending");
+    const repairRemoved = document.getElementById("repair-removed");
+    const repairBlocking = document.getElementById("repair-blocking");
+    const repairButton = document.getElementById("repair-button");
+    const saveCountButton = document.getElementById("save-count-button");
+    const confirmButton = document.getElementById("confirm-button");
+    const actionNote = document.getElementById("action-note");
+    const topState = document.getElementById("top-state");
+    const sideTitle = document.getElementById("side-title");
+    const statePill = document.getElementById("state-pill");
+    const healthScene = document.getElementById("health-scene");
+    const healthRepair = document.getElementById("health-repair");
+    const healthSceneCopy = document.getElementById("health-scene-copy");
+    const healthRepairCopy = document.getElementById("health-repair-copy");
+    const healthConfirmCopy = document.getElementById("health-confirm-copy");
+
+    let selectedChapterIndex = 6;
+    let selectedSceneCount = 5;
+    let sceneCountSaved = false;
+    let referencesRepaired = false;
+    let repairedReferenceCount = 0;
+    let trackOffset = 0;
+    let isDragging = false;
+    let didDrag = false;
+    let dragStartX = 0;
+    let dragStartOffset = 0;
+    let pendingCardIndex = null;
+    let suppressNextClick = false;
+
+    function selectedChapter() {
+      return chapters.find((chapter) => chapter.index === selectedChapterIndex) || chapters[0];
+    }
+
+    function getMaxOffset() {
+      return Math.max(0, chapterTrack.scrollWidth - chapterScroll.clientWidth);
+    }
+
+    function setTrackOffset(nextOffset, animate = true) {
+      const maxOffset = getMaxOffset();
+      trackOffset = Math.max(0, Math.min(nextOffset, maxOffset));
+      chapterTrack.style.transition = animate ? "" : "none";
+      chapterTrack.style.transform = `translate3d(${-trackOffset}px, 0, 0)`;
+
+      const trackBar = trackThumb.parentElement;
+      const ratio = chapterTrack.scrollWidth ? chapterScroll.clientWidth / chapterTrack.scrollWidth : 1;
+      const thumbWidth = Math.max(42, trackBar.clientWidth * Math.min(1, ratio));
+      const maxThumbTravel = Math.max(0, trackBar.clientWidth - thumbWidth);
+      const thumbOffset = maxOffset ? (trackOffset / maxOffset) * maxThumbTravel : 0;
+      trackThumb.style.width = `${thumbWidth}px`;
+      trackThumb.style.transform = `translateX(${thumbOffset}px)`;
+    }
+
+    function centerChapter(index) {
+      const activeCard = chapterTrack.querySelector(`.chapter-card[data-index="${index}"]`);
+      if (!activeCard) return;
+      const target = activeCard.offsetLeft + (activeCard.offsetWidth / 2) - (chapterScroll.clientWidth / 2);
+      setTrackOffset(target);
+    }
+
+    function renderChapterCards() {
+      chapterTrack.innerHTML = "";
+      chapters.forEach((chapter) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `chapter-card${chapter.index === selectedChapterIndex ? " active" : ""}${chapter.repair || !chapter.scenes ? " needs-work" : ""}`;
+        button.dataset.index = String(chapter.index);
+        button.innerHTML = `
+          <strong>第 ${chapter.index} 章 · ${chapter.title}</strong>
+          <span>${chapter.scenes ? `${chapter.scenes} 场景` : "场景数待设置"} / ${chapter.repair ? `${chapter.repair} 条待修复` : "引用可用"}</span>
+        `;
+        chapterTrack.appendChild(button);
+      });
+      window.requestAnimationFrame(() => centerChapter(selectedChapterIndex));
+    }
+
+    function renderCountMenu() {
+      countMenu.innerHTML = "";
+      for (let count = 1; count <= 20; count += 1) {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = `count-option${count === selectedSceneCount ? " active" : ""}`;
+        option.textContent = String(count);
+        option.addEventListener("click", () => {
+          setSceneCount(count, false);
+          closeCountMenu();
+        });
+        countMenu.appendChild(option);
+      }
+    }
+
+    function renderSceneBeads() {
+      sceneBeads.innerHTML = "";
+      for (let index = 1; index <= selectedSceneCount; index += 1) {
+        const bead = document.createElement("span");
+        bead.className = "scene-bead";
+        bead.textContent = String(index);
+        sceneBeads.appendChild(bead);
+      }
+    }
+
+    function renderReferences() {
+      const chapter = selectedChapter();
+      const references = referencesRepaired && repairedReferenceCount
+        ? repairReferences.slice(0, repairedReferenceCount)
+        : chapter.index === 6
+          ? repairReferences
+          : chapter.repair
+            ? repairReferences.slice(0, chapter.repair)
+            : [];
+      referenceList.innerHTML = "";
+
+      if (!references.length) {
+        const item = document.createElement("article");
+        item.className = "reference-item fixed";
+        item.innerHTML = `
+          <strong>当前章节没有待修复引用 <span class="tag">可用</span></strong>
+          <span>章节计划引用可以继续进入确认流程。</span>
+        `;
+        referenceList.appendChild(item);
+        return;
+      }
+
+      references.forEach((reference) => {
+        const item = document.createElement("article");
+        item.className = `reference-item${referencesRepaired ? " fixed" : ""}`;
+        item.innerHTML = `
+          <strong>${reference.name} <span class="tag">${referencesRepaired ? "已移除" : "待修复"}</span></strong>
+          <span>${reference.path} · ${reference.meta}</span>
+        `;
+        referenceList.appendChild(item);
+      });
+    }
+
+    function openCountMenu() {
+      countSelectShell.classList.add("open");
+      countSelectButton.setAttribute("aria-expanded", "true");
+    }
+
+    function closeCountMenu() {
+      countSelectShell.classList.remove("open");
+      countSelectButton.setAttribute("aria-expanded", "false");
+    }
+
+    function setSceneCount(nextCount, markUnsaved = true) {
+      selectedSceneCount = Math.max(1, Math.min(20, Number(nextCount) || 1));
+      if (markUnsaved) sceneCountSaved = false;
+      updateView();
+    }
+
+    function resetForChapter(chapter) {
+      selectedSceneCount = chapter.scenes || chapter.recommended || 5;
+      sceneCountSaved = Boolean(chapter.scenes);
+      referencesRepaired = chapter.repair === 0;
+      repairedReferenceCount = 0;
+    }
+
+    function updateView() {
+      const chapter = selectedChapter();
+      const sourceRepairCount = chapter.index === 6 ? repairReferences.length : chapter.repair;
+      const repairCount = referencesRepaired ? repairedReferenceCount : sourceRepairCount;
+      const pendingRepair = referencesRepaired ? 0 : repairCount;
+      const ready = sceneCountSaved && pendingRepair === 0;
+
+      workTitle.textContent = `第 ${chapter.index} 章 · ${chapter.title}`;
+      workHint.textContent = pendingRepair
+        ? "该章需要保存场景数，并处理角色引用。"
+        : "该章引用可用，只需确认场景数。";
+      summaryStatus.textContent = chapter.status;
+      summaryRecommended.textContent = `${chapter.recommended || selectedSceneCount} 场景`;
+      summarySelected.textContent = sceneCountSaved ? `${selectedSceneCount} 场景` : "未保存";
+      summaryRepair.textContent = pendingRepair ? `${pendingRepair} 条待修复` : "引用可用";
+
+      countValue.textContent = String(selectedSceneCount);
+      countSelectButton.textContent = `选择 ${selectedSceneCount} 场景`;
+      saveStatus.textContent = sceneCountSaved ? "已保存" : "尚未保存";
+      impactTitle.textContent = `第 ${chapter.index} 章会生成 ${selectedSceneCount} 个场景节点`;
+
+      repairPending.textContent = String(pendingRepair);
+      repairRemoved.textContent = String(referencesRepaired ? repairedReferenceCount : 0);
+      repairBlocking.textContent = "0";
+      repairButton.disabled = sourceRepairCount === 0 || referencesRepaired;
+      repairButton.textContent = referencesRepaired ? "引用已修复" : "自动修复引用";
+      confirmButton.classList.toggle("ready", ready);
+      confirmButton.disabled = !ready;
+
+      topState.textContent = ready ? "可确认" : "待处理";
+      sideTitle.textContent = ready ? "可以确认" : "需要处理";
+      statePill.textContent = ready ? "已完成" : "未完成";
+      statePill.classList.toggle("ready", ready);
+
+      healthScene.classList.toggle("warn", !sceneCountSaved);
+      healthScene.classList.toggle("ready", sceneCountSaved);
+      healthSceneCopy.textContent = sceneCountSaved
+        ? `第 ${chapter.index} 章场景数已保存为 ${selectedSceneCount}。`
+        : `第 ${chapter.index} 章还没有保存场景数。`;
+
+      healthRepair.classList.toggle("warn", pendingRepair > 0);
+      healthRepair.classList.toggle("ready", pendingRepair === 0);
+      healthRepairCopy.textContent = pendingRepair
+        ? `存在 ${pendingRepair} 条 supporting role 引用需要修复。`
+        : "角色引用已经可用。";
+
+      healthConfirmCopy.textContent = ready
+        ? "确认按钮可进入下一步确认流程。"
+        : "场景数和引用修复完成后，确认按钮进入可用状态。";
+      actionNote.textContent = ready
+        ? "场景数和角色引用已经处理完成，可以确认章节计划。"
+        : "先保存场景数；如果存在失效角色引用，执行自动修复后再确认章节计划。";
+
+      renderCountMenu();
+      renderSceneBeads();
+      renderReferences();
+      chapterTrack.querySelectorAll(".chapter-card").forEach((card) => {
+        card.classList.toggle("active", Number(card.dataset.index) === selectedChapterIndex);
+      });
+      window.requestAnimationFrame(() => setTrackOffset(trackOffset, false));
+    }
+
+    function selectChapter(index) {
+      const chapter = chapters.find((item) => item.index === index);
+      if (!chapter) return;
+      selectedChapterIndex = index;
+      resetForChapter(chapter);
+      updateView();
+      centerChapter(index);
+    }
+
+    chapterPrev.addEventListener("click", () => setTrackOffset(trackOffset - 360));
+    chapterNext.addEventListener("click", () => setTrackOffset(trackOffset + 360));
+
+    chapterTrack.addEventListener("click", (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      if (didDrag) return;
+      const card = event.target.closest(".chapter-card");
+      if (!card) return;
+      selectChapter(Number(card.dataset.index));
+    });
+
+    chapterScroll.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      setTrackOffset(trackOffset + delta);
+    }, { passive: false });
+
+    chapterScroll.addEventListener("pointerdown", (event) => {
+      if (event.button !== undefined && event.button !== 0) return;
+      const card = event.target.closest(".chapter-card");
+      pendingCardIndex = card ? Number(card.dataset.index) : null;
+      isDragging = true;
+      didDrag = false;
+      dragStartX = event.clientX;
+      dragStartOffset = trackOffset;
+      chapterScroll.classList.add("dragging");
+      chapterScroll.setPointerCapture?.(event.pointerId);
+    });
+
+    chapterScroll.addEventListener("pointermove", (event) => {
+      if (!isDragging) return;
+      const distance = event.clientX - dragStartX;
+      if (Math.abs(distance) > 4) didDrag = true;
+      setTrackOffset(dragStartOffset - distance, false);
+    });
+
+    function stopDragging(event) {
+      if (!isDragging) return;
+      const shouldSelectCard = !didDrag && pendingCardIndex !== null;
+      const selectedCardIndex = pendingCardIndex;
+      isDragging = false;
+      pendingCardIndex = null;
+      chapterScroll.classList.remove("dragging");
+      setTrackOffset(trackOffset);
+      if (chapterScroll.hasPointerCapture?.(event.pointerId)) {
+        chapterScroll.releasePointerCapture(event.pointerId);
+      }
+      if (shouldSelectCard) {
+        selectChapter(selectedCardIndex);
+        suppressNextClick = true;
+      }
+      window.setTimeout(() => {
+        didDrag = false;
+        suppressNextClick = false;
+      }, 0);
+    }
+
+    chapterScroll.addEventListener("pointerup", stopDragging);
+    chapterScroll.addEventListener("pointercancel", stopDragging);
+    chapterScroll.addEventListener("pointerleave", stopDragging);
+    chapterScroll.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setTrackOffset(trackOffset - 360);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setTrackOffset(trackOffset + 360);
+      }
+    });
+
+    countSelectButton.addEventListener("click", () => {
+      if (countSelectShell.classList.contains("open")) {
+        closeCountMenu();
+      } else {
+        openCountMenu();
+      }
+    });
+
+    countPlus.addEventListener("click", () => setSceneCount(selectedSceneCount + 1));
+    countMinus.addEventListener("click", () => setSceneCount(selectedSceneCount - 1));
+
+    saveCountButton.addEventListener("click", () => {
+      sceneCountSaved = true;
+      const chapter = selectedChapter();
+      chapter.scenes = selectedSceneCount;
+      chapter.status = chapter.status === "待补齐" ? "草案" : chapter.status;
+      updateView();
+    });
+
+    repairButton.addEventListener("click", () => {
+      const chapter = selectedChapter();
+      const sourceRepairCount = chapter.index === 6 ? repairReferences.length : chapter.repair;
+      repairedReferenceCount = sourceRepairCount;
+      referencesRepaired = true;
+      chapter.repair = 0;
+      updateView();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!countSelectShell.contains(event.target)) {
+        closeCountMenu();
+      }
+    });
+
+    window.addEventListener("resize", () => setTrackOffset(trackOffset, false));
+
+    renderChapterCards();
+    updateView();
+  </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -46,9 +47,17 @@ from app.backend.services.model_gateway_service import (
     ModelJsonParseError,
 )
 from app.backend.services.quality_check_service import QualityCheckService
+from app.backend.services.scene_character_visibility import text_mentions_character
 from app.backend.services.scene_generation_service import SceneGenerationService
+from app.backend.services.world_rule_timing import (
+    has_period_bound_exchange_rule,
+    premature_period_exchange_claim,
+)
 from app.backend.services.tracing_service import traceable_operation
 from app.backend.storage.json_store import JsonStore, StorageError
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 LOCAL_PROJECT_ID = "local_project"
@@ -214,6 +223,7 @@ class SceneRevisionService:
         revision_prompt: str,
         force_hard_rule_override: bool = False,
         source_continuity_issue_id: str = "",
+        allow_confirmed_scene: bool = False,
     ) -> SceneRevisionResponse:
         clean_prompt = revision_prompt.strip()
         if not clean_prompt:
@@ -222,7 +232,10 @@ class SceneRevisionService:
         scene = self._find_scene_by_id(scene_id)
         if scene is None:
             raise StorageError("SCENE_REVISION_SCENE_MISSING: Scene does not exist.")
-        self._ensure_scene_revision_open(scene)
+        self._ensure_scene_revision_open(
+            scene,
+            allow_confirmed_scene=allow_confirmed_scene,
+        )
 
         context = self.load_revision_context(
             scene=scene,
@@ -762,11 +775,15 @@ class SceneRevisionService:
         scene = self._find_scene_by_id(scene_id)
         if scene is None:
             raise StorageError("SCENE_REVISION_SCENE_MISSING: Scene does not exist.")
-        self._ensure_scene_revision_open(scene)
-
         candidate = self._find_revision_candidate(scene, revision_id)
         if candidate is None:
             raise StorageError("SCENE_REVISION_CANDIDATE_MISSING: Revision candidate does not exist.")
+        self._ensure_scene_revision_open(
+            scene,
+            allow_confirmed_scene=(
+                candidate.source_scene_status in REVISION_LOCKED_SCENE_STATUSES
+            ),
+        )
         if candidate.status != "candidate":
             raise StorageError("SCENE_REVISION_CANDIDATE_NOT_ACTIVE: Revision candidate is not active.")
         if scene.active_revision_id != candidate.revision_id:
@@ -919,6 +936,7 @@ class SceneRevisionService:
         allowed_character_ids = self._revision_context_character_ids(scene)
         approved_context = {
             "project_id": self._current_project_id(),
+            "output_language": self.scene_generation_service._project_output_language(),
             "scene_index": scene.scene_index,
             "scene_count": chapter.scene_count,
             "world_canvas": model_to_dict(world_canvas),
@@ -956,38 +974,72 @@ class SceneRevisionService:
         context: dict[str, Any],
     ) -> str:
         text = revision_prompt.lower()
-        if self._contains_any(
-            text,
-            [
-                "hard rule",
-                "break rule",
-                "ignore rule",
-                "sun rises",
-                "daytime trigger",
-                "free memory",
-                "without cost",
-                "restore memory without",
-                "硬规则",
-                "世界规则",
-                "太阳",
-                "白天触发",
-                "无代价",
-                "没有代价",
-            ],
+        rule_preservation_markers = [
+            "preserve the hard rules",
+            "preserve all hard rules",
+            "keep the hard rules",
+            "keep all hard rules",
+            "follow the hard rules",
+            "respect the hard rules",
+            "do not change the rules",
+            "without changing the rules",
+            "do not violate",
+            "without violating",
+            "保持硬规则",
+            "保持全部硬规则",
+            "保持世界规则",
+            "保持全部已确认世界规则",
+            "遵守硬规则",
+            "遵守世界规则",
+            "不改变规则",
+            "不修改规则",
+            "不违反规则",
+            "不违背规则",
+            "不得违反规则",
+            "不得违背规则",
+        ]
+        preserves_rules = self._contains_any(text, rule_preservation_markers)
+        explicit_rule_conflict_markers = [
+            "break rule",
+            "ignore rule",
+            "bypass rule",
+            "violate rule",
+            "sun rises",
+            "daytime trigger",
+            "free memory",
+            "without cost",
+            "restore memory without",
+            "打破规则",
+            "忽略规则",
+            "绕过规则",
+            "违反规则",
+            "违背规则",
+            "太阳升起",
+            "白天触发",
+            "无代价",
+            "没有代价",
+            "免费恢复",
+        ]
+        if (
+            self._contains_any(text, explicit_rule_conflict_markers)
+            and not preserves_rules
         ):
             return "hard_rule_conflict"
-        if self._contains_any(
-            text,
-            [
-                "world rule",
-                "change rule",
-                "change the rule",
-                "change world setting",
-                "世界规则",
-                "修改规则",
-                "改变规则",
-                "更改设定",
-            ],
+        explicit_rule_change_markers = [
+            "change rule",
+            "change the rule",
+            "change world setting",
+            "rewrite the rule",
+            "修改规则",
+            "改变规则",
+            "更改规则",
+            "重写规则",
+            "更改设定",
+            "修改设定",
+        ]
+        if (
+            self._contains_any(text, explicit_rule_change_markers)
+            and not preserves_rules
         ):
             return "world_rule_change"
         outcome_markers = [
@@ -1096,6 +1148,22 @@ class SceneRevisionService:
                     "Revision candidate may violate memory cost restrictions.",
                 )
             )
+        hard_rule_texts = [
+            f"{rule.get('rule_id', '')} {rule.get('statement', '')}"
+            for rule in hard_rules
+        ]
+        premature_claim = (
+            premature_period_exchange_claim(revised_text)
+            if has_period_bound_exchange_rule(hard_rule_texts) and revised_text
+            else ""
+        )
+        if premature_claim:
+            warning = self._hard_rule_warning(
+                    hard_rules,
+                    "Revision candidate appears to trigger a period-bound exchange before its confirmed event window.",
+                )
+            warning["evidence_excerpt"] = premature_claim[:240]
+            warnings.append(warning)
         return self._dedupe_warning_dicts(warnings)
 
     def _safe_provider_error(self, exc: Exception) -> str:
@@ -1272,21 +1340,114 @@ class SceneRevisionService:
                     "revise_scene:disallowed_character_mentions:"
                     + ",".join(disallowed_mentions)
                 )
-            output = self._fallback_revision_output(
-                scene=scene,
-                context=context,
-                revision_prompt=revision_prompt,
-                revision_intent=revision_intent,
-                exc=ModelCallError(
-                    "Revision output introduced characters outside allowed scene participants."
-                ),
+            safety_repair_context = dict(context)
+            safety_repair_scene = dict(safety_repair_context.get("current_scene") or {})
+            safety_repair_scene["prose_text"] = ""
+            safety_repair_scene["revision_history"] = []
+            safety_repair_scene["active_revision_id"] = ""
+            safety_repair_context["current_scene"] = safety_repair_scene
+            safety_repair_context["revision_prompt"] = (
+                revision_prompt
+                + "\n\n上一版候选未通过正文安全检查。请只输出故事内叙事，"
+                "不要复述修订指令、上下文、技术字段或错误信息；只使用允许角色。"
             )
+            safety_repair_context["output_safety_repair"] = {
+                "internal_markers_to_remove": internal_markers,
+                "disallowed_character_names_to_remove": disallowed_mentions,
+                "allowed_revision_characters": context.get("allowed_revision_characters") or [],
+            }
+            try:
+                output = self.scene_revision_agent.revise_scene(safety_repair_context)
+            except (ModelCallError, ModelJsonParseError) as exc:
+                raise StorageError(
+                    "SCENE_REVISION_UNSAFE_OUTPUT: Automatic story-prose safety repair failed."
+                ) from exc
             revised_synopsis = str(output.get("revised_synopsis") or "").strip()
             revised_prose_text = str(output.get("revised_prose_text") or "").strip()
-            if not revised_synopsis or not revised_prose_text:
+            repaired_markers = self._revision_internal_prose_markers(
+                revised_synopsis,
+                revised_prose_text,
+                revision_prompt,
+            )
+            repaired_disallowed = self._disallowed_revision_character_mentions(
+                context,
+                revised_synopsis,
+                revised_prose_text,
+            )
+            if not revised_synopsis or not revised_prose_text or repaired_markers or repaired_disallowed:
                 raise StorageError(
-                    "SCENE_REVISION_MODEL_SCHEMA_INVALID: Safe fallback revision output must include revised_synopsis and revised_prose_text."
+                    "SCENE_REVISION_UNSAFE_OUTPUT: Revision candidate still contains meta text or disallowed characters after automatic repair."
                 )
+
+        first_pass_detected_warnings = self.detect_hard_rule_warnings(
+                revision_prompt="",
+                revision_intent=revision_intent,
+                revised_text=f"{revised_synopsis}\n{revised_prose_text}",
+                world_canvas=context.get("world_canvas") or {},
+            )
+        first_pass_agent_warnings = self._agent_hard_rule_warnings(output)
+        first_pass_warnings = self._dedupe_warning_dicts(
+            first_pass_detected_warnings + first_pass_agent_warnings
+        )
+        if first_pass_warnings and not force_hard_rule_override:
+            LOGGER.warning(
+                "scene_revision_hard_rule_repair scene_id=%s deterministic=%s agent=%s",
+                scene.scene_id,
+                [
+                    {
+                        "summary": item.get("summary"),
+                        "evidence": item.get("evidence_excerpt"),
+                    }
+                    for item in first_pass_detected_warnings
+                ],
+                [item.get("summary") for item in first_pass_agent_warnings],
+            )
+            repair_context = dict(context)
+            repair_scene = dict(repair_context.get("current_scene") or {})
+            repair_scene["prose_text"] = ""
+            repair_scene["revision_history"] = []
+            repair_scene["active_revision_id"] = ""
+            repair_context["current_scene"] = repair_scene
+            repair_context["revision_prompt"] = (
+                revision_prompt
+                + "\n\n上一版候选未通过世界硬规则检查。请完整重写并修复下列冲突；"
+                "不得沿用冲突句，返回的 hard_rule_warnings 必须为空。"
+            )
+            repair_context["hard_rule_repair"] = {
+                "warnings": first_pass_warnings,
+                "confirmed_hard_rules": (context.get("world_canvas") or {}).get("hard_rules") or [],
+                "safe_scene_synopsis": str(repair_scene.get("synopsis") or ""),
+                "required_result": "A complete replacement candidate that satisfies every confirmed hard rule.",
+            }
+            try:
+                repaired_output = self.scene_revision_agent.revise_scene(repair_context)
+            except (ModelCallError, ModelJsonParseError) as exc:
+                raise StorageError(
+                    "HARD_RULE_CONFLICT: Revision candidate conflicts with World Canvas hard rules and automatic repair failed."
+                ) from exc
+            repaired_synopsis = str(repaired_output.get("revised_synopsis") or "").strip()
+            repaired_prose = str(repaired_output.get("revised_prose_text") or "").strip()
+            if not repaired_synopsis or not repaired_prose:
+                raise StorageError(
+                    "SCENE_REVISION_MODEL_SCHEMA_INVALID: Hard-rule repair output must include revised_synopsis and revised_prose_text."
+                )
+            repaired_internal_markers = self._revision_internal_prose_markers(
+                repaired_synopsis,
+                repaired_prose,
+                revision_prompt,
+            )
+            repaired_disallowed_mentions = self._disallowed_revision_character_mentions(
+                context,
+                repaired_synopsis,
+                repaired_prose,
+            )
+            if repaired_internal_markers or repaired_disallowed_mentions:
+                raise StorageError(
+                    "HARD_RULE_CONFLICT: Automatic hard-rule repair produced an unsafe scene candidate."
+                )
+            output = repaired_output
+            revised_synopsis = repaired_synopsis
+            revised_prose_text = repaired_prose
 
         candidate_scene = self._candidate_scene_dict(
             scene=scene,
@@ -1333,6 +1494,17 @@ class SceneRevisionService:
             + self._agent_hard_rule_warnings(output)
         )
         if hard_rule_warnings and not force_hard_rule_override:
+            LOGGER.warning(
+                "scene_revision_hard_rule_rejected scene_id=%s warnings=%s",
+                scene.scene_id,
+                [
+                    {
+                        "summary": item.get("summary"),
+                        "evidence": item.get("evidence_excerpt"),
+                    }
+                    for item in hard_rule_warnings
+                ],
+            )
             raise StorageError(
                 "HARD_RULE_CONFLICT: Revision candidate conflicts with World Canvas hard rules."
             )
@@ -1344,6 +1516,7 @@ class SceneRevisionService:
             revision_prompt=revision_prompt,
             revision_intent=revision_intent,
             base_scene_version_id=scene.version_id or "",
+            source_scene_status=scene.status,
             revised_synopsis=revised_synopsis,
             revised_prose_text=revised_prose_text,
             change_summary=[
@@ -1544,11 +1717,18 @@ class SceneRevisionService:
             revision_id,
         )
 
-    def _ensure_scene_revision_open(self, scene: Scene) -> None:
-        if scene.status in REVISION_LOCKED_SCENE_STATUSES:
+    def _ensure_scene_revision_open(
+        self,
+        scene: Scene,
+        *,
+        allow_confirmed_scene: bool = False,
+    ) -> None:
+        if scene.status in REVISION_LOCKED_SCENE_STATUSES and not allow_confirmed_scene:
             raise StorageError(
                 "SCENE_REVISION_CONFIRMED_SCENE_LOCKED: Confirmed or committed scenes cannot be revised by the Milestone 8 draft revision flow."
             )
+        if scene.status in REVISION_LOCKED_SCENE_STATUSES and allow_confirmed_scene:
+            return
         if self._is_scene_gate_pipeline_needs_review(scene):
             return
         if scene.status not in REVISION_ALLOWED_SCENE_STATUSES:
@@ -1890,12 +2070,7 @@ class SceneRevisionService:
         visible_ids: set[str] = set()
         for character in self._read_characters():
             character_id = character.character_id
-            names = [
-                character_id,
-                character.name,
-                getattr(character.profile, "identity", ""),
-            ]
-            if any(name and str(name).casefold() in text for name in names):
+            if text_mentions_character(text, character):
                 visible_ids.add(character_id)
         for key in ("visible_character_ids", "participant_character_ids", "linked_character_ids"):
             for value in agent_output.get(key) or []:

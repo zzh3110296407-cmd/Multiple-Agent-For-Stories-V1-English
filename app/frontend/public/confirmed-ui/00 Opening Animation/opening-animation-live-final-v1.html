@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Opening Animation Live v1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --paper-warm: #e9ddbf;
+      --rose: #b48a78;
+      --rose-deep: #80685d;
+      --ink: #2f2d2a;
+      --muted: #655e57;
+      --duration: 2850ms;
+      --ease: cubic-bezier(.16, .84, .22, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #181410;
+      font-family: Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      isolation: isolate;
+      background: #211a16;
+    }
+
+    .homepage {
+      position: absolute;
+      inset: 0;
+      background-image: url("assets/homepage-final-v1.png");
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transform: scale(1.018);
+      filter: blur(10px) saturate(.9);
+      animation: homepageReveal 720ms var(--ease) 2140ms forwards;
+      z-index: 1;
+    }
+
+    .mobile-homepage {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: none;
+      padding: 24px 22px 30px;
+      background:
+        linear-gradient(rgba(236, 231, 220, .18), rgba(236, 231, 220, .18)),
+        url("assets/main-page-story-workbench-background-v5.png");
+      background-size: cover;
+      background-position: 63% center;
+      opacity: 0;
+      transform: scale(1.018);
+      filter: blur(10px) saturate(.9);
+      animation: homepageReveal 720ms var(--ease) 2140ms forwards;
+      color: var(--ink);
+    }
+
+    .mobile-homepage__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 13px;
+      color: rgba(47, 45, 42, .74);
+    }
+
+    .mobile-homepage__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+    }
+
+    .mobile-homepage__mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: rgba(180, 138, 120, .92);
+    }
+
+    .mobile-homepage__mark svg {
+      width: 25px;
+      height: 25px;
+    }
+
+    .mobile-homepage__center {
+      min-height: calc(100vh - 170px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 18px;
+      padding: 52px 0 28px;
+    }
+
+    .mobile-homepage__kicker {
+      font-size: 13px;
+      color: rgba(47, 45, 42, .62);
+    }
+
+    .mobile-homepage h2 {
+      margin: 0;
+      max-width: 340px;
+      font-size: clamp(34px, 11vw, 46px);
+      line-height: 1.04;
+      letter-spacing: 0;
+      color: #24211f;
+    }
+
+    .mobile-homepage__subtitle {
+      margin: 0;
+      max-width: 310px;
+      font-size: 16px;
+      line-height: 1.5;
+      color: rgba(47, 45, 42, .72);
+    }
+
+    .mobile-homepage__cta {
+      margin-top: 14px;
+      width: 196px;
+      height: 54px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(180, 138, 120, .92);
+      color: #2f2d2a;
+      font-size: 18px;
+      font-weight: 700;
+      box-shadow: 0 18px 34px rgba(80, 60, 49, .14);
+    }
+
+    .mobile-homepage__dock {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+    }
+
+    .mobile-homepage__dock button {
+      height: 48px;
+      border: 1px solid rgba(255, 248, 238, .62);
+      border-radius: 8px;
+      background: rgba(242, 237, 228, .88);
+      color: #373b3a;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(80, 60, 49, .08);
+    }
+
+    .intro {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      overflow: hidden;
+      pointer-events: auto;
+      animation: introExit 620ms var(--ease) 2360ms forwards;
+    }
+
+    .paper {
+      position: absolute;
+      inset: -5%;
+      background-image: url("assets/main-page-story-workbench-background-v5.png");
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.045) translate3d(0, 0, 0);
+      filter: blur(14px) brightness(.50) saturate(.74);
+      opacity: .70;
+      animation: paperWake 1660ms var(--ease) 180ms forwards;
+      will-change: filter, opacity, transform;
+    }
+
+    .paper::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(236, 231, 220, .58), transparent 26%),
+        radial-gradient(circle at 72% 30%, rgba(233, 221, 191, .24), transparent 22%),
+        linear-gradient(180deg, rgba(32, 25, 21, .62), rgba(32, 25, 21, .26) 42%, rgba(32, 25, 21, .52));
+      opacity: .90;
+      animation: veilLift 1600ms var(--ease) 120ms forwards;
+    }
+
+    .paper::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 246, 224, .55) 0 1px, transparent 2px),
+        radial-gradient(circle at 62% 24%, rgba(255, 246, 224, .46) 0 1px, transparent 2px),
+        radial-gradient(circle at 84% 68%, rgba(255, 246, 224, .38) 0 1px, transparent 2px),
+        radial-gradient(circle at 38% 72%, rgba(255, 246, 224, .34) 0 1px, transparent 2px);
+      background-size: 210px 180px, 270px 230px, 180px 210px, 240px 180px;
+      opacity: .10;
+      mix-blend-mode: screen;
+      transform: translateY(16px);
+      animation: dustDrift 2350ms linear 0ms forwards;
+    }
+
+    .dragon-trace {
+      position: absolute;
+      inset: -5%;
+      background-image: url("assets/main-page-story-workbench-background-v5.png");
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      filter: contrast(1.05) saturate(.8);
+      -webkit-mask-image: radial-gradient(ellipse at 78% 31%, #000 0 34%, rgba(0, 0, 0, .76) 48%, rgba(0, 0, 0, .28) 61%, transparent 76%);
+      mask-image: radial-gradient(ellipse at 78% 31%, #000 0 34%, rgba(0, 0, 0, .76) 48%, rgba(0, 0, 0, .28) 61%, transparent 76%);
+      transform: translate3d(28px, -10px, 0) scale(1.025);
+      mix-blend-mode: multiply;
+      animation: dragonSettle 980ms var(--ease) 920ms forwards;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .ink-wash {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 74% 30%, rgba(128, 104, 93, .20), transparent 24%),
+        radial-gradient(ellipse at 50% 68%, rgba(180, 138, 120, .12), transparent 36%);
+      opacity: 0;
+      animation: inkBloom 820ms var(--ease) 1050ms forwards;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .brand {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(720px, 76vw);
+      transform: translate(-50%, -42%) scale(.985);
+      text-align: center;
+      opacity: 0;
+      filter: blur(12px);
+      animation: brandEnter 690ms var(--ease) 1500ms forwards, brandLeave 440ms var(--ease) 2200ms forwards;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    .brand-mark {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 22px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(180, 138, 120, .94);
+      box-shadow: 0 18px 38px rgba(80, 60, 49, .22), inset 0 1px 0 rgba(255, 248, 238, .36);
+    }
+
+    .brand-mark svg {
+      width: 42px;
+      height: 42px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(34px, 5.8vw, 78px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      color: #24211f;
+      font-weight: 800;
+    }
+
+    .brand p {
+      margin: 18px 0 0;
+      font-size: clamp(15px, 1.6vw, 22px);
+      line-height: 1.5;
+      color: rgba(57, 50, 45, .78);
+      letter-spacing: 0;
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(90deg, rgba(255,255,255,.025) 50%, transparent 50%),
+        linear-gradient(rgba(255,255,255,.018) 50%, transparent 50%);
+      background-size: 3px 3px;
+      opacity: .40;
+      mix-blend-mode: overlay;
+      z-index: 7;
+      pointer-events: none;
+      animation: grainFade 900ms ease 1780ms forwards;
+    }
+
+    .skip {
+      position: absolute;
+      right: clamp(18px, 4vw, 42px);
+      bottom: clamp(18px, 4vw, 34px);
+      z-index: 8;
+      height: 38px;
+      padding: 0 18px;
+      border: 1px solid rgba(255, 248, 238, .34);
+      border-radius: 8px;
+      background: rgba(236, 231, 220, .16);
+      color: rgba(47, 45, 42, .72);
+      font: 600 13px/1 Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      opacity: 0;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      animation: skipReady 260ms ease 420ms forwards;
+    }
+
+    .skip:hover,
+    .skip:focus-visible {
+      background: rgba(236, 231, 220, .36);
+      outline: none;
+    }
+
+    .stage.is-skipped .homepage,
+    .stage.is-skipped .mobile-homepage {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+
+    .stage.is-skipped .intro {
+      animation: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .stage[data-frame] .homepage,
+    .stage[data-frame] .mobile-homepage,
+    .stage[data-frame] .intro,
+    .stage[data-frame] .paper,
+    .stage[data-frame] .paper::before,
+    .stage[data-frame] .paper::after,
+    .stage[data-frame] .dragon-trace,
+    .stage[data-frame] .ink-wash,
+    .stage[data-frame] .brand,
+    .stage[data-frame] .grain,
+    .stage[data-frame] .skip {
+      animation: none !important;
+    }
+
+    .stage[data-frame="dark"] .paper {
+      opacity: .64;
+      filter: blur(18px) brightness(.40) saturate(.72);
+      transform: scale(1.06);
+    }
+
+    .stage[data-frame="dark"] .paper::before {
+      opacity: .98;
+    }
+
+    .stage[data-frame="paper"] .paper {
+      opacity: .92;
+      filter: blur(5px) brightness(.88) saturate(.86);
+      transform: scale(1.035);
+    }
+
+    .stage[data-frame="paper"] .paper::before {
+      opacity: .45;
+    }
+
+    .stage[data-frame="dragon"] .paper,
+    .stage[data-frame="title"] .paper {
+      opacity: 1;
+      filter: blur(1.5px) brightness(1.03) saturate(.96);
+      transform: scale(1.018);
+    }
+
+    .stage[data-frame="dragon"] .paper::before,
+    .stage[data-frame="title"] .paper::before {
+      opacity: .08;
+    }
+
+    .stage[data-frame="dragon"] .dragon-trace,
+    .stage[data-frame="title"] .dragon-trace {
+      opacity: .64;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    .stage[data-frame="title"] .brand {
+      opacity: 1;
+      filter: blur(0);
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .stage[data-frame="home"] .homepage,
+    .stage[data-frame="home"] .mobile-homepage {
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
+
+    .stage[data-frame="home"] .intro {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes paperWake {
+      0% { opacity: .70; filter: blur(14px) brightness(.50) saturate(.74); transform: scale(1.045); }
+      54% { opacity: .92; filter: blur(5px) brightness(.88) saturate(.86); }
+      100% { opacity: 1; filter: blur(1.2px) brightness(1.04) saturate(.96); transform: scale(1.018); }
+    }
+
+    @keyframes veilLift {
+      0% { opacity: .92; }
+      58% { opacity: .42; }
+      100% { opacity: .06; }
+    }
+
+    @keyframes dustDrift {
+      0% { opacity: .06; transform: translate3d(-18px, 18px, 0) scale(1.02); }
+      46% { opacity: .30; }
+      100% { opacity: .12; transform: translate3d(14px, -22px, 0) scale(1); }
+    }
+
+    @keyframes dragonSettle {
+      0% { opacity: 0; transform: translate3d(34px, -12px, 0) scale(1.035); filter: blur(4px) contrast(.92); }
+      60% { opacity: .72; }
+      100% { opacity: .60; transform: translate3d(0, 0, 0) scale(1); filter: blur(.2px) contrast(1.05); }
+    }
+
+    @keyframes inkBloom {
+      0% { opacity: 0; transform: scale(.96); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes brandEnter {
+      0% { opacity: 0; filter: blur(12px); transform: translate(-50%, -42%) scale(.985); }
+      100% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes brandLeave {
+      0% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; filter: blur(8px); transform: translate(-50%, -54%) scale(.985); }
+    }
+
+    @keyframes homepageReveal {
+      0% { opacity: 0; filter: blur(10px) saturate(.9); transform: scale(1.018); }
+      100% { opacity: 1; filter: blur(0) saturate(1); transform: scale(1); }
+    }
+
+    @keyframes introExit {
+      0% { opacity: 1; }
+      100% { opacity: 0; pointer-events: none; }
+    }
+
+    @keyframes grainFade {
+      0% { opacity: .40; }
+      100% { opacity: .10; }
+    }
+
+    @keyframes skipReady {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .homepage {
+        animation: homepageReveal 420ms ease forwards;
+      }
+
+      .intro {
+        animation: introExit 420ms ease 80ms forwards;
+      }
+
+      .paper,
+      .paper::before,
+      .paper::after,
+      .dragon-trace,
+      .ink-wash,
+      .brand,
+      .grain,
+      .skip {
+        animation-duration: 1ms !important;
+        animation-delay: 0ms !important;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .homepage {
+        display: none;
+      }
+
+      .mobile-homepage {
+        display: block;
+      }
+
+      .paper,
+      .dragon-trace {
+        background-position: 64% center;
+      }
+
+      .brand {
+        width: 88vw;
+        top: 48%;
+      }
+
+      .brand-mark {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 18px;
+      }
+
+      .brand-mark svg {
+        width: 36px;
+        height: 36px;
+      }
+
+      .brand p {
+        margin-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="开场动画动态稿">
+    <div class="homepage" aria-hidden="true"></div>
+    <div class="mobile-homepage" aria-hidden="true">
+      <div class="mobile-homepage__top">
+        <div class="mobile-homepage__brand">
+          <span class="mobile-homepage__mark">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M10 30 C16 14 32 14 38 30" fill="none" stroke="#fff7ec" stroke-width="3" stroke-linecap="round"/>
+              <path d="M12 31 C20 24 29 24 36 31" fill="none" stroke="#fff7ec" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Multiple Agent<br>For Stories</span>
+        </div>
+        <span>设置</span>
+      </div>
+      <div class="mobile-homepage__center">
+        <span class="mobile-homepage__kicker">故事创作工作台</span>
+        <h2>Multiple Agent For Stories</h2>
+        <p class="mobile-homepage__subtitle">让世界、角色与章节在同一张长卷中苏醒</p>
+        <button class="mobile-homepage__cta" type="button">开始创作</button>
+      </div>
+      <div class="mobile-homepage__dock">
+        <button type="button">作品集</button>
+        <button type="button">导入故事</button>
+        <button type="button">灵感库</button>
+        <button type="button">创作资料库</button>
+      </div>
+    </div>
+    <section class="intro" aria-label="The Manuscript Wakes">
+      <div class="paper" aria-hidden="true"></div>
+      <div class="dragon-trace" aria-hidden="true"></div>
+      <div class="ink-wash" aria-hidden="true"></div>
+      <div class="brand" aria-hidden="true">
+        <div class="brand-mark">
+          <svg viewBox="0 0 48 48" role="img" aria-label="Multiple Agent For Stories">
+            <path d="M10 30 C16 14 32 14 38 30" fill="none" stroke="#fff7ec" stroke-width="3" stroke-linecap="round"/>
+            <path d="M12 31 C20 24 29 24 36 31" fill="none" stroke="#fff7ec" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1>Multiple Agent</h1>
+        <p>For Stories</p>
+      </div>
+      <div class="grain" aria-hidden="true"></div>
+      <button class="skip" type="button" aria-label="跳过开场动画">跳过</button>
+    </section>
+  </main>
+  <script>
+    const stage = document.querySelector(".stage");
+    const params = new URLSearchParams(window.location.search);
+    const frame = params.get("frame");
+
+    if (frame) {
+      stage.dataset.frame = frame;
+    }
+
+    function currentStage() {
+      return document.querySelector(".stage");
+    }
+
+    function skipIntro() {
+      currentStage().classList.add("is-skipped");
+    }
+
+    document.querySelector(".skip").addEventListener("click", skipIntro);
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") skipIntro();
+    });
+  </script>
+</body>
+</html>

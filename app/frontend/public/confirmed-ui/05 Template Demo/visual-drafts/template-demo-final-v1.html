@@ -1,0 +1,1245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>模板与演示 V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: #f7f1e6;
+      --paper-deep: #e9ddbf;
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --ink: #302c28;
+      --muted: #7b7068;
+      --safe: #5d7474;
+      --safe-deep: #4b6263;
+      --sample: #a59a8f;
+      --line: rgba(120, 95, 80, 0.18);
+      --white: rgba(255, 252, 244, 0.76);
+      --shadow: 0 26px 66px rgba(86, 64, 49, 0.16);
+      --soft-shadow: 0 12px 28px rgba(86, 64, 49, 0.11);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 11% 16%, rgba(255, 250, 239, 0.72), transparent 30%),
+        radial-gradient(circle at 88% 78%, rgba(180, 138, 120, 0.16), transparent 32%),
+        linear-gradient(135deg, #ece7dc 0%, #eee8db 48%, #e7ddca 100%);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      opacity: 0.17;
+      pointer-events: none;
+      background-image:
+        linear-gradient(90deg, rgba(76, 56, 42, 0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(76, 56, 42, 0.035) 1px, transparent 1px);
+      background-size: 34px 34px, 42px 42px;
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ambient::before {
+      content: "";
+      position: absolute;
+      left: 58px;
+      bottom: -92px;
+      width: 360px;
+      height: 360px;
+      opacity: 0.12;
+      border: 1px solid rgba(143, 103, 92, 0.24);
+      border-radius: 50%;
+      box-shadow:
+        inset 0 0 0 34px rgba(143, 103, 92, 0.08),
+        inset 0 0 0 76px rgba(143, 103, 92, 0.05);
+    }
+
+    .ambient svg {
+      position: absolute;
+      right: 210px;
+      top: 140px;
+      width: 640px;
+      height: 520px;
+      opacity: 0.14;
+      transform: rotate(-5deg);
+    }
+
+    .page {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      padding: 48px 74px 36px;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 46px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .back,
+    .theme {
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(247, 241, 230, 0.58);
+      color: #443c37;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .back {
+      min-width: 118px;
+      cursor: pointer;
+    }
+
+    .theme {
+      min-width: 176px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+    }
+
+    .crumb {
+      color: #83776e;
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .headline {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-left: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 50px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      color: #2f2d29;
+      font-weight: 880;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: #756a62;
+      font-size: 16px;
+      line-height: 1.58;
+      font-weight: 520;
+    }
+
+    .source-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.58);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      color: #5c514a;
+      font-size: 13px;
+      font-weight: 780;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .source-pill span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--safe);
+      box-shadow: 0 0 0 5px rgba(93, 116, 116, 0.12);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 2;
+      margin-top: 24px;
+      height: calc(100vh - 286px);
+      min-height: 600px;
+      display: grid;
+      grid-template-columns: 330px minmax(480px, 1fr) 332px;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.78), rgba(239, 228, 207, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .template-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      padding: 20px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: #8f675c;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .panel-title {
+      margin: 0;
+      color: #3d3732;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 880;
+    }
+
+    .panel-note {
+      margin: 8px 0 0;
+      color: #7c7068;
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 530;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      min-width: 54px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: #fbf6ec;
+      background: var(--accent);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .badge.safe {
+      background: var(--safe);
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .search {
+      height: 42px;
+      border: 1px solid rgba(120, 95, 80, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.58);
+      color: #443d37;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 650;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .filter-button {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(120, 95, 80, 0.14);
+      border-radius: 12px;
+      background: rgba(233, 221, 191, 0.5);
+      color: #5c514a;
+      font-size: 18px;
+      font-weight: 820;
+      cursor: pointer;
+    }
+
+    .template-list {
+      display: grid;
+      gap: 10px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .template-card {
+      width: 100%;
+      min-height: 94px;
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      padding: 11px;
+      border: 1px solid rgba(120, 95, 80, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 252, 244, 0.42);
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+    }
+
+    .template-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(180, 138, 120, 0.24);
+    }
+
+    .template-card.selected {
+      background: rgba(233, 221, 191, 0.66);
+      border-color: rgba(180, 138, 120, 0.28);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .sample-sheet {
+      width: 54px;
+      height: 66px;
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.92), rgba(225, 211, 189, 0.78));
+      border: 1px solid rgba(120, 95, 80, 0.16);
+      position: relative;
+      box-shadow: 0 8px 18px rgba(80, 58, 46, 0.09);
+    }
+
+    .sample-sheet::before,
+    .sample-sheet::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      height: 2px;
+      border-radius: 99px;
+      background: rgba(120, 95, 80, 0.16);
+    }
+
+    .sample-sheet::before {
+      top: 22px;
+      box-shadow: 0 13px 0 rgba(120, 95, 80, 0.13);
+    }
+
+    .sample-sheet::after {
+      bottom: 18px;
+      width: 22px;
+    }
+
+    .template-main strong {
+      display: block;
+      color: #3b352f;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 860;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .template-main p {
+      margin: 6px 0 9px;
+      color: #776b63;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .tag-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      min-height: 24px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0 8px;
+      border-radius: 9px;
+      color: #61564e;
+      background: rgba(255, 252, 244, 0.52);
+      border: 1px solid rgba(120, 95, 80, 0.1);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .tag.safe {
+      color: #435b5c;
+      background: rgba(93, 116, 116, 0.12);
+      border-color: rgba(93, 116, 116, 0.18);
+    }
+
+    .flow-panel {
+      display: grid;
+      grid-template-rows: 126px minmax(0, 1fr) 122px;
+      gap: 14px;
+      background: transparent;
+      box-shadow: none;
+      border: 0;
+      overflow: visible;
+    }
+
+    .origin-strip,
+    .flow-board,
+    .safety-strip {
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.78), rgba(239, 228, 207, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .origin-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 18px;
+      align-items: center;
+      padding: 17px 24px;
+    }
+
+    .origin-title {
+      margin: 0;
+      color: #3d3732;
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 880;
+    }
+
+    .origin-copy {
+      margin: 6px 0 0;
+      color: #796e66;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .origin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .origin-metric {
+      min-height: 42px;
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(120, 95, 80, 0.11);
+    }
+
+    .origin-metric span {
+      display: block;
+      color: #8a7d72;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .origin-metric strong {
+      display: block;
+      margin-top: 4px;
+      color: #433c36;
+      font-size: 13px;
+      font-weight: 820;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .flow-board {
+      position: relative;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .selected-template {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(120, 95, 80, 0.11);
+    }
+
+    .selected-template h2 {
+      margin: 0;
+      color: #332e29;
+      font-size: 24px;
+      line-height: 1.16;
+      font-weight: 880;
+    }
+
+    .selected-template p {
+      margin: 7px 0 0;
+      max-width: 620px;
+      color: #766b63;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .entry-badge {
+      min-width: 138px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #f8f2e7;
+      background: var(--safe-deep);
+      font-size: 13px;
+      font-weight: 850;
+      box-shadow: 0 12px 26px rgba(75, 98, 99, 0.2);
+    }
+
+    .flow-track {
+      position: relative;
+      min-height: 150px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+    }
+
+    .flow-track::before {
+      content: "";
+      position: absolute;
+      left: 54px;
+      right: 54px;
+      top: 50%;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(93, 116, 116, 0.44), rgba(180, 138, 120, 0.4));
+      transform: translateY(-50%);
+    }
+
+    .flow-step {
+      position: relative;
+      z-index: 1;
+      min-height: 112px;
+      border: 1px solid rgba(120, 95, 80, 0.13);
+      border-radius: 16px;
+      background: rgba(255, 252, 244, 0.54);
+      padding: 12px 10px;
+      text-align: center;
+      cursor: pointer;
+      color: inherit;
+      font: inherit;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .flow-step.active {
+      background: rgba(233, 221, 191, 0.74);
+      border-color: rgba(180, 138, 120, 0.26);
+    }
+
+    .flow-step.done .step-no {
+      background: var(--safe);
+    }
+
+    .flow-step.active .step-no {
+      background: var(--accent-deep);
+      box-shadow: 0 0 0 7px rgba(180, 138, 120, 0.13);
+    }
+
+    .flow-step.locked {
+      opacity: 0.58;
+    }
+
+    .step-no {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      color: #fbf6ec;
+      background: var(--sample);
+      font-size: 13px;
+      font-weight: 880;
+    }
+
+    .flow-step strong {
+      display: block;
+      color: #3f3832;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 850;
+    }
+
+    .flow-step span {
+      display: block;
+      margin-top: 6px;
+      color: #7b7068;
+      font-size: 11px;
+      line-height: 1.32;
+      font-weight: 560;
+    }
+
+    .flow-detail {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 190px;
+      gap: 18px;
+      align-items: end;
+      padding-top: 12px;
+      border-top: 1px solid rgba(120, 95, 80, 0.11);
+    }
+
+    .flow-detail strong {
+      display: block;
+      color: #3f3832;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .flow-detail p {
+      margin: 6px 0 0;
+      color: #7b7068;
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 530;
+    }
+
+    .primary-action {
+      width: 100%;
+      height: 42px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--safe-deep);
+      color: #fbf6ec;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 14px 28px rgba(75, 98, 99, 0.22);
+    }
+
+    .safety-strip {
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .safety-item {
+      min-height: 88px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 252, 244, 0.46);
+      border: 1px solid rgba(120, 95, 80, 0.11);
+    }
+
+    .safety-item span {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fbf6ec;
+      background: var(--safe);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .safety-item strong {
+      display: block;
+      margin-top: 7px;
+      color: #403832;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .safety-item p {
+      margin: 4px 0 0;
+      color: #7b7068;
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 530;
+    }
+
+    .demo-panel {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      padding: 20px;
+      background:
+        linear-gradient(135deg, rgba(247, 241, 230, 0.78), rgba(223, 226, 216, 0.56));
+    }
+
+    .demo-panel::before {
+      content: "";
+      position: absolute;
+      right: -42px;
+      top: 78px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 1px solid rgba(93, 116, 116, 0.2);
+      opacity: 0.7;
+    }
+
+    .demo-list {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .demo-card {
+      width: 100%;
+      min-height: 84px;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(93, 116, 116, 0.13);
+      background: rgba(255, 252, 244, 0.44);
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .demo-card.selected {
+      background: rgba(93, 116, 116, 0.12);
+      border-color: rgba(93, 116, 116, 0.25);
+    }
+
+    .demo-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fbf6ec;
+      background: var(--safe);
+      font-size: 16px;
+      font-weight: 880;
+    }
+
+    .demo-main strong {
+      display: block;
+      color: #3f3832;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .demo-main span {
+      display: block;
+      margin-top: 5px;
+      color: #7b7068;
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 560;
+    }
+
+    .audit-box {
+      position: relative;
+      z-index: 1;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255, 252, 244, 0.46);
+      border: 1px solid rgba(93, 116, 116, 0.14);
+    }
+
+    .audit-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .audit-title strong {
+      color: #3f3832;
+      font-size: 15px;
+      font-weight: 860;
+    }
+
+    .audit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .audit-metric {
+      min-height: 50px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: rgba(247, 241, 230, 0.54);
+      border: 1px solid rgba(93, 116, 116, 0.09);
+    }
+
+    .audit-metric span {
+      display: block;
+      color: #82908c;
+      font-size: 10px;
+      font-weight: 760;
+    }
+
+    .audit-metric strong {
+      display: block;
+      margin-top: 4px;
+      color: #3f3832;
+      font-size: 13px;
+      font-weight: 840;
+    }
+
+    .demo-actions {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .demo-action {
+      height: 42px;
+      border: 1px solid rgba(93, 116, 116, 0.18);
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.48);
+      color: #4d5f60;
+      font-size: 12px;
+      font-weight: 820;
+      cursor: pointer;
+    }
+
+    .demo-action.primary {
+      border: 0;
+      background: var(--safe);
+      color: #fbf6ec;
+      box-shadow: 0 12px 22px rgba(75, 98, 99, 0.17);
+    }
+
+    .toast {
+      position: fixed;
+      right: 74px;
+      bottom: 34px;
+      z-index: 10;
+      min-width: 220px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: #5b5049;
+      background: rgba(255, 252, 244, 0.82);
+      border: 1px solid rgba(120, 95, 80, 0.14);
+      box-shadow: var(--soft-shadow);
+      font-size: 12px;
+      font-weight: 760;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100vh;
+        padding: 34px 24px;
+      }
+
+      .headline {
+        display: block;
+        padding-left: 0;
+      }
+
+      .source-pill {
+        margin-top: 18px;
+        width: fit-content;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+
+      .flow-panel {
+        grid-template-rows: auto auto auto;
+      }
+
+      .flow-track,
+      .safety-strip,
+      .origin-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-track::before {
+        display: none;
+      }
+
+      .flow-detail {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <svg viewBox="0 0 640 520">
+      <path d="M88 430 C158 312 252 386 342 222 C408 104 504 142 572 66" fill="none" stroke="rgba(80, 62, 48, 0.42)" stroke-width="2" stroke-dasharray="10 14"/>
+      <path d="M126 126 C214 178 244 276 360 304 C470 330 496 418 586 446" fill="none" stroke="rgba(80, 62, 48, 0.28)" stroke-width="1.4"/>
+      <circle cx="224" cy="342" r="35" fill="none" stroke="rgba(80, 62, 48, 0.24)"/>
+      <circle cx="438" cy="184" r="46" fill="none" stroke="rgba(80, 62, 48, 0.2)"/>
+    </svg>
+  </div>
+
+  <main class="page">
+    <nav class="topbar" aria-label="模板与演示导航">
+      <div class="top-left">
+        <button class="back" type="button">返回当前项目</button>
+        <div class="crumb">主页 / 当前项目 / 模板与演示</div>
+      </div>
+    </nav>
+
+    <header class="headline">
+      <div>
+        <h1>模板与演示</h1>
+        <div class="subtitle">选择可复用的结构起点，或在隔离区查看演示样本；真实故事事实仍由后续工作区确认。</div>
+      </div>
+      <div class="source-pill"><span></span> 当前项目：模板起点</div>
+    </header>
+
+    <section class="workspace" aria-label="模板与演示工作区">
+      <aside class="panel template-panel" aria-label="模板馆">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">模板馆</p>
+            <h2 class="panel-title">模板馆</h2>
+            <p class="panel-note">模板提供结构起点，不直接确认故事事实。</p>
+          </div>
+          <div class="badge">3</div>
+        </div>
+        <div class="filter-row">
+          <input class="search" value="安全内置模板" aria-label="模板筛选" />
+          <button class="filter-button" type="button" title="筛选">⌁</button>
+        </div>
+        <div class="template-list">
+          <button class="template-card selected" data-template="mystery" type="button">
+            <span class="sample-sheet"></span>
+            <span class="template-main">
+              <strong>悬疑证词结构</strong>
+              <p>以互相矛盾的证词、关键地点和延迟揭示构成故事骨架。</p>
+              <span class="tag-row">
+                <span class="tag safe">安全</span>
+                <span class="tag">Framework</span>
+              </span>
+            </span>
+          </button>
+          <button class="template-card" data-template="quest" type="button">
+            <span class="sample-sheet"></span>
+            <span class="template-main">
+              <strong>远行任务结构</strong>
+              <p>围绕阶段目标、同伴分歧和地点推进构成宏观框架。</p>
+              <span class="tag-row">
+                <span class="tag safe">安全</span>
+                <span class="tag">世界</span>
+              </span>
+            </span>
+          </button>
+          <button class="template-card" data-template="ensemble" type="button">
+            <span class="sample-sheet"></span>
+            <span class="template-main">
+              <strong>群像交叉结构</strong>
+              <p>适合多主角、多视角和关系网逐步显影的长篇故事。</p>
+              <span class="tag-row">
+                <span class="tag safe">安全</span>
+                <span class="tag">角色</span>
+              </span>
+            </span>
+          </button>
+        </div>
+      </aside>
+
+      <section class="flow-panel" aria-label="模板实例化">
+        <section class="origin-strip" aria-label="项目来源">
+          <div>
+            <p class="eyebrow">来源标记</p>
+            <h2 class="origin-title">雾港钟楼证词</h2>
+            <p class="origin-copy">来源为模板起点。本页只生成起始材料与交接，后续进入 Framework 编排。</p>
+          </div>
+          <div class="origin-grid">
+            <div class="origin-metric">
+              <span>来源</span>
+              <strong>模板起点</strong>
+            </div>
+            <div class="origin-metric">
+              <span>真实项目</span>
+              <strong>是</strong>
+            </div>
+            <div class="origin-metric">
+              <span>来源复核</span>
+              <strong>无需</strong>
+            </div>
+            <div class="origin-metric">
+              <span>目标工作区</span>
+              <strong>Framework</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="flow-board" aria-label="实例化流程">
+          <div class="selected-template">
+            <div>
+              <p class="eyebrow">当前模板</p>
+              <h2 id="selectedTitle">悬疑证词结构</h2>
+              <p id="selectedCopy">生成适用于悬疑篇章的起始材料：证词矛盾、地点线索、阶段性误导和最终核验点。</p>
+            </div>
+            <div class="entry-badge">进入 Framework</div>
+          </div>
+
+          <div class="flow-track" aria-label="模板流程">
+            <button class="flow-step done" data-step="select" type="button">
+              <span class="step-no">1</span>
+              <strong>选择模板</strong>
+              <span>已选中安全内置模板</span>
+            </button>
+            <button class="flow-step done" data-step="request" type="button">
+              <span class="step-no">2</span>
+              <strong>创建请求</strong>
+              <span>请求已创建</span>
+            </button>
+            <button class="flow-step done" data-step="validate" type="button">
+              <span class="step-no">3</span>
+              <strong>验证</strong>
+              <span>可实例化</span>
+            </button>
+            <button class="flow-step active" data-step="starter" type="button">
+              <span class="step-no">4</span>
+              <strong>起始材料</strong>
+              <span>已生成交接材料</span>
+            </button>
+            <button class="flow-step" data-step="handoff" type="button">
+              <span class="step-no">5</span>
+              <strong>Framework</strong>
+              <span>下一步进入编排</span>
+            </button>
+          </div>
+
+          <div class="flow-detail" aria-live="polite">
+            <div>
+              <strong id="flowTitle">起始材料已生成</strong>
+              <p id="flowText">模板实例化报告已生成，包含后续编排所需的起始材料，但不会直接写入确认后的故事事实。</p>
+            </div>
+            <button class="primary-action" id="primaryAction" type="button">进入 Framework</button>
+          </div>
+        </section>
+
+        <section class="safety-strip" aria-label="安全边界">
+          <div class="safety-item">
+            <span>1</span>
+            <strong>不直接写事实</strong>
+            <p>模板起始材料不等于世界、角色或章节的已确认事实。</p>
+          </div>
+          <div class="safety-item">
+            <span>2</span>
+            <strong>需要后续确认</strong>
+            <p>Framework、世界画布和角色仍需要用户在对应页面确认。</p>
+          </div>
+          <div class="safety-item">
+            <span>3</span>
+            <strong>演示隔离</strong>
+            <p>演示样本只生成演示记录，不写入真实项目存储。</p>
+          </div>
+        </section>
+      </section>
+
+      <aside class="panel demo-panel" aria-label="演示隔离柜">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">演示隔离</p>
+            <h2 class="panel-title">演示隔离柜</h2>
+            <p class="panel-note">演示样本可运行，但不能直接作为真实故事。</p>
+          </div>
+          <div class="badge safe">隔离</div>
+        </div>
+
+        <div class="demo-list">
+          <button class="demo-card selected" data-demo="clock" type="button">
+            <span class="demo-icon">演</span>
+            <span class="demo-main">
+              <strong>钟楼样本</strong>
+              <span>仅创建演示项目，转换真实项目已阻断。</span>
+            </span>
+          </button>
+          <button class="demo-card" data-demo="dragon" type="button">
+            <span class="demo-icon">演</span>
+            <span class="demo-main">
+              <strong>飞龙袭城样本</strong>
+              <span>用于观察章节和场景链路，不写真实存储。</span>
+            </span>
+          </button>
+        </div>
+
+        <section class="audit-box">
+          <div class="audit-title">
+            <strong id="demoTitle">钟楼样本隔离审计</strong>
+            <span class="tag safe">通过</span>
+          </div>
+          <div class="audit-grid">
+            <div class="audit-metric">
+              <span>显式选择</span>
+              <strong>已验证</strong>
+            </div>
+            <div class="audit-metric">
+              <span>真实写入</span>
+              <strong>无</strong>
+            </div>
+            <div class="audit-metric">
+              <span>演示标记</span>
+              <strong>存在</strong>
+            </div>
+            <div class="audit-metric">
+              <span>转换真实项目</span>
+              <strong>已阻断</strong>
+            </div>
+            <div class="audit-metric">
+              <span>故事事实写入</span>
+              <strong>无</strong>
+            </div>
+            <div class="audit-metric">
+              <span>插件产物写入</span>
+              <strong>无</strong>
+            </div>
+          </div>
+        </section>
+
+        <div class="demo-actions">
+          <button class="demo-action primary" type="button">运行演示</button>
+          <button class="demo-action" type="button">隔离审计</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">将进入 Framework</div>
+
+  <script>
+    const templates = {
+      mystery: {
+        title: "悬疑证词结构",
+        copy: "生成适用于悬疑篇章的起始材料：证词矛盾、地点线索、阶段性误导和最终核验点。"
+      },
+      quest: {
+        title: "远行任务结构",
+        copy: "生成适用于旅途篇章的起始材料：阶段任务、同行冲突、地点推进和回收节点。"
+      },
+      ensemble: {
+        title: "群像交叉结构",
+        copy: "生成适用于群像故事的起始材料：角色视角交替、关系压力和共同事件节点。"
+      }
+    };
+
+    const steps = {
+      select: ["模板已选择", "当前选择的模板只提供结构起点，不复制完整故事正文。"],
+      request: ["请求已创建", "模板实例化请求已创建，并绑定当前项目来源。"],
+      validate: ["验证已通过", "模板状态、来源、许可、安全预览和后续确认要求均通过。"],
+      starter: ["起始材料已生成", "模板实例化报告已生成，包含后续编排所需的起始材料，但不会直接写入确认后的故事事实。"],
+      handoff: ["准备进入 Framework", "下一步进入 Framework 编排，世界画布将在 Framework 后继续推进。"]
+    };
+
+    const demos = {
+      clock: "钟楼样本隔离审计",
+      dragon: "飞龙袭城样本隔离审计"
+    };
+
+    const selectedTitle = document.getElementById("selectedTitle");
+    const selectedCopy = document.getElementById("selectedCopy");
+    const flowTitle = document.getElementById("flowTitle");
+    const flowText = document.getElementById("flowText");
+    const demoTitle = document.getElementById("demoTitle");
+    const toast = document.getElementById("toast");
+
+    document.querySelectorAll(".template-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".template-card").forEach((item) => item.classList.remove("selected"));
+        card.classList.add("selected");
+        const data = templates[card.dataset.template];
+        selectedTitle.textContent = data.title;
+        selectedCopy.textContent = data.copy;
+      });
+    });
+
+    document.querySelectorAll(".flow-step").forEach((step) => {
+      step.addEventListener("click", () => {
+        document.querySelectorAll(".flow-step").forEach((item) => item.classList.remove("active"));
+        step.classList.add("active");
+        const data = steps[step.dataset.step];
+        flowTitle.textContent = data[0];
+        flowText.textContent = data[1];
+      });
+    });
+
+    document.querySelectorAll(".demo-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".demo-card").forEach((item) => item.classList.remove("selected"));
+        card.classList.add("selected");
+        demoTitle.textContent = demos[card.dataset.demo];
+      });
+    });
+
+    document.getElementById("primaryAction").addEventListener("click", () => {
+      toast.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove("show"), 1500);
+    });
+  </script>
+</body>
+</html>

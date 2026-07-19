@@ -1409,12 +1409,21 @@ class FrameworkPackageService:
                 allowed_components=[
                     ModuleComponent(
                         component_id="desire_seek_truth",
-                        label="想知道真相",
+                        label="确认关键事实",
                         scope="character",
                         persistence="writes_character_state",
                         owner="character_state",
                         write_policy="propose_state_change",
-                        normalized_hint="角色开始把真相置于安全之上。",
+                        normalized_hint="角色开始把关键事实和行动责任置于便利或回避之上。",
+                    ),
+                    ModuleComponent(
+                        component_id="desire_confirm_responsibility_boundary",
+                        label="确认责任边界",
+                        scope="character",
+                        persistence="writes_character_state",
+                        owner="character_state",
+                        write_policy="propose_state_change",
+                        normalized_hint="角色开始把技术、制度或行动责任置于便利之上。",
                     )
                 ],
             ),
@@ -1429,12 +1438,12 @@ class FrameworkPackageService:
                 allowed_components=[
                     ModuleComponent(
                         component_id="arc_observer_to_actor",
-                        label="从旁观到承担",
+                        label="从观察到行动",
                         scope="cross_chapter",
                         persistence="writes_character_state",
                         owner="character_state",
                         write_policy="propose_state_change",
-                        normalized_hint="角色从记录或旁观转向主动承担代价。",
+                        normalized_hint="角色从记录、观察或回避转向主动行动并承担代价。",
                     )
                 ],
             ),
@@ -1456,10 +1465,10 @@ class FrameworkPackageService:
                     ),
                     ModuleComponent(
                         component_id="conflict_person_vs_unknown",
-                        label="人与未知冲突",
+                        label="人与未明规则冲突",
                         persistence="writes_story_fact",
                         write_policy="propose_state_change",
-                        normalized_hint="角色面对无法解释的世界规则或异常。",
+                        normalized_hint="角色面对尚未解释清楚的世界规则、系统边界或异常现象。",
                     ),
                     ModuleComponent(
                         component_id="conflict_pressure_growth",
@@ -1467,6 +1476,20 @@ class FrameworkPackageService:
                         persistence="writes_story_fact",
                         write_policy="propose_state_change",
                         normalized_hint="风险、误解或代价持续扩大。",
+                    ),
+                    ModuleComponent(
+                        component_id="conflict_person_vs_algorithmic_system",
+                        label="人与算法系统冲突",
+                        persistence="writes_story_fact",
+                        write_policy="propose_state_change",
+                        normalized_hint="角色与算法判断、自动化流程或技术治理系统发生对抗。",
+                    ),
+                    ModuleComponent(
+                        component_id="conflict_public_efficiency_vs_individual_dignity",
+                        label="效率与尊严冲突",
+                        persistence="writes_story_fact",
+                        write_policy="propose_state_change",
+                        normalized_hint="公共效率诉求与个体尊严、申诉权或真实处境发生冲突。",
                     ),
                 ],
             ),
@@ -1481,10 +1504,17 @@ class FrameworkPackageService:
                 allowed_components=[
                     ModuleComponent(
                         component_id="info_partial_truth",
-                        label="揭示部分真相",
+                        label="释放阶段性事实",
                         persistence="writes_story_fact",
                         write_policy="propose_state_change",
-                        normalized_hint="释放一部分事实，同时保留更深层谜团。",
+                        normalized_hint="释放一部分可确认事实，同时保留更深层原因或后果。",
+                    ),
+                    ModuleComponent(
+                        component_id="info_audit_chain",
+                        label="揭示审计链",
+                        persistence="writes_story_fact",
+                        write_policy="propose_state_change",
+                        normalized_hint="释放一段可复查的责任链、数据来源或人工复核记录。",
                     )
                 ],
             ),
@@ -1499,10 +1529,24 @@ class FrameworkPackageService:
                 allowed_components=[
                     ModuleComponent(
                         component_id="style_slow_suspense",
-                        label="慢热悬疑",
+                        label="慢热张力",
                         persistence="ephemeral",
                         write_policy="no_memory_write",
-                        normalized_hint="低速推进，用细节和缺口积累悬疑。",
+                        normalized_hint="低速推进，用细节、缺口和选择压力积累阅读张力。",
+                    ),
+                    ModuleComponent(
+                        component_id="style_rational_warm",
+                        label="理性温暖",
+                        persistence="ephemeral",
+                        write_policy="no_memory_write",
+                        normalized_hint="用清晰逻辑推进，同时保留角色和读者能感到的人情温度。",
+                    ),
+                    ModuleComponent(
+                        component_id="style_social_issue_tension",
+                        label="社会议题张力",
+                        persistence="ephemeral",
+                        write_policy="no_memory_write",
+                        normalized_hint="让制度、技术和个人处境之间的张力成为章节表达重点。",
                     )
                 ],
             ),

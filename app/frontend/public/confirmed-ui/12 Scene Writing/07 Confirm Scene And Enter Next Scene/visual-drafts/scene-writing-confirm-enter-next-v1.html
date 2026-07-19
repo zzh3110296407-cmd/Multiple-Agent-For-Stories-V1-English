@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>场景写作 / 确认场景与进入下一场景 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(238, 227, 208, 0.68);
+      --ink: #2f312b;
+      --muted: #71685e;
+      --quiet: #9a8f83;
+      --line: rgba(110, 86, 61, 0.19);
+      --line-strong: rgba(110, 86, 61, 0.32);
+      --bronze: #b48a78;
+      --bronze-deep: #8f675b;
+      --sage: #71806f;
+      --sage-deep: #53624f;
+      --blue-gray: #6f8182;
+      --blue-gray-deep: #536869;
+      --gold: #c7a66a;
+      --gold-deep: #9b7d47;
+      --danger: #a66f60;
+      --shadow: 0 26px 72px rgba(74, 53, 32, 0.18);
+      --soft-shadow: 0 14px 34px rgba(74, 53, 32, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.9), rgba(236, 231, 220, 0.68) 43%, rgba(236, 231, 220, 0.25)),
+        url("../../assets/scene-writing-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 18%, rgba(255, 248, 229, 0.55), transparent 30%),
+        radial-gradient(circle at 82% 20%, rgba(111, 129, 130, 0.14), transparent 32%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.25), rgba(180, 138, 120, 0.1));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1376px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 210px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .ghost-button,
+    .check-card,
+    .route-card,
+    .tab-button,
+    .lock-card {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 12px 28px rgba(74, 53, 32, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .ghost-button,
+    .tab-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .ghost-button:hover,
+    .check-card:hover,
+    .route-card:hover,
+    .tab-button:hover,
+    .lock-card:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 16px 34px rgba(74, 53, 32, 0.12);
+    }
+
+    .primary-button {
+      color: #fffaf2;
+      border-color: rgba(83, 104, 105, 0.48);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 16px 36px rgba(83, 104, 105, 0.22);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #789091, #536869);
+      box-shadow: 0 20px 42px rgba(83, 104, 105, 0.28);
+    }
+
+    .primary-button.next {
+      border-color: rgba(83, 98, 79, 0.45);
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 16px 36px rgba(83, 98, 79, 0.22);
+    }
+
+    .ghost-button.warning {
+      color: var(--bronze-deep);
+      border-color: rgba(180, 138, 120, 0.22);
+      background: rgba(255, 249, 241, 0.48);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(113, 128, 111, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 520px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30332d;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 800px;
+      margin: 0;
+      color: rgba(47, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #373832;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 374px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(238, 227, 208, 0.72)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 21px 30px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #30332d;
+      font-size: 26px;
+      line-height: 1.16;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.58;
+      font-weight: 520;
+    }
+
+    .seal-chip {
+      flex: 0 0 168px;
+      align-self: start;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.7);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .seal-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .seal-chip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .confirm-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 318px minmax(0, 1fr);
+      gap: 20px;
+      padding: 20px 30px 14px;
+      overflow: hidden;
+    }
+
+    .check-column,
+    .lock-column {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .check-column {
+      overflow: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+    }
+
+    .section-card,
+    .lock-shell,
+    .detail-box {
+      border: 1px solid rgba(110, 86, 61, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+    }
+
+    .section-card {
+      padding: 14px;
+    }
+
+    .section-card h3,
+    .lock-shell h3,
+    .detail-box h3,
+    .side-panel h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-card p,
+    .detail-box p,
+    .side-panel p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .check-card {
+      width: 100%;
+      min-height: 68px;
+      padding: 12px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 10px;
+      box-shadow: none;
+    }
+
+    .check-card.active {
+      border-color: rgba(83, 104, 105, 0.36);
+      background: rgba(239, 244, 242, 0.62);
+      box-shadow: 0 14px 28px rgba(83, 104, 105, 0.12);
+    }
+
+    .check-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      font-size: 15px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(83, 98, 79, 0.2);
+    }
+
+    .check-copy {
+      min-width: 0;
+    }
+
+    .check-copy strong {
+      display: block;
+      color: #353731;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .check-copy span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.36;
+    }
+
+    .note-card {
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 86, 61, 0.15);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .note-card strong {
+      display: block;
+      color: #3d3e38;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .note-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+    }
+
+    .lock-shell {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .lock-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab-button {
+      min-height: 34px;
+      padding: 0 13px;
+      color: var(--muted);
+      background: rgba(255, 252, 244, 0.42);
+      box-shadow: none;
+    }
+
+    .tab-button.active {
+      color: #fffaf2;
+      border-color: rgba(83, 104, 105, 0.42);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 14px 30px rgba(83, 104, 105, 0.2);
+    }
+
+    .confirm-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(199, 166, 106, 0.16);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .lock-area {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      scrollbar-width: thin;
+    }
+
+    .lock-view {
+      display: none;
+      min-height: 100%;
+    }
+
+    .lock-view.active {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .lock-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .lock-card {
+      min-height: 112px;
+      padding: 15px;
+      text-align: left;
+      box-shadow: none;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 246, 0.86), rgba(250, 243, 230, 0.72));
+    }
+
+    .lock-card span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+    }
+
+    .lock-card strong {
+      display: block;
+      margin-top: 10px;
+      color: #353731;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .lock-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .detail-box {
+      padding: 15px;
+    }
+
+    .detail-box ul {
+      margin: 11px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .detail-box li {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr);
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    .detail-box li strong {
+      color: #3d3e38;
+      font-weight: 900;
+    }
+
+    .handoff-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .handoff-card {
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 86, 61, 0.15);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .handoff-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .handoff-card strong {
+      display: block;
+      margin-top: 6px;
+      color: #3b3c35;
+      font-size: 15px;
+      line-height: 1.36;
+      font-weight: 900;
+    }
+
+    .handoff-card p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .panel-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 13px 30px 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .side-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .side-head {
+      padding: 20px 22px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side-head h2 {
+      font-size: 24px;
+    }
+
+    .route-list {
+      min-height: 0;
+      display: grid;
+      gap: 9px;
+      align-content: start;
+      padding: 14px 18px;
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .route-card {
+      width: 100%;
+      min-height: 78px;
+      padding: 12px;
+      text-align: left;
+      box-shadow: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .route-card.active {
+      border-color: rgba(83, 104, 105, 0.35);
+      background: rgba(239, 244, 242, 0.62);
+      box-shadow: 0 14px 28px rgba(83, 104, 105, 0.12);
+    }
+
+    .route-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .route-card strong {
+      color: #383a34;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .route-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.36;
+      font-weight: 520;
+    }
+
+    .mini-pill {
+      flex: 0 0 auto;
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .mini-pill.warning {
+      background: rgba(199, 166, 106, 0.16);
+      color: var(--gold-deep);
+    }
+
+    .side-detail {
+      margin: 0 18px 13px;
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 86, 61, 0.16);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .side-detail strong {
+      display: block;
+      color: #3a3b35;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .side-detail p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+    }
+
+    .confirm-box {
+      padding: 0 18px 18px;
+    }
+
+    .confirm-box label {
+      display: grid;
+      gap: 8px;
+      color: #4a443d;
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 82px;
+      resize: vertical;
+      border: 1px solid rgba(110, 86, 61, 0.22);
+      border-radius: var(--radius);
+      outline: none;
+      color: #3f3933;
+      background: rgba(255, 252, 244, 0.62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.56;
+    }
+
+    textarea:focus {
+      border-color: rgba(83, 104, 105, 0.48);
+      box-shadow: 0 0 0 3px rgba(111, 129, 130, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 5;
+      min-width: 310px;
+      max-width: min(560px, calc(100vw - 40px));
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      background: rgba(255, 252, 244, 0.88);
+      color: #3f3933;
+      box-shadow: 0 18px 42px rgba(74, 53, 32, 0.18);
+      opacity: 0;
+      transform: translate(-50%, 14px);
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: min(100% - 34px, 920px);
+        min-height: calc(100vh - 34px);
+        height: auto;
+        margin: 17px auto;
+      }
+
+      .topbar,
+      .hero,
+      .layout,
+      .confirm-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-left: 0;
+      }
+
+      .summary-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .main-panel,
+      .side-panel,
+      .lock-shell {
+        min-height: auto;
+      }
+
+      .check-column,
+      .lock-area,
+      .route-list {
+        overflow: visible;
+      }
+
+      .lock-grid,
+      .handoff-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 38px;
+      }
+
+      .topbar {
+        gap: 10px;
+      }
+
+      .summary-strip,
+      .lock-grid,
+      .handoff-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .lock-head,
+      .panel-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .confirm-body,
+      .panel-actions {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .seal-chip {
+        flex: 0 0 auto;
+      }
+
+      .panel-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-content: stretch;
+      }
+
+      .panel-actions > button {
+        width: 100%;
+      }
+
+      .detail-box li {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button">返回记忆写入</button>
+      <div class="crumb">主页 / 工作台 / 场景写作 / 确认场景</div>
+      <div class="status-pill"><span class="dot"></span><span>模型已连接</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">确认场景</h1>
+        <p>锁定当前场景的正文、记忆和后续承接范围，然后选择进入下一场景或回到项目总览。</p>
+      </div>
+      <div class="summary-strip" aria-label="场景确认摘要">
+        <div class="summary-item">
+          <span>当前场景</span>
+          <strong>场景 1 / 4</strong>
+        </div>
+        <div class="summary-item">
+          <span>场景状态</span>
+          <strong id="sceneStatusSummary">待正式确认</strong>
+        </div>
+        <div class="summary-item">
+          <span>记忆状态</span>
+          <strong>已写入</strong>
+        </div>
+        <div class="summary-item">
+          <span>下一步</span>
+          <strong id="nextSummary">可生成下一幕</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="确认场景主面板">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">场景收束 / 等待确认</p>
+            <h2>钟楼证词的第一处裂缝</h2>
+            <p class="hint">确认后，本场景会成为后续生成的正式前情；未确认前，下一场景只显示为可准备状态。</p>
+          </div>
+          <div class="seal-chip" aria-live="polite">
+            <strong id="sealValue">待确认</strong>
+            <span id="sealLabel">尚未锁定</span>
+          </div>
+        </div>
+
+        <div class="confirm-body">
+          <aside class="check-column" aria-label="最终确认清单">
+            <section class="section-card">
+              <h3>最终确认清单</h3>
+              <p>这些项目通过后，当前场景才适合进入正式确认。</p>
+              <div class="check-list">
+                <button class="check-card active" data-check="prose" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>正文草案</strong>
+                    <span>当前修订候选已采用，正文可进入确认。</span>
+                  </span>
+                </button>
+                <button class="check-card" data-check="quality" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>质量结果</strong>
+                    <span>节奏、视角、场景目标均无阻塞项。</span>
+                  </span>
+                </button>
+                <button class="check-card" data-check="continuity" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>连续性</strong>
+                    <span>世界事实与角色状态已经复核通过。</span>
+                  </span>
+                </button>
+                <button class="check-card" data-check="memory" type="button">
+                  <span class="check-mark">✓</span>
+                  <span class="check-copy">
+                    <strong>记忆写入</strong>
+                    <span>本场景新增记忆已写入，可供下一场景读取。</span>
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            <section class="note-card" id="checkDetail">
+              <strong>正文草案已准备确认</strong>
+              <span>当前正文来自已采用的修订候选，确认后会成为正式场景内容，后续修改应走修订流程。正式确认不会自动生成下一场景。</span>
+            </section>
+          </aside>
+
+          <section class="lock-column" aria-label="当前场景锁定摘要">
+            <div class="lock-shell">
+              <div class="lock-head">
+                <div class="tabs" role="tablist" aria-label="场景锁定信息">
+                  <button class="tab-button active" data-tab="locked" type="button">锁定摘要</button>
+                  <button class="tab-button" data-tab="inherit" type="button">下一场景继承</button>
+                  <button class="tab-button" data-tab="complete" type="button">章节进度</button>
+                </div>
+                <span class="confirm-status" id="confirmStatus">等待正式确认</span>
+              </div>
+
+              <div class="lock-area">
+                <div class="lock-view active" data-view="locked">
+                  <div class="lock-grid">
+                    <article class="lock-card">
+                      <span>正文</span>
+                      <strong>证词缺口被确认</strong>
+                      <p>林砚与薇拉发现两份证词在同一时间段出现空白。</p>
+                    </article>
+                    <article class="lock-card">
+                      <span>角色</span>
+                      <strong>信任发生细微变化</strong>
+                      <p>林砚开始采纳薇拉对档案保存方式的判断。</p>
+                    </article>
+                    <article class="lock-card">
+                      <span>线索</span>
+                      <strong>半枚火漆印章</strong>
+                      <p>线索保留为开放项，后续场景必须承接。</p>
+                    </article>
+                  </div>
+                  <div class="detail-box">
+                    <h3>正式确认会锁定的内容</h3>
+                    <p>当前场景确认后，正文、摘要、记忆写入结果和开放线索都会成为下一场景的输入基础。</p>
+                    <ul>
+                      <li><strong>正文版本</strong><span>采用修订候选作为正式场景正文。</span></li>
+                      <li><strong>记忆包</strong><span>下一场景可读取旧钟楼证词缺口、火漆印章和角色判断变化。</span></li>
+                      <li><strong>开放线索</strong><span>火漆印章不能无解释消失，也不能在下一场景直接揭示真相。</span></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="lock-view" data-view="inherit">
+                  <div class="handoff-strip">
+                    <article class="handoff-card">
+                      <span>下一幕读取</span>
+                      <strong>旧钟楼证词缺口</strong>
+                      <p>作为下一场景的前情摘要和证据状态。</p>
+                    </article>
+                    <article class="handoff-card">
+                      <span>角色状态</span>
+                      <strong>林砚保留怀疑，薇拉可信度上升</strong>
+                      <p>影响后续对话、行动选择和证据判断。</p>
+                    </article>
+                    <article class="handoff-card">
+                      <span>开放线索</span>
+                      <strong>半枚火漆印章需要承接</strong>
+                      <p>下一场景可以推进线索，但不应直接完成谜底。</p>
+                    </article>
+                    <article class="handoff-card">
+                      <span>章节目标</span>
+                      <strong>继续调查证词断层</strong>
+                      <p>不改变章节路线，只为下一场景提供可用上下文。</p>
+                    </article>
+                  </div>
+                </div>
+
+                <div class="lock-view" data-view="complete">
+                  <div class="detail-box">
+                    <h3>章节内进度</h3>
+                    <p>当前章共规划 4 个场景。确认本场景后，系统可以生成下一幕；如果已经到章节末尾，则应准备下一章。</p>
+                    <ul>
+                      <li><strong>已完成</strong><span>场景 1：钟楼证词的第一处裂缝。</span></li>
+                      <li><strong>下一步</strong><span>场景 2：追踪火漆印章的来源。</span></li>
+                      <li><strong>章节状态</strong><span>当前章尚未完成，不需要准备下一章。</span></li>
+                      <li><strong>用户选择</strong><span>可立即生成下一幕，也可返回项目总览。</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="panel-actions" aria-label="确认场景动作">
+          <button class="soft-button" data-action="temporary" type="button">临时确认</button>
+          <button class="primary-button" data-action="confirm" type="button">正式确认当前幕</button>
+          <button class="primary-button next" data-action="next" type="button">进入下一场景</button>
+        </div>
+      </article>
+
+      <aside class="side-panel" aria-label="下一步选择">
+        <div class="side-head">
+          <p class="eyebrow">下一步</p>
+          <h2>确认后去哪里</h2>
+          <p>选择确认完成后的落点，避免流程突然跳转。</p>
+        </div>
+
+        <div class="route-list">
+          <button class="route-card active" data-route="nextScene" type="button">
+            <span class="route-top"><strong>生成下一幕</strong><span class="mini-pill">推荐</span></span>
+            <span>正式确认后进入下一场景生成流程。</span>
+          </button>
+          <button class="route-card" data-route="overview" type="button">
+            <span class="route-top"><strong>回项目总览</strong><span class="mini-pill warning">停留</span></span>
+            <span>确认当前场景，但暂不生成下一幕。</span>
+          </button>
+          <button class="route-card" data-route="current" type="button">
+            <span class="route-top"><strong>留在当前场景</strong><span class="mini-pill warning">复查</span></span>
+            <span>确认后仍停留在本场景查看正式版本。</span>
+          </button>
+          <button class="route-card" data-route="nextChapter" type="button">
+            <span class="route-top"><strong>准备下一章</strong><span class="mini-pill warning">章节末尾</span></span>
+            <span>仅当当前章已完成时才可使用。</span>
+          </button>
+        </div>
+
+        <div class="side-detail" id="routeDetail">
+          <strong>生成下一幕</strong>
+          <p>正式确认当前场景后，调用下一幕生成流程。下一幕会读取本场景写入的记忆与开放线索。</p>
+        </div>
+
+        <div class="confirm-box">
+          <label>
+            场景确认说明
+            <textarea id="confirmInput" placeholder="例如：确认当前场景作为正式前情，下一幕继续承接火漆印章线索。"></textarea>
+          </label>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const checkDetails = {
+      prose: {
+        title: "正文草案已准备确认",
+        text: "当前正文来自已采用的修订候选，确认后会成为正式场景内容，后续修改应走修订流程。"
+      },
+      quality: {
+        title: "质量结果已通过",
+        text: "本场景没有质量阻塞项；叙事节奏、场景目标、人物视角均符合当前章节需求。"
+      },
+      continuity: {
+        title: "连续性已通过",
+        text: "旧钟楼、证词缺口、火漆印章和角色行动都没有破坏既有事实。"
+      },
+      memory: {
+        title: "记忆已写入",
+        text: "新增事件、状态、关系和物件线索已经写入记忆计划，下一场景可以读取。"
+      }
+    };
+
+    const routeDetails = {
+      nextScene: {
+        title: "生成下一幕",
+        text: "正式确认当前场景后，调用下一幕生成流程。下一幕会读取本场景写入的记忆与开放线索。"
+      },
+      overview: {
+        title: "回项目总览",
+        text: "适合用户暂时结束本次写作。当前场景会保持正式确认状态，稍后可从项目总览继续。"
+      },
+      current: {
+        title: "留在当前场景",
+        text: "适合确认后复查正式版本、导出片段或查看记忆继承情况。"
+      },
+      nextChapter: {
+        title: "准备下一章",
+        text: "只有当前章已经完成时才显示为主路径。此时应调用下一章准备流程，而不是生成下一幕。"
+      }
+    };
+
+    const tabs = document.querySelectorAll("[data-tab]");
+    const views = document.querySelectorAll("[data-view]");
+    const checkCards = document.querySelectorAll("[data-check]");
+    const routeCards = document.querySelectorAll("[data-route]");
+    const checkDetail = document.getElementById("checkDetail");
+    const routeDetail = document.getElementById("routeDetail");
+    const toast = document.getElementById("toast");
+    let toastTimer = null;
+    let sceneConfirmed = false;
+    let selectedRoute = "nextScene";
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("visible");
+      toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2300);
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const key = tab.dataset.tab;
+        tabs.forEach((item) => item.classList.toggle("active", item === tab));
+        views.forEach((view) => view.classList.toggle("active", view.dataset.view === key));
+      });
+    });
+
+    checkCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const detail = checkDetails[card.dataset.check];
+        checkCards.forEach((item) => item.classList.toggle("active", item === card));
+        checkDetail.innerHTML = `<strong>${detail.title}</strong><span>${detail.text}</span>`;
+      });
+    });
+
+    routeCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        selectedRoute = card.dataset.route;
+        const detail = routeDetails[selectedRoute];
+        routeCards.forEach((item) => item.classList.toggle("active", item === card));
+        routeDetail.innerHTML = `<strong>${detail.title}</strong><p>${detail.text}</p>`;
+        document.getElementById("nextSummary").textContent = detail.title;
+      });
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.action;
+        const sceneStatusSummary = document.getElementById("sceneStatusSummary");
+        const nextSummary = document.getElementById("nextSummary");
+        const sealValue = document.getElementById("sealValue");
+        const sealLabel = document.getElementById("sealLabel");
+        const confirmStatus = document.getElementById("confirmStatus");
+
+        if (action === "temporary") {
+          sceneStatusSummary.textContent = "临时确认";
+          confirmStatus.textContent = "临时确认完成";
+          sealValue.textContent = "临时";
+          sealLabel.textContent = "可继续复查";
+          showToast("当前场景已临时确认，仍可返回修改。");
+        }
+
+        if (action === "confirm") {
+          sceneConfirmed = true;
+          sceneStatusSummary.textContent = "正式确认";
+          confirmStatus.textContent = "正式确认完成";
+          sealValue.textContent = "已锁定";
+          sealLabel.textContent = "可进入下一步";
+          showToast("当前场景已正式确认，下一步入口已准备好。");
+        }
+
+        if (action === "next") {
+          if (!sceneConfirmed) {
+            showToast("请先正式确认当前幕，再进入下一场景。");
+            return;
+          }
+
+          if (selectedRoute === "nextScene") {
+            nextSummary.textContent = "下一幕生成中";
+            confirmStatus.textContent = "进入下一幕";
+            showToast("正在进入下一场景生成流程。");
+          }
+
+          if (selectedRoute === "overview") {
+            nextSummary.textContent = "返回总览";
+            confirmStatus.textContent = "确认后返回总览";
+            showToast("当前场景已确认，接下来返回项目总览。");
+          }
+
+          if (selectedRoute === "current") {
+            nextSummary.textContent = "停留当前场景";
+            confirmStatus.textContent = "停留查看正式版本";
+            showToast("当前场景已确认，继续停留在正式版本。");
+          }
+
+          if (selectedRoute === "nextChapter") {
+            nextSummary.textContent = "准备下一章";
+            confirmStatus.textContent = "等待章节完成判断";
+            showToast("当前章尚未完成，准备下一章应在章节末尾使用。");
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

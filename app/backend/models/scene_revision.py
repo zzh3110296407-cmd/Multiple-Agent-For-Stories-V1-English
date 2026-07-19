@@ -19,6 +19,7 @@ class SceneRevisionCandidate(BaseModel):
     revision_prompt: str
     revision_intent: str
     base_scene_version_id: str = ""
+    source_scene_status: str = ""
     revised_synopsis: str
     revised_prose_text: str
     change_summary: list[str] = Field(default_factory=list)

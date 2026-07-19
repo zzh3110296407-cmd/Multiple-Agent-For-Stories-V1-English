@@ -45,6 +45,11 @@ from app.backend.services.scene_content_quality_signal_service import (
 from app.backend.storage.json_store import JsonStore, StorageError
 
 
+SEMANTIC_CONTINUITY_MAX_OUTPUT_TOKENS = 900
+SEMANTIC_CONTINUITY_TIMEOUT_SECONDS = 45
+SEMANTIC_CONTINUITY_MAX_ATTEMPTS = 1
+
+
 LOCAL_PROJECT_ID = "local_project"
 SHANGHAI_TZ = timezone(timedelta(hours=8))
 SECRET_MARKERS = ["s" + "k-", "lsv2_pt", "API_KEY", "LANGSMITH", "DEEPSEEK"]
@@ -501,6 +506,13 @@ class RuleBasedContinuityChecker:
             conflict = True
         if self._has_no_free_memory_reversal_rule(hard_rule_texts) and self._claims_free_memory_reversal(text):
             conflict = True
+        from app.backend.services.world_rule_timing import (
+            claims_premature_period_exchange,
+            has_period_bound_exchange_rule,
+        )
+
+        if has_period_bound_exchange_rule(hard_rule_texts) and claims_premature_period_exchange(text):
+            conflict = True
         if any(marker in text for marker in ["ignore hard rule", "break hard rule", "无视硬规则", "打破硬规则"]):
             conflict = True
         if not conflict:
@@ -882,6 +894,15 @@ class ContinuityCheckAgent:
                         ]
                     },
                 },
+                options={
+                    "temperature": 0.0,
+                    "max_output_tokens": SEMANTIC_CONTINUITY_MAX_OUTPUT_TOKENS,
+                    "timeout_seconds": SEMANTIC_CONTINUITY_TIMEOUT_SECONDS,
+                    "max_attempts": SEMANTIC_CONTINUITY_MAX_ATTEMPTS,
+                },
+                agent_role="quality_check",
+                service_name="ContinuityCheckAgent",
+                operation_name="semantic_scene_continuity_check",
             )
         except (ModelCallError, ModelJsonParseError, StorageError):
             return []

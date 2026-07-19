@@ -48,7 +48,11 @@ from app.backend.services.generator_framework_context_service import (
     GeneratorFrameworkContextService,
     SCHEMA_VERSION as GENERATOR_FRAMEWORK_CONTEXT_SCHEMA_VERSION,
 )
-from app.backend.services.model_gateway_service import ModelGatewayService, ModelJsonParseError
+from app.backend.services.model_gateway_service import (
+    ModelGatewayError,
+    ModelGatewayService,
+    ModelJsonParseError,
+)
 from app.backend.services.chapter_role_input_builder_service import (
     ChapterRoleInputBuilderService,
 )
@@ -307,6 +311,14 @@ SCENE_BEAT_PHASE_LIBRARY: dict[str, dict[str, Any]] = {
         "cost_or_risk_delta": "Carry forward a cost, risk, or unresolved implication from the chapter.",
         "ending_hook_requirement": "End with a forward hook that does not prescribe exact future prose or action order.",
     },
+    "story_resolution": {
+        "scene_function": "Resolve the whole-story central movement and deliver the promised ending.",
+        "new_information": "Show the final consequence or payoff without introducing a new central threat.",
+        "character_state_delta": "Settle the principal character arc into a durable end state.",
+        "conflict_turn": "Resolve the central conflict or preserve only ambiguity already approved by the user.",
+        "cost_or_risk_delta": "Make the lasting consequence visible without manufacturing a sequel crisis.",
+        "ending_hook_requirement": "End on a resonant final image or emotional landing, not a compulsory next-story hook.",
+    },
     "single_scene_turn": {
         "scene_function": "Compress chapter entry, turn, consequence, and hook into one scene responsibility.",
         "new_information": "Add one decisive chapter-level information movement without over-specifying its content.",
@@ -494,7 +506,7 @@ class ChapterPlanService:
                 chapter_count=chapter_count,
                 current_chapter_index=current_chapter_index,
             )
-        except ModelJsonParseError:
+        except ModelGatewayError:
             agent_data = self._fallback_agent_data_after_json_failure(
                 story_goal=clean_goal,
                 chapter_count=chapter_count,
@@ -521,6 +533,9 @@ class ChapterPlanService:
             generator_framework_context=generator_framework_context,
             latest_user_prompt=clean_goal,
             existing_draft=None,
+            explicit_requested_scene_count=self._explicit_requested_scene_count_from_premise(
+                project_story_premise
+            ),
         )
         self.save_chapter_plan_draft(draft)
         self._update_project_step("chapter_plan_draft", "chapter_plan_draft")
@@ -580,7 +595,7 @@ class ChapterPlanService:
                 project_story_premise=project_story_premise,
                 revision_prompt=clean_prompt,
             )
-        except ModelJsonParseError:
+        except ModelGatewayError:
             agent_data = self._fallback_agent_data_after_json_failure(
                 story_goal=current_draft.story_goal,
                 chapter_count=current_draft.chapter_count,
@@ -614,6 +629,9 @@ class ChapterPlanService:
             generator_framework_context=generator_framework_context,
             latest_user_prompt=clean_prompt,
             existing_draft=current_draft,
+            explicit_requested_scene_count=self._explicit_requested_scene_count_from_premise(
+                project_story_premise
+            ),
         )
         self.save_chapter_plan_draft(draft)
         self._update_project_step("chapter_plan_draft", "chapter_plan_draft")
@@ -675,6 +693,14 @@ class ChapterPlanService:
             scene_count=scene_count,
             chapter_goal=draft.current_chapter_brief.chapter_goal,
             summary_for_scene_generation=draft.current_chapter_brief.summary_for_scene_generation,
+        )
+        resized_beats = self.enforce_final_story_resolution(
+            resized_beats,
+            chapter_id=self._chapter_id(chapter_index),
+            scene_count=scene_count,
+            chapter_goal=draft.current_chapter_brief.chapter_goal,
+            summary_for_scene_generation=draft.current_chapter_brief.summary_for_scene_generation,
+            is_final_chapter=chapter_index == draft.chapter_count,
         )
         brief = copy_model(
             draft.current_chapter_brief,
@@ -740,9 +766,21 @@ class ChapterPlanService:
             )
         validation = self.validate_chapter_plan_draft(draft)
         if validation.blocking_issues:
-            raise StorageError(
-                "CHAPTER_PLAN_BLOCKING_ISSUES: Cannot confirm chapter plan while blocking validation issues exist."
-            )
+            blocking_issues = list(validation.blocking_issues)
+            if (
+                set(blocking_issues) == {CHAPTER_PLAN_FRAMEWORK_FALLBACK_UNACKNOWLEDGED}
+                and self._acknowledges_framework_fallback(user_input)
+            ):
+                validation = copy_model(
+                    validation,
+                    passed=True,
+                    blocking_issues=[],
+                    user_confirmation_needed=[],
+                )
+            else:
+                raise StorageError(
+                    "CHAPTER_PLAN_BLOCKING_ISSUES: Cannot confirm chapter plan while blocking validation issues exist."
+                )
         chapters = self.save_confirmed_chapters(draft)
         current_framework = self.save_confirmed_current_chapter_framework(
             draft=draft,
@@ -773,6 +811,14 @@ class ChapterPlanService:
             validation=validation,
             foundation=self.check_foundation_ready(),
             decision=decision,
+        )
+
+    def _acknowledges_framework_fallback(self, user_input: str | None) -> bool:
+        text = str(user_input or "")
+        return bool(
+            text
+            and any(marker in text for marker in ("保守草案", "降级草案", "模型服务暂不可用", "fallback", "继续"))
+            and any(marker in text for marker in ("确认", "同意", "接受", "使用"))
         )
 
     def check_foundation_ready(self) -> ChapterPlanFoundationStatus:
@@ -1202,9 +1248,17 @@ class ChapterPlanService:
             or draft.current_chapter_brief.recommended_scene_count
             or DEFAULT_SCENE_COUNT
         )
+        existing_chapters_by_index = {
+            chapter.chapter_index: chapter
+            for chapter in self._read_chapters_if_present()
+        }
         chapters: list[Chapter] = []
         for route in draft.chapter_routes:
             is_current = route.chapter_index == draft.current_chapter_index
+            existing = existing_chapters_by_index.get(route.chapter_index)
+            if existing is not None and existing.status == "archived":
+                chapters.append(existing)
+                continue
             brief = draft.current_chapter_brief if is_current else None
             route_scene_count = (
                 scene_count if brief else route.planned_scene_count or DEFAULT_SCENE_COUNT
@@ -1326,6 +1380,9 @@ class ChapterPlanService:
             ),
             None,
         )
+        requested_scene_count = self._requested_scene_count_from_premise(
+            project_story_premise
+        )
         route_items: list[dict[str, Any]] = []
         for assignment in macro_assignments:
             linked_ids = list(assignment.linked_macro_component_ids)
@@ -1336,17 +1393,16 @@ class ChapterPlanService:
             route_items.append(
                 {
                     "chapter_index": assignment.chapter_index,
-                    "temporary_title": f"Chapter {assignment.chapter_index}: {macro_label or 'Story phase'}",
+                    "temporary_title": f"第 {assignment.chapter_index} 章：{macro_label or '故事阶段'}",
                     "linked_macro_component_ids": linked_ids,
                     "macro_component_label": macro_label,
                     "light_route_summary": (
-                        f"Controlled fallback route for chapter {assignment.chapter_index}. "
-                        f"Preserve ProjectStoryPremise evidence: {premise_evidence}."
+                        f"第 {assignment.chapter_index} 章围绕已确认项目前提推进：{premise_evidence}"
                     ),
                     "narrative_function": (
-                        f"Establish the chapter function around {premise_evidence}."
+                        f"建立核心问题、人物目标和世界规则边界：{premise_evidence}"
                         if assignment.chapter_index == 1
-                        else f"Advance {premise_evidence} without locking future scenes."
+                        else f"推进已确认矛盾，但不提前锁死后续幕的具体事件：{premise_evidence}"
                     ),
                     "expected_focus_character_ids": main_cast_ids[:2] or main_cast_ids,
                     "expected_supporting_role_ids": supporting_role_ids[:2],
@@ -1360,7 +1416,8 @@ class ChapterPlanService:
                             reason="The chapter route should reserve local texture without binding a concrete C/D character at chapter level.",
                         )
                     ],
-                    "expected_conflict_hint": "The cast must pursue evidence while uncertainty and institutional pressure increase.",
+                    "expected_conflict_hint": "主角团必须追查证据，同时承受信息不确定性和制度压力的上升。",
+                    "planned_scene_count": requested_scene_count,
                     "detail_level": "light",
                     "future_lock_level": "low",
                 }
@@ -1380,23 +1437,23 @@ class ChapterPlanService:
         d_count = int(cd_counts.get("D") or 0)
         current_cd_needs = [
             self._fallback_cd_function_need(
-                need_id=f"fallback_chapter_{current_chapter_index:03d}_cd_need_001",
-                scene_index=1,
-                tier_preference="C" if c_count else "C_or_D",
-                function_type="local_witness",
-                function_summary="SceneAgent should select or reuse a local witness when the opening scene needs a concrete clue.",
-                reason="C-tier roles belong in scene selection, but the chapter can request a witness function.",
+                            need_id=f"fallback_chapter_{current_chapter_index:03d}_cd_need_001",
+                            scene_index=1,
+                            tier_preference="C" if c_count else "C_or_D",
+                            function_type="local_witness",
+                            function_summary="当开场幕需要具体线索时，场景智能体可以选择或复用一名局部见证者。",
+                            reason="C 级角色应在场景阶段绑定，章节阶段只声明角色功能需求。",
             )
         ]
         if d_count:
             current_cd_needs.append(
                 self._fallback_cd_function_need(
                     need_id=f"fallback_chapter_{current_chapter_index:03d}_cd_need_002",
-                    scene_index=2,
-                    tier_preference="D",
-                    function_type="crowd_reaction",
-                    function_summary="SceneAgent may reuse a minimal persistent D-tier crowd or dock presence if the location returns.",
-                    reason="D-tier roles can persist through memory, but concrete binding is deferred to scene runtime.",
+                            scene_index=2,
+                            tier_preference="D",
+                            function_type="crowd_reaction",
+                            function_summary="如果地点反复出现，场景智能体可以复用极简 D 级群体反应或背景存在。",
+                            reason="D 级角色可通过记忆保持轻量连续性，但具体绑定延后到场景运行时。",
                 )
             )
 
@@ -1405,12 +1462,11 @@ class ChapterPlanService:
             "chapter_routes": route_items[:chapter_count],
             "current_chapter_brief": {
                 "chapter_index": current_chapter_index,
-                "title": f"Chapter {current_chapter_index}: {current_macro_label or 'Current pressure'}",
+                "title": f"第 {current_chapter_index} 章：{current_macro_label or '当前压力'}",
                 "linked_macro_component_ids": linked_current_ids,
                 "chapter_framework_id": current_chapter_framework.chapter_framework_id,
                 "chapter_goal": (
-                    "Recover from invalid model JSON by producing a conservative, user-confirmable chapter brief "
-                    f"that preserves ProjectStoryPremise: {premise_evidence}."
+                    f"围绕已确认项目前提推进当前章，先建立可追查的问题、角色行动压力和世界规则边界：{premise_evidence}"
                 ),
                 "reader_emotion_goal": ["curiosity", "unease"],
                 "participating_character_ids": participating_ids,
@@ -1437,7 +1493,7 @@ class ChapterPlanService:
                     for character_id in supporting_role_ids
                 ],
                 "cd_role_function_needs": current_cd_needs,
-                "main_conflict": f"The main cast needs evidence for {premise_evidence} while world boundaries constrain direct action.",
+                "main_conflict": f"主角需要找到可验证证据来逼近真相，但世界规则、信息缺口和既有权力结构会限制直接行动：{premise_evidence}",
                 "character_desire_or_arc_focus": [
                     {
                         "character_id": character.character_id,
@@ -1455,14 +1511,14 @@ class ChapterPlanService:
                     "Do not overwrite confirmed memory or world facts.",
                     "Do not skip user confirmation for the fallback chapter plan.",
                 ],
-                "recommended_scene_count": DEFAULT_SCENE_COUNT,
+                "recommended_scene_count": requested_scene_count,
+                "user_selected_scene_count": requested_scene_count,
                 "summary_for_scene_generation": (
-                    f"Use this conservative chapter brief around {premise_evidence} as a recoverable fallback after invalid model JSON. "
-                    "Scene writing should create concrete events only after the user confirms the plan."
+                    f"当前章以已确认项目前提为核心：{premise_evidence}。场景写作必须在用户确认路线后再生成具体事件。"
                 ),
             },
             "user_confirmation_needed": [
-                "Controlled fallback chapter plan was created because the model returned invalid JSON; user confirmation is required before scene writing."
+                "模型服务暂不可用，系统已生成可审阅的保守章节路线；进入场景写作前仍需要用户确认。"
             ],
         }
 
@@ -1506,6 +1562,7 @@ class ChapterPlanService:
         generator_framework_context: dict[str, Any] | None,
         latest_user_prompt: str,
         existing_draft: ChapterPlanDraft | None,
+        explicit_requested_scene_count: int | None = None,
     ) -> ChapterPlanDraft:
         timestamp = now_iso()
         plan_data = data.get("draft") or data.get("chapter_plan") or data
@@ -1581,6 +1638,11 @@ class ChapterPlanService:
             )
             if planned_scene_count is None and existing_route:
                 planned_scene_count = existing_route.planned_scene_count
+            if explicit_requested_scene_count is not None and not (
+                existing_draft
+                and existing_draft.current_chapter_brief.user_selected_scene_count is not None
+            ):
+                planned_scene_count = explicit_requested_scene_count
             routes.append(
                 ChapterRouteItem(
                     chapter_index=chapter_index,
@@ -1666,7 +1728,7 @@ class ChapterPlanService:
             raw_brief.get("summary_for_scene_generation")
             or route_for_current.light_route_summary
         )
-        recommended_scene_count = self._coerce_scene_count(
+        recommended_scene_count = explicit_requested_scene_count or self._coerce_scene_count(
             raw_brief.get("recommended_scene_count"),
             default=DEFAULT_SCENE_COUNT,
         )
@@ -1680,6 +1742,7 @@ class ChapterPlanService:
         )
         effective_scene_count = (
             existing_scene_count
+            or explicit_requested_scene_count
             or raw_user_selected_scene_count
             or recommended_scene_count
             or DEFAULT_SCENE_COUNT
@@ -1696,6 +1759,14 @@ class ChapterPlanService:
             chapter_goal=chapter_goal,
             summary_for_scene_generation=summary_for_scene_generation,
             existing_beats=existing_beats,
+        )
+        chapter_scene_beats = self.enforce_final_story_resolution(
+            chapter_scene_beats,
+            chapter_id=self._chapter_id(current_chapter_index),
+            scene_count=effective_scene_count,
+            chapter_goal=chapter_goal,
+            summary_for_scene_generation=summary_for_scene_generation,
+            is_final_chapter=current_chapter_index == chapter_count,
         )
         brief = CurrentChapterBrief(
             chapter_index=current_chapter_index,
@@ -1750,7 +1821,11 @@ class ChapterPlanService:
                 ]
             ),
             recommended_scene_count=recommended_scene_count,
-            user_selected_scene_count=raw_user_selected_scene_count,
+            user_selected_scene_count=(
+                existing_scene_count
+                or explicit_requested_scene_count
+                or raw_user_selected_scene_count
+            ),
             chapter_scene_beats=chapter_scene_beats,
             summary_for_scene_generation=summary_for_scene_generation,
         )
@@ -2098,6 +2173,51 @@ class ChapterPlanService:
             summary_for_scene_generation=summary_for_scene_generation,
             existing_beats=existing_beats,
         )
+
+    def enforce_final_story_resolution(
+        self,
+        beats: Any,
+        *,
+        chapter_id: str,
+        scene_count: int,
+        chapter_goal: str,
+        summary_for_scene_generation: str,
+        is_final_chapter: bool,
+    ) -> list[ChapterSceneBeat]:
+        normalized = [
+            beat if isinstance(beat, ChapterSceneBeat) else ChapterSceneBeat(**self._scene_beat_data(beat))
+            for beat in beats or []
+            if self._scene_beat_data(beat)
+        ]
+        if not is_final_chapter or not normalized:
+            return normalized
+        resolution = self.fallback_differentiated_chapter_scene_beat(
+            scene_count,
+            chapter_id=chapter_id,
+            scene_count=scene_count,
+            chapter_goal=chapter_goal,
+            summary_for_scene_generation=summary_for_scene_generation,
+            phase_key="story_resolution",
+        )
+        previous_last = normalized[-1]
+        normalized[-1] = copy_model(
+            previous_last,
+            beat_id=previous_last.beat_id or resolution.beat_id,
+            chapter_id=chapter_id,
+            scene_index=scene_count,
+            scene_count=scene_count,
+            scene_function=resolution.scene_function,
+            function_family=resolution.function_family,
+            required_progression_delta=resolution.required_progression_delta,
+            ending_hook_requirement=resolution.ending_hook_requirement,
+            source_refs=self._unique_strings(
+                [
+                    *self._string_list(previous_last.source_refs),
+                    "final_chapter_story_resolution_enforced",
+                ]
+            ),
+        )
+        return normalized
 
     def fallback_chapter_scene_beat(
         self,
@@ -2447,6 +2567,14 @@ class ChapterPlanService:
             chapter_goal=brief.chapter_goal,
             summary_for_scene_generation=brief.summary_for_scene_generation,
             existing_beats=brief.chapter_scene_beats,
+        )
+        beats = self.enforce_final_story_resolution(
+            beats,
+            chapter_id=self._chapter_id(brief.chapter_index),
+            scene_count=scene_count,
+            chapter_goal=brief.chapter_goal,
+            summary_for_scene_generation=brief.summary_for_scene_generation,
+            is_final_chapter=brief.chapter_index == draft.chapter_count,
         )
         if [model_to_dict(beat) for beat in beats] == [
             model_to_dict(beat) for beat in brief.chapter_scene_beats
@@ -3101,7 +3229,80 @@ class ChapterPlanService:
         terms = premise_required_terms(premise) if premise else []
         summary = str(getattr(premise, "safe_user_story_summary", "") or "")
         evidence = " / ".join([*terms[:6], summary][:7]).strip()
-        return evidence[:420] or "confirmed project premise"
+        evidence = self._clean_user_visible_premise_text(evidence)
+        return evidence[:420] or "已确认项目前提"
+
+    def _requested_scene_count_from_premise(self, premise: Any) -> int:
+        return self._explicit_requested_scene_count_from_premise(premise) or DEFAULT_SCENE_COUNT
+
+    def _explicit_requested_scene_count_from_premise(self, premise: Any) -> int | None:
+        texts = []
+        if premise:
+            for key in (
+                "user_story_premise",
+                "safe_user_story_summary",
+                "story_prompt",
+                "prompt",
+                "raw_prompt",
+            ):
+                value = (
+                    premise.get(key)
+                    if isinstance(premise, dict)
+                    else getattr(premise, key, "")
+                )
+                if value:
+                    texts.append(str(value))
+        texts.extend(premise_required_terms(premise) if premise else [])
+        source = self._clean_user_visible_premise_text(" ".join(texts))
+        patterns = [
+            r"每\s*章\s*([0-9一二两三四五六七八九十]{1,4})\s*(?:幕|场|场景)",
+            r"每\s*个?章节\s*([0-9一二两三四五六七八九十]{1,4})\s*(?:幕|场|场景)",
+            r"([0-9一二两三四五六七八九十]{1,4})\s*(?:幕|场|场景)\s*(?:每\s*章|每\s*个?章节)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, source)
+            if match:
+                count = self._chinese_count_to_int(match.group(1))
+                if count:
+                    return clamp_scene_count(count, default=DEFAULT_SCENE_COUNT)
+        return None
+
+    def _chinese_count_to_int(self, raw_value: Any) -> int:
+        text = str(raw_value or "").strip()
+        if text.isdigit():
+            return int(text)
+        digit_map = {
+            "一": 1,
+            "二": 2,
+            "两": 2,
+            "三": 3,
+            "四": 4,
+            "五": 5,
+            "六": 6,
+            "七": 7,
+            "八": 8,
+            "九": 9,
+        }
+        if text == "十":
+            return 10
+        if "十" in text:
+            before, after = text.split("十", 1)
+            tens = digit_map.get(before, 1 if before == "" else 0)
+            ones = digit_map.get(after, 0) if after else 0
+            return tens * 10 + ones
+        return digit_map.get(text, 0)
+
+    def _clean_user_visible_premise_text(self, value: Any) -> str:
+        text = str(value or "")
+        replacements = [
+            (r"ProjectStoryPremise is authoritative for this Prompt-first project\.\s*", ""),
+            (r"User story premise:\s*", ""),
+            (r"Prompt-first project\.\s*", ""),
+            (r"\[object Object\]", ""),
+        ]
+        for pattern, replacement in replacements:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+        return re.sub(r"\s{2,}", " ", text).strip()
 
     def _latest_framework_build_context(
         self,

@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 当前章框架构建中 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(252, 247, 236, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(238, 228, 210, 0.72);
+      --ink: #27312b;
+      --muted: #746a60;
+      --quiet: #9a8c7d;
+      --line: rgba(116, 92, 66, 0.2);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.9), rgba(236, 231, 220, 0.56) 47%, rgba(236, 231, 220, 0.14)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 72% 27%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.34), rgba(176, 138, 107, 0.11));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1360px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 192px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .stage-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(200, 168, 104, 0.18);
+      animation: dotPulse 1.2s ease-in-out infinite alternate;
+      flex: 0 0 auto;
+    }
+
+    @keyframes dotPulse {
+      from {
+        box-shadow: 0 0 0 5px rgba(200, 168, 104, 0.18);
+      }
+      to {
+        box-shadow: 0 0 0 10px rgba(200, 168, 104, 0.06);
+      }
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 520px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 344px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 26px 30px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 27px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .chapter-chip {
+      flex: 0 0 auto;
+      min-width: 126px;
+      padding: 13px 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(200, 168, 104, 0.38);
+      background: rgba(255, 249, 235, 0.74);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .chapter-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .chapter-chip span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .build-stage {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 24px;
+      padding: 26px 30px 20px;
+      overflow: hidden;
+    }
+
+    .map-card {
+      position: relative;
+      min-height: 430px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background:
+        radial-gradient(circle at 50% 46%, rgba(255, 252, 244, 0.74), rgba(240, 229, 207, 0.32) 54%, rgba(200, 168, 104, 0.08)),
+        rgba(255, 252, 244, 0.46);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 18px 44px rgba(75, 55, 34, 0.08);
+      overflow: hidden;
+    }
+
+    .map-card::before,
+    .map-card::after {
+      content: "";
+      position: absolute;
+      inset: 24px;
+      border: 1px solid rgba(166, 133, 82, 0.14);
+      border-radius: 50%;
+      transform: rotate(-12deg);
+    }
+
+    .map-card::after {
+      inset: 68px 96px 70px 88px;
+      border-color: rgba(111, 126, 131, 0.16);
+      transform: rotate(18deg);
+    }
+
+    .chapter-rail {
+      position: absolute;
+      z-index: 2;
+      left: 9%;
+      right: 9%;
+      top: 44%;
+      height: 112px;
+      transform: translateY(-50%);
+    }
+
+    .rail-line {
+      position: absolute;
+      left: 36px;
+      right: 36px;
+      top: 50%;
+      height: 2px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(166, 133, 82, 0.08), rgba(166, 133, 82, 0.44), rgba(166, 133, 82, 0.08));
+      overflow: hidden;
+    }
+
+    .rail-line::after {
+      content: "";
+      position: absolute;
+      top: -5px;
+      left: -24%;
+      width: 118px;
+      height: 12px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255, 248, 220, 0.84), rgba(200, 168, 104, 0.34) 45%, transparent 72%);
+      filter: blur(1px);
+      animation: railLight 2.8s ease-in-out infinite;
+    }
+
+    @keyframes railLight {
+      from {
+        transform: translateX(0);
+        opacity: 0;
+      }
+      18%,
+      82% {
+        opacity: 1;
+      }
+      to {
+        transform: translateX(720%);
+        opacity: 0;
+      }
+    }
+
+    .chapter-nodes {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chapter-node {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(200, 168, 104, 0.48);
+      background: rgba(255, 252, 244, 0.86);
+      color: var(--quiet);
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 12px 26px rgba(75, 55, 34, 0.11);
+      transition: transform 220ms ease, opacity 220ms ease;
+    }
+
+    .chapter-node.past,
+    .chapter-node.future {
+      opacity: 0.72;
+      transform: scale(0.92);
+    }
+
+    .chapter-node.current {
+      width: 58px;
+      height: 58px;
+      opacity: 1;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.72);
+      background: linear-gradient(135deg, var(--gold), var(--bronze));
+      box-shadow: 0 0 0 10px rgba(200, 168, 104, 0.12), 0 20px 42px rgba(142, 103, 91, 0.2);
+      animation: currentNodeBreath 1.8s ease-in-out infinite alternate;
+    }
+
+    .chapter-node span {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 50%;
+      min-width: 58px;
+      transform: translateX(-50%);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 740;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .chapter-node.current span {
+      color: var(--bronze-deep);
+      font-weight: 900;
+    }
+
+    @keyframes currentNodeBreath {
+      from {
+        box-shadow: 0 0 0 9px rgba(200, 168, 104, 0.12), 0 20px 42px rgba(142, 103, 91, 0.18);
+      }
+      to {
+        box-shadow: 0 0 0 15px rgba(200, 168, 104, 0.05), 0 24px 48px rgba(142, 103, 91, 0.23);
+      }
+    }
+
+    .center-copy {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      bottom: 34px;
+      width: min(420px, calc(100% - 56px));
+      transform: translateX(-50%);
+      text-align: center;
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.62);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 34px rgba(75, 55, 34, 0.1);
+    }
+
+    .center-copy strong {
+      display: block;
+      color: #343932;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .center-copy span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .steps-card {
+      min-width: 0;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background: rgba(255, 252, 244, 0.48);
+      padding: 17px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+    }
+
+    .steps-card h3 {
+      margin: 0 0 14px;
+      color: #3d4039;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.14);
+      background: rgba(250, 244, 230, 0.46);
+      animation: stepBreathe 2.4s ease-in-out infinite;
+    }
+
+    .step:nth-child(2) {
+      animation-delay: 0.24s;
+    }
+
+    .step:nth-child(3) {
+      animation-delay: 0.48s;
+    }
+
+    .step:nth-child(4) {
+      animation-delay: 0.72s;
+    }
+
+    @keyframes stepBreathe {
+      0%,
+      100% {
+        background: rgba(250, 244, 230, 0.44);
+      }
+      45% {
+        background: rgba(255, 252, 244, 0.76);
+      }
+    }
+
+    .step-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fffaf2;
+      background: var(--blue-gray);
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 0 0 6px rgba(111, 126, 131, 0.1);
+    }
+
+    .step strong {
+      display: block;
+      color: #3f413b;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .step span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 30px 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .progress-track {
+      flex: 1;
+      min-width: 0;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(116, 92, 66, 0.13);
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(75, 55, 34, 0.08);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 58%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue-gray), var(--gold), var(--bronze));
+      animation: progressDrift 2.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes progressDrift {
+      from {
+        width: 42%;
+      }
+      to {
+        width: 76%;
+      }
+    }
+
+    .soft-button {
+      min-width: 132px;
+      padding: 0 18px;
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .live-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(200, 168, 104, 0.14);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .source-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .source-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .source-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .source-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .note-card {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .note-card strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .note-card p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 920px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .build-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 94px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .build-stage,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .map-card {
+        min-height: 380px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回总览</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 当前章框架</div>
+      <div class="model-pill"><span class="status-dot"></span>构建中</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>当前章 Framework 正在整理中，完成后进入审阅，再决定是否生成完整章节路线。</p>
+      </div>
+
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">前提</button>
+        <button class="stage-button active" type="button">框架</button>
+        <button class="stage-button" type="button">路线</button>
+        <button class="stage-button" type="button">场景数</button>
+        <button class="stage-button" type="button">确认</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-busy="true" aria-live="polite">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">当前章 Framework</p>
+            <h2>叙事骨架正在成形</h2>
+            <p class="hint">系统正在把本章意图、上一章结果和已确认素材整理为可审阅的当前章框架。</p>
+          </div>
+          <div class="chapter-chip">
+            <strong>第 3 章</strong>
+            <span>共 12 章</span>
+          </div>
+        </div>
+
+        <div class="build-stage">
+          <div class="map-card">
+            <div class="chapter-rail" aria-label="当前章正在构建">
+              <div class="rail-line" aria-hidden="true"></div>
+              <div class="chapter-nodes">
+                <div class="chapter-node past">1<span>已承接</span></div>
+                <div class="chapter-node past">2<span>已承接</span></div>
+                <div class="chapter-node current">3<span>构建中</span></div>
+                <div class="chapter-node future">4<span>待规划</span></div>
+                <div class="chapter-node future">5<span>待规划</span></div>
+              </div>
+            </div>
+            <div class="center-copy">
+              <strong>当前章节点正在点亮</strong>
+              <span>完成后会生成可审阅的主骨架、承接关系和可用引用。</span>
+            </div>
+          </div>
+
+          <aside class="steps-card">
+            <h3>构建步骤</h3>
+            <div class="step-list">
+              <div class="step">
+                <span class="step-mark">1</span>
+                <div>
+                  <strong>整理本章意图</strong>
+                  <span>提取用户想推进的方向。</span>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-mark">2</span>
+                <div>
+                  <strong>承接上一章结果</strong>
+                  <span>保留因果、分歧和未解线索。</span>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-mark">3</span>
+                <div>
+                  <strong>合并可用素材</strong>
+                  <span>读取世界事实、角色主轴和关系引用。</span>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-mark">4</span>
+                <div>
+                  <strong>生成当前章骨架</strong>
+                  <span>准备进入下一页审阅。</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer class="action-row">
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill"></div>
+          </div>
+          <button class="soft-button" type="button">保持在本页</button>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="构建来源">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">构建来源</p>
+            <h2>正在汇合</h2>
+          </div>
+          <span class="live-pill">进行中</span>
+        </div>
+
+        <div class="source-list">
+          <div class="source-item">
+            <strong><span class="mini-dot">✓</span>故事设定</strong>
+            <p>题材、基调和核心约束已纳入当前章上下文。</p>
+          </div>
+          <div class="source-item">
+            <strong><span class="mini-dot">✓</span>世界画布</strong>
+            <p>已确认世界事实作为章节事件边界。</p>
+          </div>
+          <div class="source-item">
+            <strong><span class="mini-dot">✓</span>Framework</strong>
+            <p>已确认组合与章节映射可用于当前章。</p>
+          </div>
+          <div class="source-item">
+            <strong><span class="mini-dot">✓</span>角色主轴</strong>
+            <p>主角团、关系和冲突方向已接入。</p>
+          </div>
+          <div class="source-item">
+            <strong><span class="mini-dot">•</span>章节记忆</strong>
+            <p>正在准备与上一章结果相关的记忆线索。</p>
+          </div>
+        </div>
+
+        <div class="note-card">
+          <strong>下一步</strong>
+          <p>构建完成后进入当前章 Framework 审阅页。用户可以检查主骨架、模块、引用和承接关系，再继续生成章节路线。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

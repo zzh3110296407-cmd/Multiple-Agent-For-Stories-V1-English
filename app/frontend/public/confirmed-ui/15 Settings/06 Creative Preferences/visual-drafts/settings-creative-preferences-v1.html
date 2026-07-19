@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>设置 / 创作偏好 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --ink: #302f2a;
+      --muted: #6f665d;
+      --quiet: #968a7d;
+      --accent: #80684e;
+      --accent-soft: #b48a78;
+      --support: #737d69;
+      --support-deep: #56614f;
+      --paper: rgba(255, 252, 244, 0.58);
+      --paper-strong: rgba(255, 252, 244, 0.78);
+      --line: rgba(255, 252, 244, 0.64);
+      --shadow: 0 28px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      letter-spacing: 0;
+    }
+    button, select, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.58), rgba(236, 231, 220, 0.34) 48%, rgba(236, 231, 220, 0.12)),
+        url("../../assets/settings-background-v1.png") center / cover no-repeat;
+    }
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 17% 12%, rgba(255, 249, 232, 0.44), transparent 34%),
+        radial-gradient(circle at 72% 23%, rgba(180, 149, 111, 0.13), transparent 36%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.08), rgba(121, 94, 65, 0.1));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 226px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .button,
+    .nav-item,
+    .ghost-button,
+    .minor-button,
+    .setting-card,
+    .preview-card,
+    .token,
+    .select-wrap select {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    .button,
+    .ghost-button,
+    .minor-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .button:hover,
+    .nav-item:hover,
+    .ghost-button:hover,
+    .minor-button:hover,
+    .setting-card:hover,
+    .preview-card:hover {
+      transform: translateY(-1px);
+      background: var(--paper-strong);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+    .primary {
+      min-width: 168px;
+      border-color: rgba(86, 97, 79, 0.48);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--support-deep), var(--accent));
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #63705c, #8b7358);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+    .ghost-button { background: rgba(255, 252, 244, 0.42); }
+    .minor-button { background: rgba(255, 252, 244, 0.64); }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--support);
+      box-shadow: 0 0 0 5px rgba(115, 125, 105, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(38px, 3.8vw, 54px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.72);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+    .summary-strip div,
+    .metric,
+    .scope-item,
+    .preset-chip,
+    .route-row,
+    .preview-line {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .summary-strip span,
+    .metric span,
+    .setting-card span.kicker,
+    .preview-card span.kicker,
+    .scope-item span,
+    .route-row span,
+    .preview-line span,
+    .token span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .summary-strip strong,
+    .metric strong,
+    .scope-item strong,
+    .route-row strong,
+    .preview-line strong,
+    .token strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 16px;
+      line-height: 1.22;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 218px minmax(0, 1fr) 344px;
+      gap: 22px;
+      min-height: 0;
+    }
+
+    .side-nav {
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.28);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--soft-shadow);
+    }
+    .nav-item {
+      min-height: 60px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    .nav-item.active {
+      border-color: rgba(86, 97, 79, 0.38);
+      background: rgba(255, 252, 244, 0.72);
+    }
+    .nav-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(233, 221, 191, 0.72);
+      color: #74624f;
+      font-size: 12px;
+      font-weight: 860;
+    }
+    .active .nav-number {
+      color: #fffaf0;
+      background: linear-gradient(135deg, #606a58, #80684e);
+    }
+    .nav-copy strong {
+      display: block;
+      color: #3f3a33;
+      font-size: 13px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-copy span {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .main-panel,
+    .right-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      min-width: 0;
+    }
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 22px 16px;
+    }
+    .panel-head h2,
+    .preview-card h3,
+    .setting-card h3 {
+      margin: 0;
+      color: #37342e;
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .panel-head p,
+    .setting-card p,
+    .preview-card p,
+    .hint {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 13px;
+      line-height: 1.64;
+      font-weight: 520;
+    }
+    .dirty {
+      flex: 0 0 auto;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: rgba(115, 125, 105, 0.12);
+      color: #56614f;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .settings-scroll {
+      padding: 0 22px 22px;
+      overflow: auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+      gap: 14px;
+      min-height: 0;
+    }
+    .setting-card {
+      padding: 16px;
+      min-width: 0;
+      background: rgba(255, 252, 244, 0.54);
+    }
+    .setting-card.wide { grid-column: 1 / -1; }
+    .setting-card header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .setting-card h3 { font-size: 19px; }
+    .tag {
+      flex: 0 0 auto;
+      min-height: 26px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid rgba(86, 97, 79, 0.22);
+      border-radius: 999px;
+      background: rgba(255, 252, 244, 0.56);
+      color: #56614f;
+      font-size: 11px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .field,
+    .range-field,
+    .toggle-row,
+    .mode-card {
+      border: 1px solid rgba(139, 118, 91, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      padding: 12px;
+      min-width: 0;
+    }
+    label,
+    .label {
+      display: block;
+      color: #4b443d;
+      font-size: 12px;
+      font-weight: 820;
+      line-height: 1.4;
+    }
+    .select-wrap {
+      position: relative;
+      margin-top: 8px;
+    }
+    .select-wrap select {
+      width: 100%;
+      min-height: 40px;
+      appearance: none;
+      padding: 0 34px 0 12px;
+      outline: none;
+      color: #38342e;
+      font-size: 13px;
+      font-weight: 760;
+      background: rgba(255, 252, 244, 0.78);
+    }
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(80, 72, 62, 0.62);
+      border-bottom: 2px solid rgba(80, 72, 62, 0.62);
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .segment {
+      min-height: 40px;
+      border: 1px solid rgba(139, 118, 91, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #4f473f;
+      font-size: 12px;
+      font-weight: 820;
+    }
+    .segment.active {
+      border-color: rgba(86, 97, 79, 0.42);
+      color: #fffaf0;
+      background: linear-gradient(135deg, #5c6656, #7b654e);
+      box-shadow: 0 12px 26px rgba(71, 52, 31, 0.16);
+    }
+
+    .range-field {
+      display: grid;
+      gap: 8px;
+    }
+    .range-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .range-value {
+      min-width: 42px;
+      min-height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: rgba(233, 221, 191, 0.58);
+      color: #473d34;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #6a745f;
+    }
+    .range-caption {
+      display: flex;
+      justify-content: space-between;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 720;
+    }
+
+    .toggle-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-row strong {
+      display: block;
+      color: #3f3a33;
+      font-size: 14px;
+      line-height: 1.28;
+    }
+    .toggle-row span {
+      display: block;
+      margin-top: 4px;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+    .switch {
+      width: 48px;
+      height: 28px;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(150, 138, 125, 0.4);
+      padding: 3px;
+      box-shadow: inset 0 2px 6px rgba(61, 45, 32, 0.18);
+    }
+    .switch::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fffaf0;
+      box-shadow: 0 6px 14px rgba(61, 45, 32, 0.18);
+      transition: transform 180ms ease;
+    }
+    .switch.on {
+      background: rgba(86, 97, 79, 0.72);
+    }
+    .switch.on::before {
+      transform: translateX(20px);
+    }
+
+    .mode-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .mode-card {
+      min-height: 108px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+    }
+    .mode-card.active {
+      border-color: rgba(86, 97, 79, 0.42);
+      background:
+        linear-gradient(135deg, rgba(115, 125, 105, 0.12), rgba(180, 138, 120, 0.12)),
+        rgba(255, 252, 244, 0.64);
+    }
+    .mode-card:hover { transform: translateY(-1px); }
+    .mode-card strong {
+      display: block;
+      color: #3f3a33;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+    .mode-card small {
+      display: block;
+      margin-top: 8px;
+      color: rgba(48, 47, 42, 0.64);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 560;
+    }
+
+    .scope-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .scope-item strong { font-size: 15px; }
+    .scope-item p {
+      margin: 6px 0 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .panel-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 22px 20px;
+      border-top: 1px solid rgba(255, 252, 244, 0.42);
+      background: rgba(255, 252, 244, 0.18);
+    }
+
+    .right-panel {
+      min-width: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-self: stretch;
+    }
+    .preview-card {
+      padding: 16px;
+      background: rgba(255, 252, 244, 0.54);
+    }
+    .preview-card h3 { font-size: 19px; }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .route-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .route-row {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+    .route-index {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(233, 221, 191, 0.72);
+      color: #74624f;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .route-row.active .route-index {
+      color: #fffaf0;
+      background: linear-gradient(135deg, #5c6656, #7b654e);
+    }
+    .route-row strong { font-size: 14px; }
+    .preview-lines {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+    .preview-line strong {
+      white-space: normal;
+      font-size: 14px;
+      line-height: 1.42;
+    }
+    .token-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .token {
+      padding: 9px 11px;
+      background: rgba(255, 252, 244, 0.56);
+    }
+    .token strong {
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 5;
+      min-width: min(420px, calc(100vw - 40px));
+      max-width: 520px;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.88);
+      box-shadow: 0 22px 52px rgba(71, 52, 31, 0.18);
+      color: #3f3a33;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 760;
+      transition: opacity 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(16px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace { width: min(1000px, calc(100vw - 44px)); }
+      .hero { grid-template-columns: 1fr; padding-left: 0; }
+      .content { grid-template-columns: 210px minmax(0, 1fr); }
+      .right-panel { grid-column: 2; }
+      .settings-scroll { grid-template-columns: 1fr; }
+      .scope-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: calc(100vw - 28px);
+        margin: 14px auto;
+        gap: 14px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .button,
+      .status-pill { width: 100%; }
+      .hero {
+        gap: 12px;
+      }
+      h1 { font-size: 42px; }
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+      .content {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .main-panel { order: 1; }
+      .right-panel { order: 2; }
+      .side-nav { order: 3; }
+      .side-nav {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .nav-item {
+        min-height: 52px;
+      }
+      .right-panel { grid-column: auto; }
+      .panel-head {
+        display: grid;
+        padding: 18px 16px 12px;
+      }
+      .settings-scroll {
+        padding: 0 16px 16px;
+      }
+      .control-grid,
+      .mode-list,
+      .preview-grid,
+      .scope-grid {
+        grid-template-columns: 1fr;
+      }
+      .segmented {
+        grid-template-columns: 1fr;
+      }
+      .panel-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 14px 16px 16px;
+      }
+      .primary { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <section class="topbar">
+      <button class="button" type="button" id="backButton">返回总览</button>
+      <div class="crumb">主页 / 当前项目 / 设置 / 创作偏好</div>
+      <div class="status-pill"><span class="dot"></span><span id="saveState">偏好草案</span></div>
+    </section>
+
+    <section class="hero">
+      <div>
+        <h1>创作偏好</h1>
+        <p>设置默认语言、创作节奏、容量边界和审阅习惯。这里不替用户决定故事内容，只保存系统在各工作台中如何呈现和询问的偏好。</p>
+      </div>
+      <div class="summary-strip" aria-label="当前偏好摘要">
+        <div>
+          <span>语言</span>
+          <strong id="summaryLanguage">中文</strong>
+        </div>
+        <div>
+          <span>章节默认</span>
+          <strong><span id="summaryChapters">5</span> 章</strong>
+        </div>
+        <div>
+          <span>审阅</span>
+          <strong id="summaryReview">手动确认</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="content">
+      <nav class="side-nav" aria-label="设置分类">
+        <button class="nav-item" type="button" data-target="设置总览">
+          <span class="nav-number">01</span>
+          <span class="nav-copy"><strong>设置总览</strong><span>环境状态入口</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="外观与主题">
+          <span class="nav-number">02</span>
+          <span class="nav-copy"><strong>外观与主题</strong><span>色卡与预览</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="模型配置">
+          <span class="nav-number">03</span>
+          <span class="nav-copy"><strong>模型配置</strong><span>模型档案</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="当前模型">
+          <span class="nav-number">04</span>
+          <span class="nav-copy"><strong>当前模型</strong><span>健康检查</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="密钥与安全">
+          <span class="nav-number">05</span>
+          <span class="nav-copy"><strong>密钥与安全</strong><span>引用与策略</span></span>
+        </button>
+        <button class="nav-item active" type="button" data-target="创作偏好" aria-current="page">
+          <span class="nav-number">06</span>
+          <span class="nav-copy"><strong>创作偏好</strong><span>默认语言容量</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="帮助与引导">
+          <span class="nav-number">07</span>
+          <span class="nav-copy"><strong>帮助与引导</strong><span>新手提示</span></span>
+        </button>
+      </nav>
+
+      <section class="main-panel" aria-label="创作偏好设置">
+        <div class="panel-head">
+          <div>
+            <span class="kicker">偏好控制台</span>
+            <h2>默认创作行为</h2>
+            <p>这些设置应作为项目创建和后续工作台的默认值。用户仍可在具体页面中临时调整。</p>
+          </div>
+          <div class="dirty"><span class="dot"></span><span id="dirtyState">未保存</span></div>
+        </div>
+
+        <div class="settings-scroll">
+          <article class="setting-card">
+            <header>
+              <div>
+                <span class="kicker">语言</span>
+                <h3>默认语言</h3>
+                <p>新项目创建时默认填入，实际接口字段为 `requested_language`。</p>
+              </div>
+              <span class="tag">已有落点</span>
+            </header>
+            <div class="control-grid">
+              <div class="field">
+                <label for="languageSelect">创作语言</label>
+                <div class="select-wrap">
+                  <select id="languageSelect">
+                    <option value="中文" selected>中文</option>
+                    <option value="英文">英文</option>
+                    <option value="双语草稿">双语草稿</option>
+                    <option value="跟随项目">跟随项目</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="punctuationSelect">标点与排版</label>
+                <div class="select-wrap">
+                  <select id="punctuationSelect">
+                    <option selected>中文出版格式</option>
+                    <option>英文小说格式</option>
+                    <option>轻量网络文格式</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="setting-card">
+            <header>
+              <div>
+                <span class="kicker">节奏</span>
+                <h3>创作节奏</h3>
+                <p>决定系统默认给出的篇幅密度和审阅节奏，不改变后端事实确认规则。</p>
+              </div>
+              <span class="tag">UI 偏好</span>
+            </header>
+            <div class="segmented" role="group" aria-label="创作节奏">
+              <button class="segment" type="button" data-mode="快节奏">快节奏</button>
+              <button class="segment active" type="button" data-mode="均衡">均衡</button>
+              <button class="segment" type="button" data-mode="细写">细写</button>
+            </div>
+          </article>
+
+          <article class="setting-card wide">
+            <header>
+              <div>
+                <span class="kicker">容量</span>
+                <h3>默认容量</h3>
+                <p>章节与场景上限来自 Phase 8.5 当前前端常量：章节 1-20，场景 1-20。</p>
+              </div>
+              <span class="tag">容量边界</span>
+            </header>
+            <div class="control-grid">
+              <div class="range-field">
+                <div class="range-head">
+                  <label for="chapterRange">默认章节数</label>
+                  <span class="range-value" id="chapterValue">5</span>
+                </div>
+                <input id="chapterRange" type="range" min="1" max="20" value="5" />
+                <div class="range-caption"><span>1</span><span>20</span></div>
+              </div>
+              <div class="range-field">
+                <div class="range-head">
+                  <label for="sceneRange">每章默认场景数</label>
+                  <span class="range-value" id="sceneValue">5</span>
+                </div>
+                <input id="sceneRange" type="range" min="1" max="20" value="5" />
+                <div class="range-caption"><span>1</span><span>20</span></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="setting-card wide">
+            <header>
+              <div>
+                <span class="kicker">草稿行为</span>
+                <h3>草稿与审阅习惯</h3>
+                <p>所有会写入事实、角色、章节或正文的内容仍然进入审阅，不默认自动确认。</p>
+              </div>
+              <span class="tag">安全默认</span>
+            </header>
+            <div class="control-grid">
+              <div class="toggle-row">
+                <div>
+                  <strong>生成后停在审阅页</strong>
+                  <span>草稿完成后等待用户确认、修订或退回。</span>
+                </div>
+                <button class="switch on" type="button" data-toggle="审阅停留" aria-label="生成后停在审阅页"></button>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <strong>自动保存草稿快照</strong>
+                  <span>仅保存草稿状态，不视为用户确认。</span>
+                </div>
+                <button class="switch on" type="button" data-toggle="草稿快照" aria-label="自动保存草稿快照"></button>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <strong>显示阻塞原因摘要</strong>
+                  <span>阻塞时先显示可读原因，再提供修复入口。</span>
+                </div>
+                <button class="switch on" type="button" data-toggle="阻塞摘要" aria-label="显示阻塞原因摘要"></button>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <strong>允许批量进入下一步</strong>
+                  <span>当前阶段先关闭，避免绕过单页确认。</span>
+                </div>
+                <button class="switch" type="button" data-toggle="批量下一步" aria-label="允许批量进入下一步"></button>
+              </div>
+            </div>
+          </article>
+
+          <article class="setting-card wide">
+            <header>
+              <div>
+                <span class="kicker">写作取向</span>
+                <h3>默认写作取向</h3>
+                <p>这是用户偏好，不是固定风格命令。具体故事仍以 Framework、世界设定和场景目标为准。</p>
+              </div>
+              <span class="tag">可覆盖</span>
+            </header>
+            <div class="mode-list" role="listbox" aria-label="默认写作取向">
+              <button class="mode-card active" type="button" data-style="沉浸叙事">
+                <strong>沉浸叙事</strong>
+                <small>更重视场景感、感官细节和自然节奏。</small>
+              </button>
+              <button class="mode-card" type="button" data-style="清晰推进">
+                <strong>清晰推进</strong>
+                <small>更重视目标、冲突和行动结果。</small>
+              </button>
+              <button class="mode-card" type="button" data-style="克制留白">
+                <strong>克制留白</strong>
+                <small>更少解释，保留读者推断空间。</small>
+              </button>
+            </div>
+          </article>
+
+          <article class="setting-card wide">
+            <header>
+              <div>
+                <span class="kicker">影响范围</span>
+                <h3>影响范围</h3>
+                <p>偏好只提供默认值和展示习惯，不直接修改已确认的故事事实。</p>
+              </div>
+              <span class="tag">无事实写入</span>
+            </header>
+            <div class="scope-grid">
+              <div class="scope-item">
+                <span>项目创建</span>
+                <strong>语言默认</strong>
+                <p>映射到 `requested_language`。</p>
+              </div>
+              <div class="scope-item">
+                <span>章节计划</span>
+                <strong>容量默认</strong>
+                <p>默认章节数与场景数。</p>
+              </div>
+              <div class="scope-item">
+                <span>场景写作</span>
+                <strong>审阅习惯</strong>
+                <p>生成后停留在草稿页。</p>
+              </div>
+              <div class="scope-item">
+                <span>最终输出</span>
+                <strong>排版倾向</strong>
+                <p>作为导出默认建议。</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="panel-actions">
+          <button class="ghost-button" type="button" id="resetButton">恢复默认</button>
+          <button class="minor-button" type="button" id="previewButton">预览应用范围</button>
+          <button class="primary" type="button" id="saveButton">保存偏好</button>
+        </div>
+      </section>
+
+      <aside class="right-panel" aria-label="偏好预览">
+        <article class="preview-card">
+          <span class="kicker">当前预览</span>
+          <h3>当前偏好</h3>
+          <div class="preview-grid">
+            <div class="metric">
+              <span>语言</span>
+              <strong id="previewLanguage">中文</strong>
+            </div>
+            <div class="metric">
+              <span>节奏</span>
+              <strong id="previewMode">均衡</strong>
+            </div>
+            <div class="metric">
+              <span>容量</span>
+              <strong><span id="previewCapacity">5 x 5</span></strong>
+            </div>
+            <div class="metric">
+              <span>风格</span>
+              <strong id="previewStyle">沉浸叙事</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="preview-card">
+          <span class="kicker">接入位置</span>
+          <h3>接入位置</h3>
+          <div class="route-list">
+            <div class="route-row active">
+              <span class="route-index">1</span>
+              <div>
+                <span>Project Creation</span>
+                <strong>requested_language</strong>
+              </div>
+            </div>
+            <div class="route-row">
+              <span class="route-index">2</span>
+              <div>
+                <span>Chapter Planning</span>
+                <strong>chapter_count / scene_count</strong>
+              </div>
+            </div>
+            <div class="route-row">
+              <span class="route-index">3</span>
+              <div>
+                <span>Scene Writing</span>
+                <strong>draft_review_policy</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="preview-card">
+          <span class="kicker">默认护栏</span>
+          <h3>默认护栏</h3>
+          <div class="preview-lines">
+            <div class="preview-line">
+              <span>事实边界</span>
+              <strong>偏好不会把模型候选内容写成确认事实。</strong>
+            </div>
+            <div class="preview-line">
+              <span>审阅边界</span>
+              <strong>确认、修订、退回仍由页面级交互触发。</strong>
+            </div>
+            <div class="preview-line">
+              <span>覆盖规则</span>
+              <strong>具体项目和具体章节可以覆盖全局默认。</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="preview-card">
+          <span class="kicker">建议字段</span>
+          <h3>建议字段</h3>
+          <div class="token-list">
+            <div class="token"><span>language</span><strong>zh</strong></div>
+            <div class="token"><span>pace</span><strong>balanced</strong></div>
+            <div class="token"><span>chapters</span><strong>1-20</strong></div>
+            <div class="token"><span>scenes</span><strong>1-20</strong></div>
+            <div class="token"><span>review</span><strong>manual</strong></div>
+          </div>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const state = {
+      language: "中文",
+      mode: "均衡",
+      chapters: 5,
+      scenes: 5,
+      style: "沉浸叙事",
+      dirty: true
+    };
+
+    const labels = {
+      "中文": "zh",
+      "英文": "en",
+      "双语草稿": "bilingual_draft",
+      "跟随项目": "project_default"
+    };
+
+    const els = {
+      languageSelect: document.getElementById("languageSelect"),
+      punctuationSelect: document.getElementById("punctuationSelect"),
+      chapterRange: document.getElementById("chapterRange"),
+      sceneRange: document.getElementById("sceneRange"),
+      chapterValue: document.getElementById("chapterValue"),
+      sceneValue: document.getElementById("sceneValue"),
+      summaryLanguage: document.getElementById("summaryLanguage"),
+      summaryChapters: document.getElementById("summaryChapters"),
+      summaryReview: document.getElementById("summaryReview"),
+      previewLanguage: document.getElementById("previewLanguage"),
+      previewMode: document.getElementById("previewMode"),
+      previewCapacity: document.getElementById("previewCapacity"),
+      previewStyle: document.getElementById("previewStyle"),
+      dirtyState: document.getElementById("dirtyState"),
+      saveState: document.getElementById("saveState"),
+      toast: document.getElementById("toast")
+    };
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        els.toast.classList.remove("show");
+      }, 1800);
+    }
+
+    const settingsRoutes = {
+      "设置总览": "../../01 Settings Overview/visual-drafts/settings-overview-v1.html",
+      "外观与主题": "../../02 Appearance And Theme/visual-drafts/settings-appearance-theme-v1.html",
+      "模型配置": "../../03 Model Configuration/visual-drafts/settings-model-configuration-v1.html",
+      "当前模型": "../../04 Current Model And Health Check/visual-drafts/settings-current-model-health-v1.html",
+      "密钥与安全": "../../05 Secrets And Security/visual-drafts/settings-secrets-security-v1.html",
+      "创作偏好": "../../06 Creative Preferences/visual-drafts/settings-creative-preferences-v1.html"
+    };
+
+    function openSettingsTarget(target, currentTarget, currentLabel) {
+      if (target === currentTarget) {
+        showToast("当前已在" + currentLabel + "。");
+        return;
+      }
+      const route = settingsRoutes[target];
+      if (route) {
+        window.location.href = route;
+        return;
+      }
+      showToast("「" + target + "」尚未设计。");
+    }
+
+    function setDirty(value) {
+      state.dirty = value;
+      els.dirtyState.textContent = value ? "未保存" : "已保存";
+      els.saveState.textContent = value ? "偏好草案" : "已应用";
+    }
+
+    function render() {
+      els.chapterValue.textContent = state.chapters;
+      els.sceneValue.textContent = state.scenes;
+      els.summaryLanguage.textContent = state.language;
+      els.summaryChapters.textContent = state.chapters;
+      els.summaryReview.textContent = document.querySelector('[data-toggle="审阅停留"]').classList.contains("on") ? "手动确认" : "自由继续";
+      els.previewLanguage.textContent = state.language;
+      els.previewMode.textContent = state.mode;
+      els.previewCapacity.textContent = state.chapters + " x " + state.scenes;
+      els.previewStyle.textContent = state.style;
+    }
+
+    els.languageSelect.addEventListener("change", (event) => {
+      state.language = event.target.value;
+      document.querySelector('.token-list .token strong').textContent = labels[state.language] || "zh";
+      setDirty(true);
+      render();
+      showToast("默认语言已切换为：" + state.language);
+    });
+
+    els.punctuationSelect.addEventListener("change", () => {
+      setDirty(true);
+      showToast("排版偏好已更新，将作为导出默认建议。");
+    });
+
+    els.chapterRange.addEventListener("input", (event) => {
+      state.chapters = Number(event.target.value);
+      setDirty(true);
+      render();
+    });
+
+    els.sceneRange.addEventListener("input", (event) => {
+      state.scenes = Number(event.target.value);
+      setDirty(true);
+      render();
+    });
+
+    document.querySelectorAll(".segment").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".segment").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        state.mode = button.dataset.mode;
+        setDirty(true);
+        render();
+      });
+    });
+
+    document.querySelectorAll(".mode-card").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".mode-card").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        state.style = button.dataset.style;
+        setDirty(true);
+        render();
+        showToast("默认写作取向：" + state.style);
+      });
+    });
+
+    document.querySelectorAll(".switch").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.classList.toggle("on");
+        setDirty(true);
+        render();
+        showToast(button.dataset.toggle + (button.classList.contains("on") ? "：已开启" : "：已关闭"));
+      });
+    });
+
+    document.querySelectorAll("[data-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        openSettingsTarget(button.dataset.target, "创作偏好", "创作偏好");
+      });
+    });
+
+    document.getElementById("resetButton").addEventListener("click", () => {
+      state.language = "中文";
+      state.mode = "均衡";
+      state.chapters = 5;
+      state.scenes = 5;
+      state.style = "沉浸叙事";
+      els.languageSelect.value = "中文";
+      els.punctuationSelect.value = "中文出版格式";
+      els.chapterRange.value = "5";
+      els.sceneRange.value = "5";
+      document.querySelectorAll(".segment").forEach((item) => item.classList.toggle("active", item.dataset.mode === "均衡"));
+      document.querySelectorAll(".mode-card").forEach((item) => item.classList.toggle("active", item.dataset.style === "沉浸叙事"));
+      document.querySelectorAll(".switch").forEach((item) => {
+        const shouldOn = item.dataset.toggle !== "批量下一步";
+        item.classList.toggle("on", shouldOn);
+      });
+      setDirty(true);
+      render();
+      showToast("已恢复为默认创作偏好。");
+    });
+
+    document.getElementById("previewButton").addEventListener("click", () => {
+      showToast("应用范围：项目创建、章节计划、场景写作和最终输出默认值。");
+    });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      setDirty(false);
+      render();
+      showToast("创作偏好已保存为当前项目默认值。");
+    });
+
+    document.getElementById("backButton").addEventListener("click", () => {
+      showToast("返回设置总览。");
+    });
+
+    render();
+  </script>
+</body>
+</html>

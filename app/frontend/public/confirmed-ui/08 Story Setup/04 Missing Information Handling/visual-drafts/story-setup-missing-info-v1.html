@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>故事设定缺失信息处理 UI V1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --paper-strong: #fffaf2;
+      --ink: #2f332f;
+      --muted: #7a6e63;
+      --line: rgba(86, 74, 61, 0.16);
+      --line-strong: rgba(86, 74, 61, 0.26);
+      --sage: #6f7e76;
+      --sage-deep: #53665f;
+      --accent: #a97868;
+      --accent-deep: #8f5d50;
+      --amber: #c6a369;
+      --radius: 8px;
+      --shadow: 0 22px 70px rgba(72, 55, 42, 0.16);
+      --soft-shadow: 0 16px 46px rgba(73, 54, 40, 0.12);
+      font-family: "Inter", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      background: #e7e0d2;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    button,
+    textarea,
+    select,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 34px 60px;
+      isolation: isolate;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.92) 0%, rgba(236, 231, 220, 0.72) 46%, rgba(236, 231, 220, 0.36) 100%),
+        url("./assets/story-setup-desk-background-v1.png") center / cover no-repeat;
+      filter: saturate(0.92);
+    }
+
+    .page::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 22% 22%, rgba(255, 252, 244, 0.68), transparent 34%),
+        radial-gradient(circle at 68% 40%, rgba(180, 138, 120, 0.13), transparent 38%),
+        linear-gradient(180deg, rgba(255, 252, 244, 0.08), rgba(99, 84, 68, 0.1));
+      pointer-events: none;
+    }
+
+    .workspace {
+      width: min(1320px, calc(100vw - 120px));
+      height: calc(100vh - 68px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .ghost-button,
+    .status-pill {
+      min-height: 44px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      color: #4c443d;
+      box-shadow: 0 10px 32px rgba(62, 47, 36, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .ghost-button {
+      min-width: 128px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 800;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .ghost-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .breadcrumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 620;
+    }
+
+    .status-pill {
+      min-width: 184px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #5e554d;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.12);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 432px);
+      align-items: end;
+      gap: 28px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(48px, 5vw, 74px);
+      line-height: 0.96;
+      letter-spacing: 0;
+      font-weight: 950;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: #6b6158;
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .phase-strip {
+      min-height: 56px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.28);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 46px rgba(73, 54, 40, 0.08);
+    }
+
+    .phase-step {
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: rgba(81, 72, 64, 0.58);
+      font-size: 13px;
+      font-weight: 820;
+      transition: color 180ms ease, background 180ms ease;
+    }
+
+    .phase-step:hover {
+      color: #4a443d;
+      background: rgba(255, 252, 244, 0.38);
+    }
+
+    .phase-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 12px 26px rgba(83, 102, 95, 0.18);
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 304px minmax(0, 1fr) 288px;
+      gap: 22px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.74), rgba(236, 225, 205, 0.6)),
+        rgba(255, 252, 244, 0.42);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .queue-panel,
+    .side-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 24px 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #936c60;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    h2,
+    h3,
+    h4,
+    p {
+      margin-top: 0;
+    }
+
+    .panel-head h2 {
+      margin-bottom: 0;
+      color: #332f2a;
+      font-size: 25px;
+      line-height: 1.16;
+      font-weight: 930;
+      letter-spacing: 0;
+    }
+
+    .panel-head p {
+      margin: 8px 0 0;
+      color: #6f6358;
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 560;
+    }
+
+    .count-chip {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      min-width: 62px;
+      min-height: 62px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.46);
+      color: var(--sage-deep);
+      font-size: 20px;
+      font-weight: 940;
+    }
+
+    .question-list {
+      min-height: 0;
+      overflow: auto;
+      padding: 0 18px 20px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .question-card {
+      width: 100%;
+      min-height: 106px;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      color: #51483f;
+      padding: 14px;
+      text-align: left;
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .question-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(169, 120, 104, 0.26);
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .question-card.active {
+      border-color: rgba(111, 126, 118, 0.34);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: 0 16px 34px rgba(74, 54, 40, 0.1);
+    }
+
+    .question-card.done {
+      opacity: 0.78;
+    }
+
+    .question-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #7a6e63;
+      font-size: 11px;
+      font-weight: 840;
+    }
+
+    .status-tag {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(198, 163, 105, 0.14);
+      color: #8c6d37;
+      white-space: nowrap;
+    }
+
+    .question-card.done .status-tag {
+      background: rgba(111, 126, 118, 0.13);
+      color: var(--sage-deep);
+    }
+
+    .question-card strong {
+      color: #3c3731;
+      font-size: 15px;
+      line-height: 1.36;
+      font-weight: 900;
+    }
+
+    .question-card span.summary {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .main-body {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 18px;
+      padding: 0 26px 18px;
+    }
+
+    .question-focus {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+      padding: 22px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+
+    .question-focus h2 {
+      margin: 0;
+      color: #332f2a;
+      font-size: 31px;
+      line-height: 1.15;
+      font-weight: 930;
+      letter-spacing: 0;
+    }
+
+    .question-focus p {
+      margin: 12px 0 0;
+      color: #655b52;
+      font-size: 14px;
+      line-height: 1.78;
+      font-weight: 560;
+    }
+
+    .focus-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .meta-pill {
+      padding: 7px 10px;
+      border: 1px solid rgba(111, 126, 118, 0.18);
+      border-radius: 999px;
+      background: rgba(111, 126, 118, 0.09);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .answer-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 16px;
+    }
+
+    .answer-card,
+    .option-card {
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .answer-card {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 12px;
+    }
+
+    .answer-card label,
+    .option-card h3,
+    .impact-card h3,
+    .side-section h3 {
+      color: #433b34;
+      font-size: 14px;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      resize: none;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.62);
+      color: #453e37;
+      padding: 14px;
+      outline: 0;
+      line-height: 1.75;
+      font-size: 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 126, 118, 0.52);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .answer-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .option-card {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .option-button {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.44);
+      color: #51483f;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 760;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .option-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.7);
+    }
+
+    .main-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 26px 24px;
+      border-top: 1px solid rgba(86, 74, 61, 0.08);
+    }
+
+    .progress-wrap {
+      min-width: 0;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .meter {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(111, 126, 118, 0.13);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      width: 33%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--accent));
+      transition: width 360ms ease;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .soft-button,
+    .primary-action {
+      min-height: 46px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 850;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    .soft-button {
+      min-width: 96px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      background: rgba(255, 252, 244, 0.42);
+      color: #574e46;
+    }
+
+    .soft-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.62);
+    }
+
+    .primary-action {
+      min-width: 150px;
+      padding: 0 20px;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #fffaf2;
+      box-shadow: 0 18px 38px rgba(142, 103, 91, 0.24);
+    }
+
+    .primary-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 44px rgba(142, 103, 91, 0.3);
+    }
+
+    .primary-action:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      filter: saturate(0.78);
+      box-shadow: none;
+    }
+
+    .primary-action:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .primary-action.ready {
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 18px 38px rgba(83, 102, 95, 0.22);
+    }
+
+    .side-content {
+      min-height: 0;
+      display: grid;
+      align-content: start;
+      gap: 14px;
+      padding: 0 18px 20px;
+      overflow: auto;
+    }
+
+    .side-section,
+    .impact-card {
+      border: 1px solid rgba(86, 74, 61, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      padding: 14px;
+    }
+
+    .impact-card p,
+    .side-section p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.62;
+      font-weight: 560;
+    }
+
+    .impact-list,
+    .safety-list {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .impact-list li,
+    .safety-list li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      color: #5f554d;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.1);
+    }
+
+    .draft-preview {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .preview-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 7px;
+      background: rgba(236, 225, 205, 0.44);
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .preview-item b {
+      color: var(--sage-deep);
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 230px;
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      background: rgba(48, 45, 41, 0.88);
+      color: #fffaf2;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: 0 18px 42px rgba(40, 30, 24, 0.2);
+      transform: translate(-50%, 16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1220px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        padding: 24px 21px;
+      }
+
+      .workspace {
+        width: calc(100vw - 42px);
+        height: auto;
+        min-height: calc(100vh - 48px);
+      }
+
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .queue-panel,
+      .side-panel {
+        min-height: 360px;
+      }
+    }
+
+    @media (max-width: 840px) {
+      .topbar,
+      .answer-grid,
+      .main-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .phase-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="workspace" aria-label="故事设定缺失信息处理">
+      <header class="topbar">
+        <button class="ghost-button" type="button" id="backButton">返回审阅</button>
+        <div class="breadcrumb">主页 / 当前项目 / 故事设定 / 缺失信息处理</div>
+        <div class="status-pill"><span class="status-dot"></span><span id="modelState">问题待补充</span></div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h1>故事设定</h1>
+          <p>草案还有几处需要你确认。请在这里集中回答缺失信息，回答只会补全故事设定草案，不会直接写入最终世界画布、角色、Framework 或章节计划。</p>
+        </div>
+        <nav class="phase-strip" aria-label="故事设定阶段">
+          <button class="phase-step" type="button" data-phase="entry">设定入口</button>
+          <button class="phase-step" type="button" data-phase="generating">生成草案</button>
+          <button class="phase-step active" type="button" data-phase="review">审阅补充</button>
+          <button class="phase-step" type="button" data-phase="handoff">决策交接</button>
+        </nav>
+      </section>
+
+      <section class="layout">
+        <aside class="panel queue-panel" aria-label="缺失信息问题队列">
+          <header class="panel-head">
+            <div>
+              <p class="eyebrow">问题队列</p>
+              <h2>待确认信息</h2>
+              <p>按影响范围逐项处理。已保存的问题会自动移入完成状态。</p>
+            </div>
+            <div class="count-chip" id="queueCount">1/3</div>
+          </header>
+          <div class="question-list" role="listbox" aria-label="待处理问题">
+            <button class="question-card active" type="button" data-question="scope">
+              <div class="question-topline"><span>世界范围</span><span class="status-tag">未回答</span></div>
+              <strong>故事范围是否只限港口城？</strong>
+              <span class="summary">影响世界画布范围、地理边界和章节路线。</span>
+            </button>
+            <button class="question-card" type="button" data-question="protagonist">
+              <div class="question-topline"><span>主角身份</span><span class="status-tag">未回答</span></div>
+              <strong>主角是否已经有明确身份？</strong>
+              <span class="summary">影响角色方向、主角团初始化和调查动机。</span>
+            </button>
+            <button class="question-card" type="button" data-question="tone">
+              <div class="question-topline"><span>故事基调</span><span class="status-tag">未回答</span></div>
+              <strong>整体基调更偏温暖还是冷峻？</strong>
+              <span class="summary">影响 Framework 节奏、场景密度和叙事压迫感。</span>
+            </button>
+          </div>
+        </aside>
+
+        <section class="panel main-panel">
+          <header class="panel-head">
+            <div>
+              <p class="eyebrow">当前问题</p>
+              <h2 id="focusTitle">故事范围是否只限港口城？</h2>
+              <p id="focusIntro">系统需要知道初始世界画布是否只围绕港口城展开。这个答案会影响草案里的地理范围、未知区域和章节路线边界。</p>
+            </div>
+            <div class="count-chip" id="answerState">未答</div>
+          </header>
+
+          <div class="main-body">
+            <section class="question-focus">
+              <div class="focus-meta">
+                <span class="meta-pill" id="questionType">世界范围</span>
+                <span class="meta-pill" id="answerStatus">回答状态：未回答</span>
+                <span class="meta-pill">只补全草案</span>
+              </div>
+              <h2 id="focusQuestion">故事范围是否只限港口城？</h2>
+              <p id="focusHint">请选择或写下你希望系统遵循的边界。答案可以很短，但必须明确哪些内容现在确认、哪些内容继续保留未知。</p>
+            </section>
+
+            <section class="answer-grid">
+              <div class="answer-card">
+                <label for="answerInput">你的回答</label>
+                <textarea id="answerInput" aria-label="缺失信息回答">先限定在港口城，外海和其它城市只作为传闻或后续扩展，不在当前草案中确认。</textarea>
+                <div class="answer-foot">
+                  <span id="charCount">43 字</span>
+                  <span>保存后调用回答保存接口</span>
+                </div>
+              </div>
+              <aside class="option-card" aria-label="建议选项">
+                <h3>建议选项</h3>
+                <button class="option-button" type="button">只限定在港口城</button>
+                <button class="option-button" type="button">港口城为主，外海保留传闻</button>
+                <button class="option-button" type="button">港口城与外部势力同步展开</button>
+              </aside>
+            </section>
+          </div>
+
+          <footer class="main-actions">
+            <div class="progress-wrap">
+              <div class="progress-label"><span id="progressText">已回答 0 / 3</span><span id="nextState">仍需补充</span></div>
+              <div class="meter" aria-hidden="true"><div class="meter-fill" id="meterFill"></div></div>
+            </div>
+            <div class="action-row">
+              <button class="soft-button" type="button" id="skipButton">暂时跳过</button>
+              <button class="primary-action" type="button" id="saveButton">保存回答</button>
+              <button class="primary-action" type="button" id="reviewButton" disabled>回到草案审阅</button>
+            </div>
+          </footer>
+        </section>
+
+        <aside class="panel side-panel" aria-label="影响预览与边界">
+          <header class="panel-head">
+            <div>
+              <p class="eyebrow">影响预览</p>
+              <h2>回答会影响哪里</h2>
+              <p>这里仅展示草案层面的影响，不把答案直接落入正式故事事实。</p>
+            </div>
+          </header>
+          <div class="side-content">
+            <section class="impact-card">
+              <h3 id="impactTitle">世界画布草案</h3>
+              <p id="impactCopy">范围答案会决定地理摘要、未知区域、硬规则和后续可确认边界。</p>
+              <ul class="impact-list" id="impactList"></ul>
+            </section>
+
+            <section class="side-section">
+              <h3>草案状态</h3>
+              <div class="draft-preview">
+                <div class="preview-item"><span>世界范围</span><b id="previewScope">未确认</b></div>
+                <div class="preview-item"><span>主角身份</span><b id="previewProtagonist">未确认</b></div>
+                <div class="preview-item"><span>故事基调</span><b id="previewTone">未确认</b></div>
+              </div>
+            </section>
+
+            <section class="side-section">
+              <h3>安全边界</h3>
+              <p>该页只保存用户答案引用和安全摘要。</p>
+              <ul class="safety-list">
+                <li><span class="dot"></span><span>不会确认最终世界画布</span></li>
+                <li><span class="dot"></span><span>不会确认最终角色</span></li>
+                <li><span class="dot"></span><span>不会激活最终 Framework</span></li>
+                <li><span class="dot"></span><span>不会确认章节计划</span></li>
+              </ul>
+            </section>
+          </div>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const questions = {
+        scope: {
+          type: "世界范围",
+          title: "故事范围是否只限港口城？",
+          intro: "系统需要知道初始世界画布是否只围绕港口城展开。这个答案会影响草案里的地理范围、未知区域和章节路线边界。",
+          hint: "请选择或写下你希望系统遵循的边界。答案可以很短，但必须明确哪些内容现在确认、哪些内容继续保留未知。",
+          answer: "先限定在港口城，外海和其它城市只作为传闻或后续扩展，不在当前草案中确认。",
+          options: ["只限定在港口城", "港口城为主，外海保留传闻", "港口城与外部势力同步展开"],
+          impactTitle: "世界画布草案",
+          impactCopy: "范围答案会决定地理摘要、未知区域、硬规则和后续可确认边界。",
+          impact: ["世界画布范围", "章节路线边界", "未知区域保留方式"],
+          preview: "港口城为主"
+        },
+        protagonist: {
+          type: "主角身份",
+          title: "主角是否已经有明确身份？",
+          intro: "系统需要判断主角只是方向占位，还是已有明确身份。这个答案会影响角色方向、调查动机和后续角色主轴的初始拆分。",
+          hint: "可以写主角身份、职业、进入事件的理由，也可以说明暂时不确定。",
+          answer: "",
+          options: ["暂时只保留调查者方向", "主角是钟楼档案员", "主角是失忆晚宴幸存者"],
+          impactTitle: "角色方向草案",
+          impactCopy: "身份答案会影响主角团初始化、A 级角色候选和关系草稿。",
+          impact: ["主角团方向", "调查动机", "角色主轴入口"],
+          preview: "调查者方向"
+        },
+        tone: {
+          type: "故事基调",
+          title: "整体基调更偏温暖还是冷峻？",
+          intro: "系统需要知道故事设定草案的基调，避免后续 Framework 和章节路线出现过强偏差。",
+          hint: "可以描述温度、压迫感、节奏和希望保留的故事感。",
+          answer: "",
+          options: ["温暖中带阴影", "冷峻克制", "日常秩序慢慢破裂"],
+          impactTitle: "Framework 与章节路线",
+          impactCopy: "基调答案会影响章节节奏、悬疑密度和场景写作方向。",
+          impact: ["Framework 节奏", "章节张力", "场景写作氛围"],
+          preview: "温暖中带阴影"
+        }
+      };
+
+      let activeKey = "scope";
+      const answered = new Set();
+      const toast = document.getElementById("toast");
+      const answerInput = document.getElementById("answerInput");
+      const saveButton = document.getElementById("saveButton");
+      const reviewButton = document.getElementById("reviewButton");
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+
+      function countText(value) {
+        const trimmed = value.trim();
+        const cjk = (trimmed.match(/[\u4e00-\u9fff]/g) || []).length;
+        const words = trimmed.replace(/[\u4e00-\u9fff]/g, " ").split(/\s+/).filter(Boolean).length;
+        return cjk + words;
+      }
+
+      function updateCount() {
+        document.getElementById("charCount").textContent = `${countText(answerInput.value)} 字`;
+      }
+
+      function renderImpact(items) {
+        const list = document.getElementById("impactList");
+        list.innerHTML = "";
+        items.forEach((item) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="dot"></span><span>${item}</span>`;
+          list.appendChild(li);
+        });
+      }
+
+      function renderActive(key) {
+        activeKey = key;
+        const question = questions[key];
+        document.querySelectorAll(".question-card").forEach((card) => {
+          card.classList.toggle("active", card.dataset.question === key);
+          card.classList.toggle("done", answered.has(card.dataset.question));
+          card.querySelector(".status-tag").textContent = answered.has(card.dataset.question) ? "已保存" : "未回答";
+        });
+        document.getElementById("focusTitle").textContent = question.title;
+        document.getElementById("focusIntro").textContent = question.intro;
+        document.getElementById("focusQuestion").textContent = question.title;
+        document.getElementById("focusHint").textContent = question.hint;
+        document.getElementById("questionType").textContent = question.type;
+        document.getElementById("answerStatus").textContent = answered.has(key) ? "回答状态：已回答" : "回答状态：未回答";
+        document.getElementById("answerState").textContent = answered.has(key) ? "已答" : "未答";
+        answerInput.value = question.answer;
+        document.querySelector(".option-card").innerHTML = `<h3>建议选项</h3>${question.options.map((item) => `<button class="option-button" type="button">${item}</button>`).join("")}`;
+        document.querySelectorAll(".option-button").forEach((button) => {
+          button.addEventListener("click", () => {
+            answerInput.value = button.textContent;
+            questions[activeKey].answer = answerInput.value;
+            updateCount();
+            showToast("已填入建议选项");
+          });
+        });
+        document.getElementById("impactTitle").textContent = question.impactTitle;
+        document.getElementById("impactCopy").textContent = question.impactCopy;
+        renderImpact(question.impact);
+        updateCount();
+        updateProgress();
+      }
+
+      function updateProgress() {
+        const done = answered.size;
+        const total = Object.keys(questions).length;
+        document.getElementById("queueCount").textContent = `${done}/${total}`;
+        document.getElementById("progressText").textContent = `已回答 ${done} / ${total}`;
+        document.getElementById("meterFill").style.width = `${Math.max(6, (done / total) * 100)}%`;
+        document.getElementById("nextState").textContent = done === total ? "可以回到审阅" : "仍需补充";
+        reviewButton.disabled = done !== total;
+        if (done === total) {
+          reviewButton.classList.add("ready");
+          document.getElementById("modelState").textContent = "问题已补齐";
+        }
+      }
+
+      document.querySelectorAll(".question-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          renderActive(card.dataset.question);
+          showToast(`正在处理：${card.querySelector("strong").textContent}`);
+        });
+      });
+
+      answerInput.addEventListener("input", () => {
+        questions[activeKey].answer = answerInput.value;
+        updateCount();
+      });
+
+      saveButton.addEventListener("click", () => {
+        if (!answerInput.value.trim()) {
+          showToast("请先填写回答");
+          return;
+        }
+        questions[activeKey].answer = answerInput.value.trim();
+        answered.add(activeKey);
+        const previewMap = {
+          scope: "previewScope",
+          protagonist: "previewProtagonist",
+          tone: "previewTone"
+        };
+        document.getElementById(previewMap[activeKey]).textContent = questions[activeKey].preview;
+        const unanswered = Object.keys(questions).find((key) => !answered.has(key));
+        renderActive(unanswered || activeKey);
+        showToast("已保存回答");
+      });
+
+      document.getElementById("skipButton").addEventListener("click", () => {
+        const keys = Object.keys(questions);
+        const next = keys[(keys.indexOf(activeKey) + 1) % keys.length];
+        renderActive(next);
+        showToast("已切换到下一个问题");
+      });
+
+      reviewButton.addEventListener("click", () => {
+        if (reviewButton.disabled) {
+          return;
+        }
+        showToast("返回草案审阅");
+      });
+
+      document.querySelectorAll("[data-phase]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const messages = {
+            entry: "返回设定入口",
+            generating: "生成中状态已完成",
+            review: "当前处于审阅补充",
+            handoff: "问题补齐后进入决策与交接"
+          };
+          showToast(messages[button.dataset.phase]);
+        });
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        showToast("返回草案审阅");
+      });
+
+      renderActive(activeKey);
+    })();
+  </script>
+</body>
+</html>

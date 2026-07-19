@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>修改影响与未来问题</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/scene-writing-background-v1.png")'>
+    <header class="topbar">
+      <div>
+        <p class="crumb">主页 / 工作台 / 场景写作 / 高级修订安全</p>
+        <h1>修改影响与未来问题</h1>
+      </div>
+      <div class="top-actions">
+        <span class="badge sage">不自动应用</span>
+        <span class="badge warning">候选 6</span>
+        <span class="badge">延迟问题 2</span>
+      </div>
+    </header>
+
+    <section class="workspace-grid wide">
+      <aside class="panel tall">
+        <p class="eyebrow">IMPACT PREVIEW</p>
+        <h2>影响预览</h2>
+        <label class="field">
+          <span>想修改什么</span>
+          <textarea id="impactInput" aria-label="修改影响预览输入">把当前场景里“钟楼证人主动说出线索”改为“证人只留下火漆印章”。</textarea>
+        </label>
+        <div class="button-row" style="margin-top: 12px;">
+          <button class="button primary" id="previewImpact" type="button">生成影响预览</button>
+          <button class="button" id="chooseSafe" type="button">选择安全方案</button>
+        </div>
+        <div class="soft-panel" style="margin-top: 16px;">
+          <h3>影响摘要</h3>
+          <p class="muted" id="impactNote">预览会指出受影响的记忆、后续场景、叙事债务和候选缓存，但不会自动改写。</p>
+        </div>
+      </aside>
+
+      <section class="panel tall">
+        <p class="eyebrow">FUTURE QUEUE</p>
+        <h2>候选缓存与未来问题</h2>
+        <div class="tabs" role="tablist" aria-label="高级队列">
+          <button class="tab-button active" type="button" data-tab="premodify">预修改候选</button>
+          <button class="tab-button" type="button" data-tab="cache">候选缓存</button>
+          <button class="tab-button" type="button" data-tab="questions">延迟问题</button>
+        </div>
+
+        <div class="scroll-area" style="margin-top: 16px;">
+          <div class="list" id="queueList"></div>
+        </div>
+      </section>
+
+      <aside class="panel tall">
+        <p class="eyebrow">SELECTED ITEM</p>
+        <h2 id="detailTitle">后续第 4 幕候选</h2>
+        <p class="subtitle" id="detailCopy">如果当前线索改为火漆印章，第 4 幕需要替换一次证词回收动作。</p>
+        <div class="stats-grid">
+          <div class="stat"><span>影响</span><strong>中</strong></div>
+          <div class="stat"><span>状态</span><strong>待决策</strong></div>
+          <div class="stat"><span>写入</span><strong>否</strong></div>
+          <div class="stat"><span>问题</span><strong>1</strong></div>
+        </div>
+        <label class="field" style="margin-top: 16px;">
+          <span>用户决策说明</span>
+          <textarea id="decisionNote" aria-label="用户决策说明">我已查看影响范围，先延后到对应未来场景再处理。</textarea>
+        </label>
+        <div class="button-row" style="margin-top: 12px;">
+          <button class="button primary" id="acceptItem" type="button">接受候选</button>
+          <button class="button" id="deferItem" type="button">延后处理</button>
+          <button class="button danger" id="rejectItem" type="button">拒绝候选</button>
+        </div>
+        <p class="muted" id="actionNote" style="margin-top: 14px;">选择队列项后处理。</p>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const data = {
+      premodify: [
+        ["后续第 4 幕候选", "如果当前线索改为火漆印章，第 4 幕需要替换一次证词回收动作。"],
+        ["记忆写入候选", "主角记忆中需要保留证人未明说真相的状态。"]
+      ],
+      cache: [
+        ["活跃候选缓存", "3 个场景候选仍可使用，1 个候选因当前修改可能过期。"],
+        ["过期候选缓存", "旧版证词线索不再可靠，需要隐藏或重新评估。"]
+      ],
+      questions: [
+        ["延迟问题：火漆来源", "到第 4 幕打开时询问是否揭示火漆印章归属。"],
+        ["未来待办：证人安全", "进入下一章前确认证人是否已经离港。"]
+      ]
+    };
+    const list = document.getElementById("queueList");
+    const title = document.getElementById("detailTitle");
+    const copy = document.getElementById("detailCopy");
+    const action = document.getElementById("actionNote");
+    function render(tab) {
+      list.innerHTML = "";
+      data[tab].forEach((item, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `item ${index === 0 ? "selected" : ""}`;
+        button.innerHTML = `<div class="item-head"><strong>${item[0]}</strong><span class="badge">${tab}</span></div><p>${item[1]}</p>`;
+        button.addEventListener("click", () => {
+          title.textContent = item[0];
+          copy.textContent = item[1];
+          action.textContent = `已选择：${item[0]}`;
+          [...list.children].forEach((node) => node.classList.remove("selected"));
+          button.classList.add("selected");
+        });
+        list.appendChild(button);
+      });
+    }
+    document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => {
+      document.querySelectorAll("[data-tab]").forEach((tab) => tab.classList.remove("active"));
+      button.classList.add("active");
+      render(button.dataset.tab);
+    }));
+    document.getElementById("previewImpact").addEventListener("click", () => document.getElementById("impactNote").textContent = "将调用 createModificationImpactPreview，生成只读影响范围。");
+    document.getElementById("chooseSafe").addEventListener("click", () => document.getElementById("impactNote").textContent = "将调用 chooseModificationImpactOption，只记录选择，不自动改写。");
+    ["acceptItem", "deferItem", "rejectItem"].forEach((id) => document.getElementById(id).addEventListener("click", () => action.textContent = `${document.getElementById(id).textContent}：${title.textContent}`));
+    render("premodify");
+  </script>
+</body>
+</html>

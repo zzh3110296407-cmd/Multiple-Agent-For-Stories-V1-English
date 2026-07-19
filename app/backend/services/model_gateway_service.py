@@ -8,6 +8,10 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from app.backend.core.config import settings
+from app.backend.core.model_endpoint_policy import (
+    ModelEndpointPolicyError,
+    validate_model_endpoint_policy,
+)
 from app.backend.models.agent_model_assignment import AgentModelAssignment
 from app.backend.models.model_gateway import (
     ModelGatewayJsonResult,
@@ -521,6 +525,14 @@ class ModelGatewayService:
             raise ModelConfigurationError("Qwen base_url must not be empty.")
         if not clean_api_key_env:
             raise ModelConfigurationError("Qwen api_key_env must not be empty.")
+        try:
+            clean_base_url = validate_model_endpoint_policy(
+                provider_type="qwen",
+                base_url=clean_base_url,
+                api_key_ref=f"env:{clean_api_key_env}",
+            )
+        except ModelEndpointPolicyError as exc:
+            raise ModelConfigurationError(str(exc)) from exc
         if require_env and os.environ.get(clean_api_key_env) is None:
             raise ModelConfigurationError(
                 f"Qwen API Key is not configured. Set {clean_api_key_env}."
@@ -833,8 +845,20 @@ class ModelGatewayService:
         if provider.provider_type == "local":
             return LocalMockModelAdapter()
         if provider.provider_type in {"openai", "openai_compatible", "deepseek", "qwen"}:
-            api_key = self._resolve_api_key(provider.api_key_ref)
             provider_for_adapter = self._provider_with_default_base_url(provider)
+            try:
+                normalized_base_url = validate_model_endpoint_policy(
+                    provider_type=provider_for_adapter.provider_type,
+                    base_url=provider_for_adapter.base_url,
+                    api_key_ref=provider_for_adapter.api_key_ref,
+                )
+            except ModelEndpointPolicyError as exc:
+                raise ModelConfigurationError(str(exc)) from exc
+            provider_for_adapter = self._copy_provider(
+                provider_for_adapter,
+                base_url=normalized_base_url,
+            )
+            api_key = self._resolve_api_key(provider_for_adapter.api_key_ref)
             return OpenAICompatibleModelAdapter(
                 provider_for_adapter,
                 api_key,

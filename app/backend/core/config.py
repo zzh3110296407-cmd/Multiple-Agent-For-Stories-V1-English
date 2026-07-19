@@ -35,6 +35,29 @@ def _cors_origins_from_env(default: list[str]) -> list[str]:
     return origins or default
 
 
+def _positive_int_from_env(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
+def _paths_from_semicolon_env(name: str, default: tuple[Path, ...]) -> tuple[Path, ...]:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return tuple(path.expanduser().resolve() for path in default)
+    paths = tuple(
+        Path(item.strip()).expanduser().resolve()
+        for item in raw.split(";")
+        if item.strip()
+    )
+    return paths or tuple(path.expanduser().resolve() for path in default)
+
+
 def _storage_mode_from_env(default: str = STORAGE_MODE_JSON_PRIMARY) -> tuple[str, str, str]:
     raw = os.environ.get("MULTIPLE_AGENT_STORIES_STORAGE_MODE", "").strip().lower()
     if not raw:
@@ -76,6 +99,17 @@ class Settings:
         app_root / "data" / "local_project",
     )
     project_file: Path = data_dir / "project.json"
+    max_analyze_stories_body_bytes: int = _positive_int_from_env(
+        "MULTIPLE_AGENT_STORIES_MAX_ANALYZE_STORIES_BODY_BYTES",
+        16 * 1024 * 1024,
+    )
+    analyzer_output_roots: tuple[Path, ...] = _paths_from_semicolon_env(
+        "MULTIPLE_AGENT_STORIES_ANALYZER_OUTPUT_ROOTS",
+        (
+            data_dir / "analyzer_outputs",
+            app_root / "Story Analyzer" / "data" / "handoff_exports",
+        ),
+    )
     cors_origins: list[str] = _cors_origins_from_env(
         [
             "http://localhost:5173",

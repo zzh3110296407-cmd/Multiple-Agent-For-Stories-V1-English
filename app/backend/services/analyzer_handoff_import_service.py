@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
+from app.backend.core.config import settings
 from app.backend.models.analyzer_handoff_import import (
     AnalyzerHandoffImportIssue,
     AnalyzerHandoffImportResult,
@@ -47,14 +48,38 @@ class AnalyzerHandoffImportService:
         *,
         store: JsonStore | None = None,
         schema_path: Path | None = None,
+        allowed_roots: Sequence[Path] | None = None,
     ) -> None:
         self.store = store or JsonStore()
         self.schema_path = schema_path or SCHEMA_PATH
+        configured_roots = allowed_roots or settings.analyzer_output_roots
+        self.allowed_roots = tuple(
+            dict.fromkeys(path.expanduser().resolve() for path in configured_roots)
+        )
+        if not self.allowed_roots:
+            raise ValueError("At least one analyzer output root must be configured.")
 
     def import_output(self, output_dir: str | Path) -> AnalyzerHandoffImportResult:
-        root = Path(output_dir)
+        try:
+            root = self._resolve_output_root(output_dir)
+        except ValueError:
+            return self._unsafe_path_result(
+                output_dir,
+                code="output_dir_outside_allowed_roots",
+                message="Analyzer output directory is outside the configured import roots.",
+            )
         files_read: list[str] = []
-        expected_paths = self._expected_handoff_paths(root)
+        try:
+            expected_paths = [
+                self._resolve_artifact_path(path)
+                for path in self._expected_handoff_paths(root)
+            ]
+        except ValueError:
+            return self._unsafe_path_result(
+                root,
+                code="handoff_path_outside_allowed_root",
+                message="Analyzer handoff path escapes the configured import root.",
+            )
         handoff_path = next((path for path in expected_paths if path.exists()), None)
         if handoff_path is None:
             return AnalyzerHandoffImportResult(
@@ -64,7 +89,10 @@ class AnalyzerHandoffImportService:
                     blocking_issue(
                         "missing_validated_handoff",
                         "Validated analyzer handoff was not found.",
-                        safe_detail="; ".join(str(path) for path in expected_paths),
+                        safe_detail=(
+                            "Expected generator_handoff/"
+                            f"{VALIDATED_HANDOFF_FILE} under the selected analyzer output."
+                        ),
                     )
                 ],
                 safe_summary="Analyzer output cannot be imported until the validated handoff exists.",
@@ -131,6 +159,47 @@ class AnalyzerHandoffImportService:
                 if not issues
                 else "Validated analyzer handoff is blocked before generator consumption."
             ),
+        )
+
+    def _resolve_output_root(self, output_dir: str | Path) -> Path:
+        candidate = Path(output_dir).expanduser()
+        if not candidate.is_absolute():
+            candidate = self.allowed_roots[0] / candidate
+        resolved = candidate.resolve()
+        if not self._is_within_allowed_root(resolved):
+            raise ValueError("Analyzer output directory is outside allowed roots.")
+        return resolved
+
+    def _resolve_artifact_path(self, path: Path) -> Path:
+        resolved = path.expanduser().resolve()
+        if not self._is_within_allowed_root(resolved):
+            raise ValueError("Analyzer artifact path is outside allowed roots.")
+        return resolved
+
+    def _is_within_allowed_root(self, path: Path) -> bool:
+        return any(
+            path == root or path.is_relative_to(root)
+            for root in self.allowed_roots
+        )
+
+    def _unsafe_path_result(
+        self,
+        output_dir: str | Path,
+        *,
+        code: str,
+        message: str,
+    ) -> AnalyzerHandoffImportResult:
+        return AnalyzerHandoffImportResult(
+            import_status="blocked",
+            output_dir=str(output_dir),
+            issues=[
+                blocking_issue(
+                    code,
+                    message,
+                    safe_detail="Configure MULTIPLE_AGENT_STORIES_ANALYZER_OUTPUT_ROOTS on the server.",
+                )
+            ],
+            safe_summary="Analyzer output import was blocked by the path safety policy.",
         )
 
     def _handoff_version_issues(self, handoff: dict[str, Any]) -> list[AnalyzerHandoffImportIssue]:
@@ -296,7 +365,19 @@ class AnalyzerHandoffImportService:
                 )
             )
             return None
-        source_index_path = handoff_path.parent / ref_path
+        try:
+            source_index_path = self._resolve_artifact_path(
+                handoff_path.parent / ref_path
+            )
+        except ValueError:
+            issues.append(
+                blocking_issue(
+                    "source_reference_index_ref_unsafe",
+                    "source_reference_index_ref escapes the configured analyzer root.",
+                    field_path="source_reference_index_ref",
+                )
+            )
+            return None
         source_index = self._read_json(
             source_index_path,
             files_read,

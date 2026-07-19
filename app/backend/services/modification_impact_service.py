@@ -263,6 +263,7 @@ class ModificationImpactService:
             response = self.scene_revision_service.revise_scene(
                 self._preview_scene_id(preview),
                 revision_prompt=(request.revision_prompt or request.user_input or preview.modification_summary).strip(),
+                allow_confirmed_scene=(preview.source_object_type == "confirmed_scene"),
             )
             candidate = dict(response.candidate or {})
             update["status"] = "converted_to_revision_candidate"

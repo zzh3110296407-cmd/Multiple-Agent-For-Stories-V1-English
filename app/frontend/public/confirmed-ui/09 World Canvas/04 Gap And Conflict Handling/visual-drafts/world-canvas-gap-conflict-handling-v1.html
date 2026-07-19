@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>世界画布 / 缺口与冲突处理 V1</title>
+  <style>
+    :root {
+      --ink: #28312b;
+      --muted: #746f63;
+      --faint: rgba(40, 49, 43, 0.56);
+      --line: rgba(92, 80, 64, 0.2);
+      --line-strong: rgba(92, 80, 64, 0.32);
+      --paper: rgba(247, 240, 225, 0.82);
+      --paper-soft: rgba(236, 226, 207, 0.66);
+      --sage: #66796f;
+      --sage-dark: #4e635b;
+      --sage-soft: rgba(102, 121, 111, 0.14);
+      --clay: #ae7e70;
+      --clay-dark: #94675c;
+      --gold: #b89a61;
+      --cream: #fbf7ed;
+      --shadow: 0 24px 70px rgba(59, 42, 26, 0.2);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+      color: var(--ink);
+      background: #e7ddcc;
+      overflow-x: hidden;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 36px 60px 54px;
+      isolation: isolate;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(244, 236, 221, 0.9) 0%, rgba(244, 236, 221, 0.66) 45%, rgba(244, 236, 221, 0.28) 100%),
+        url("assets/world-canvas-cartography-background-v1.png") center / cover no-repeat;
+    }
+
+    .page::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 22% 18%, rgba(255, 252, 241, 0.72), transparent 30%),
+        linear-gradient(180deg, rgba(252, 248, 238, 0.16), rgba(112, 91, 67, 0.2));
+      pointer-events: none;
+    }
+
+    .shell {
+      max-width: 1540px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .back-button,
+    .ghost-button,
+    .primary-button,
+    .stage-button,
+    .filter-button,
+    .option-button,
+    .soft-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(250, 246, 235, 0.74);
+      color: var(--ink);
+      font-weight: 800;
+      box-shadow: 0 12px 32px rgba(61, 48, 35, 0.1);
+      transition: transform 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+    }
+
+    .back-button {
+      width: 138px;
+    }
+
+    .back-button:hover,
+    .ghost-button:hover,
+    .soft-button:hover,
+    .filter-button:hover,
+    .option-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 243, 0.88);
+      box-shadow: 0 18px 40px rgba(61, 48, 35, 0.16);
+    }
+
+    .crumbs {
+      color: rgba(40, 49, 43, 0.64);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      min-width: 174px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      border-radius: var(--radius);
+      background: rgba(246, 240, 229, 0.66);
+      box-shadow: 0 12px 34px rgba(61, 48, 35, 0.12);
+      color: #4f5f57;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(102, 121, 111, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .dot.warn {
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(184, 154, 97, 0.16);
+    }
+
+    .dot.danger {
+      background: var(--clay);
+      box-shadow: 0 0 0 5px rgba(174, 126, 112, 0.16);
+    }
+
+    .dot.idle {
+      background: rgba(40, 49, 43, 0.24);
+      box-shadow: 0 0 0 5px rgba(40, 49, 43, 0.06);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 470px;
+      align-items: end;
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #26312b;
+      font-size: 64px;
+      line-height: 0.96;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .lead {
+      max-width: 900px;
+      margin: 14px 0 0;
+      color: rgba(40, 49, 43, 0.68);
+      font-size: 17px;
+      line-height: 1.8;
+      font-weight: 600;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(247, 240, 225, 0.54);
+      box-shadow: 0 16px 40px rgba(61, 48, 35, 0.12);
+    }
+
+    .stage-button {
+      min-height: 46px;
+      border-color: transparent;
+      background: transparent;
+      color: rgba(40, 49, 43, 0.48);
+      box-shadow: none;
+    }
+
+    .stage-button.active {
+      background: var(--sage);
+      color: #fffdf5;
+      box-shadow: 0 14px 28px rgba(65, 84, 76, 0.28);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 355px;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .work-panel {
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 253, 244, 0.78), rgba(235, 224, 205, 0.66)),
+        rgba(247, 240, 225, 0.76);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 30px 34px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--clay-dark);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    h2,
+    h3,
+    h4,
+    p {
+      margin-top: 0;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      color: #2b342f;
+      font-size: 32px;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    .panel-copy {
+      max-width: 820px;
+      margin: 0;
+      color: rgba(40, 49, 43, 0.66);
+      font-size: 15px;
+      line-height: 1.8;
+      font-weight: 600;
+    }
+
+    .state-card {
+      width: 168px;
+      min-height: 92px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(250, 247, 237, 0.72);
+      text-align: right;
+    }
+
+    .state-card strong {
+      display: block;
+      color: var(--sage-dark);
+      font-size: 25px;
+      line-height: 1.1;
+    }
+
+    .state-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .handling-grid {
+      display: grid;
+      grid-template-columns: 306px minmax(0, 1fr);
+      gap: 22px;
+      padding: 24px 34px 28px;
+    }
+
+    .queue-card,
+    .resolver-card,
+    .side-card,
+    .mini-card,
+    .preview-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 241, 0.68);
+      box-shadow: 0 12px 30px rgba(61, 48, 35, 0.08);
+    }
+
+    .queue-card,
+    .resolver-card {
+      min-height: 660px;
+      padding: 20px;
+    }
+
+    .queue-card h3,
+    .resolver-card h3 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .queue-card p,
+    .resolver-card > p {
+      margin: 0;
+      color: rgba(40, 49, 43, 0.62);
+      line-height: 1.7;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .filter-button {
+      min-height: 38px;
+      padding: 0 10px;
+      box-shadow: none;
+      background: rgba(246, 239, 225, 0.58);
+      color: rgba(40, 49, 43, 0.64);
+      font-size: 13px;
+    }
+
+    .filter-button.active {
+      border-color: transparent;
+      background: var(--sage);
+      color: #fffdf5;
+    }
+
+    .queue-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .queue-item {
+      width: 100%;
+      min-height: 92px;
+      display: grid;
+      grid-template-columns: 16px 1fr auto;
+      align-items: start;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(92, 80, 64, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 243, 0.52);
+      color: inherit;
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .queue-item:hover,
+    .queue-item.active {
+      transform: translateY(-1px);
+      border-color: rgba(102, 121, 111, 0.42);
+      background: rgba(255, 252, 243, 0.84);
+      box-shadow: 0 14px 28px rgba(61, 48, 35, 0.1);
+    }
+
+    .queue-item.resolved {
+      opacity: 0.68;
+    }
+
+    .queue-item .dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      box-shadow: 0 0 0 4px rgba(102, 121, 111, 0.12);
+    }
+
+    .queue-item strong {
+      display: block;
+      color: #303931;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .queue-item small {
+      display: block;
+      margin-top: 5px;
+      color: rgba(40, 49, 43, 0.55);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .queue-state {
+      min-width: 42px;
+      color: rgba(40, 49, 43, 0.48);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .resolution-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .type-badge {
+      flex: 0 0 auto;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      border: 1px solid rgba(102, 121, 111, 0.22);
+      border-radius: var(--radius);
+      background: var(--sage-soft);
+      color: var(--sage-dark);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .problem-card {
+      padding: 20px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 253, 246, 0.82), rgba(238, 229, 210, 0.62));
+    }
+
+    .problem-card h4 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .problem-card p {
+      margin: 0;
+      color: rgba(40, 49, 43, 0.72);
+      font-size: 15px;
+      line-height: 1.85;
+      font-weight: 600;
+    }
+
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .mini-card {
+      min-height: 96px;
+      padding: 14px;
+      background: rgba(250, 246, 235, 0.6);
+    }
+
+    .mini-card span {
+      color: rgba(40, 49, 43, 0.5);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #2d372f;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .option-button {
+      min-height: 122px;
+      padding: 15px;
+      background: rgba(250, 246, 235, 0.62);
+      color: inherit;
+      text-align: left;
+      box-shadow: 0 10px 22px rgba(61, 48, 35, 0.07);
+    }
+
+    .option-button.active {
+      border-color: rgba(102, 121, 111, 0.42);
+      background: rgba(102, 121, 111, 0.14);
+      box-shadow: 0 14px 28px rgba(78, 99, 91, 0.14);
+    }
+
+    .option-button strong {
+      display: block;
+      color: #2d372f;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .option-button span {
+      display: block;
+      margin-top: 8px;
+      color: rgba(40, 49, 43, 0.58);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .preview-card {
+      min-height: 148px;
+      padding: 15px;
+      background: rgba(255, 252, 243, 0.52);
+    }
+
+    .preview-card span {
+      color: rgba(40, 49, 43, 0.5);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .preview-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #2d372f;
+      font-size: 17px;
+      line-height: 1.35;
+    }
+
+    .preview-card p {
+      margin: 8px 0 0;
+      color: rgba(40, 49, 43, 0.62);
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 600;
+    }
+
+    .note-block {
+      margin-top: 18px;
+    }
+
+    .note-block label {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(40, 49, 43, 0.62);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      padding: 15px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      outline: none;
+      background: rgba(255, 252, 243, 0.72);
+      color: #2c332d;
+      font-size: 14px;
+      line-height: 1.7;
+      font-weight: 600;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    textarea:focus {
+      border-color: rgba(102, 121, 111, 0.56);
+      box-shadow: 0 0 0 4px rgba(102, 121, 111, 0.12);
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.25fr;
+      gap: 12px;
+      padding: 0 34px 30px;
+    }
+
+    .ghost-button,
+    .primary-button,
+    .soft-button {
+      min-height: 50px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      border-color: transparent;
+      background: linear-gradient(180deg, var(--clay), var(--clay-dark));
+      color: #fffaf2;
+      box-shadow: 0 18px 34px rgba(148, 103, 92, 0.26);
+    }
+
+    .primary-button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 44px rgba(148, 103, 92, 0.32);
+    }
+
+    .primary-button:disabled {
+      opacity: 0.52;
+      background: rgba(92, 80, 64, 0.26);
+      box-shadow: none;
+      color: rgba(40, 49, 43, 0.58);
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 20px;
+      background: rgba(244, 235, 219, 0.7);
+      backdrop-filter: blur(12px);
+    }
+
+    .side-card h3 {
+      margin: 0 0 8px;
+      font-size: 21px;
+    }
+
+    .side-card p {
+      margin: 0;
+      color: rgba(40, 49, 43, 0.62);
+      line-height: 1.7;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .progress-box {
+      margin-top: 16px;
+      padding: 15px;
+      border: 1px solid rgba(92, 80, 64, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 243, 0.48);
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: #303931;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .progress-track {
+      height: 10px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: rgba(92, 80, 64, 0.16);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: calc(var(--resolved) / var(--total) * 100%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--clay));
+      transition: width 260ms ease;
+    }
+
+    .status-list,
+    .impact-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .status-item,
+    .impact-item {
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      align-items: start;
+      gap: 10px;
+      min-height: 48px;
+      padding: 12px;
+      border: 1px solid rgba(92, 80, 64, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 243, 0.5);
+    }
+
+    .status-item .dot,
+    .impact-item .dot {
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      box-shadow: 0 0 0 4px rgba(102, 121, 111, 0.12);
+    }
+
+    .status-item strong,
+    .impact-item strong {
+      display: block;
+      color: #303931;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .status-item span:last-child,
+    .impact-item span:last-child {
+      color: rgba(40, 49, 43, 0.48);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .mini-note {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid rgba(92, 80, 64, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 243, 0.42);
+      color: rgba(40, 49, 43, 0.62);
+      line-height: 1.7;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 34px;
+      z-index: 10;
+      min-width: 260px;
+      transform: translate(-50%, 20px);
+      padding: 14px 22px;
+      border-radius: var(--radius);
+      background: rgba(40, 37, 33, 0.9);
+      color: #fff9ef;
+      text-align: center;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1280px) {
+      .handling-grid,
+      .evidence-grid,
+      .decision-grid,
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .page {
+        padding: 28px;
+      }
+
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-strip {
+        max-width: 720px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 18px;
+      }
+
+      .topbar,
+      .panel-head,
+      .resolution-head {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .status-pill,
+      .back-button,
+      .state-card {
+        width: 100%;
+        min-width: 0;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip,
+      .filter-row,
+      .action-row {
+        grid-template-columns: 1fr;
+      }
+
+      .handling-grid,
+      .panel-head,
+      .action-row {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .queue-item {
+        grid-template-columns: 1fr;
+      }
+
+      .queue-state {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="shell">
+      <header class="topbar">
+        <button class="back-button" type="button" id="backButton">返回总览</button>
+        <div class="crumbs">主页 / 当前项目 / 世界画布</div>
+        <div class="status-pill"><span class="dot warn" id="topDot"></span><span id="pageState">问题处理中</span></div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h1>世界画布</h1>
+          <p class="lead">处理草案里的未知规则、逻辑冲突和待确认项。每个决定都会回写到草案审阅结果，处理完成后才能继续确认。</p>
+        </div>
+        <nav class="stage-strip" aria-label="世界画布阶段">
+          <button class="stage-button" type="button" data-stage="source">来源前提</button>
+          <button class="stage-button" type="button" data-stage="generate">生成草案</button>
+          <button class="stage-button active" type="button" data-stage="review">审阅确认</button>
+          <button class="stage-button" type="button" data-stage="fact">事实底座</button>
+        </nav>
+      </section>
+
+      <section class="layout">
+        <section class="work-panel" aria-label="缺口与冲突处理">
+          <header class="panel-head">
+            <div>
+              <p class="eyebrow">缺口与冲突处理</p>
+              <h2>把不确定项变成可执行的世界事实</h2>
+              <p class="panel-copy">这里不重写整份草案，只逐项决定未知规则、逻辑冲突和确认问题的处理方式。保存后，草案审阅页会读取处理后的状态。</p>
+            </div>
+            <div class="state-card">
+              <strong id="stateCardNumber">0 / 5</strong>
+              <span>已处理问题</span>
+            </div>
+          </header>
+
+          <div class="handling-grid">
+            <aside class="queue-card" aria-label="待处理队列">
+              <h3>处理队列</h3>
+              <p>选择一项后，在右侧确认处理方式。</p>
+              <div class="filter-row">
+                <button class="filter-button active" type="button" data-filter="all">全部</button>
+                <button class="filter-button" type="button" data-filter="unknown">未知规则</button>
+                <button class="filter-button" type="button" data-filter="conflict">逻辑冲突</button>
+                <button class="filter-button" type="button" data-filter="confirm">待确认</button>
+              </div>
+              <div class="queue-list" id="queueList"></div>
+            </aside>
+
+            <article class="resolver-card" aria-label="当前问题处理">
+              <header class="resolution-head">
+                <div>
+                  <h3 id="resolverTitle">未知传说的事实边界</h3>
+                  <p id="resolverSummary">需要确认未知现象是城市传闻、真实历史残影，还是后续章节才揭示的现象。</p>
+                </div>
+                <span class="type-badge" id="resolverType">未知规则</span>
+              </header>
+
+              <section class="problem-card">
+                <h4>处理判断</h4>
+                <p id="resolverDetail">如果直接确认为真实存在，后续悬疑会更早转向奇幻真相；如果保留为传闻，调查线会有更长的推理空间。</p>
+                <div class="evidence-grid">
+                  <article class="mini-card"><span>来源证据</span><strong id="sourceEvidence">旧势力档案反复出现未知现象记载。</strong></article>
+                  <article class="mini-card"><span>影响范围</span><strong id="impactRange">特殊规则、历史脉络、章节伏笔。</strong></article>
+                  <article class="mini-card"><span>建议处理</span><strong id="suggestionText">保留传闻，延后确认。</strong></article>
+                </div>
+              </section>
+
+              <section class="decision-grid" id="decisionGrid" aria-label="处理方案"></section>
+
+              <section class="preview-grid" aria-label="影响预览">
+                <article class="preview-card">
+                  <span>写入草案</span>
+                  <strong id="draftWriteTitle">特殊规则保持开放</strong>
+                  <p id="draftWriteCopy">草案记录未知传说存在，但不确认它的真实来源。</p>
+                </article>
+                <article class="preview-card">
+                  <span>下游影响</span>
+                  <strong id="downstreamTitle">章节仍保留悬疑空间</strong>
+                  <p id="downstreamCopy">角色和章节可以围绕证据、档案和禁区逐步逼近真相。</p>
+                </article>
+              </section>
+
+              <div class="note-block">
+                <label for="resolutionNote">处理说明</label>
+                <textarea id="resolutionNote">保留未知传说作为城市传闻与旧史残影之间的模糊项，后续章节再决定是否转为硬事实。</textarea>
+              </div>
+            </article>
+          </div>
+
+          <div class="action-row">
+            <button class="ghost-button" type="button" id="reviewButton">返回草案审阅</button>
+            <button class="soft-button" type="button" id="saveButton">保存处理</button>
+            <button class="primary-button" type="button" id="continueButton" disabled>继续确认</button>
+          </div>
+        </section>
+
+        <aside class="side-stack" aria-label="处理进度辅助栏">
+          <section class="side-card">
+            <h3>处理进度</h3>
+            <p id="progressCopy">仍有问题需要处理。</p>
+            <div class="progress-box">
+              <div class="progress-top"><span>完成度</span><strong id="progressCount">0 / 5</strong></div>
+              <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill" style="--resolved: 0; --total: 5"></div></div>
+            </div>
+            <div class="status-list">
+              <article class="status-item"><span class="dot warn" id="unknownDot"></span><strong>未知规则</strong><span id="unknownCount">0 / 2</span></article>
+              <article class="status-item"><span class="dot warn" id="conflictDot"></span><strong>逻辑冲突</strong><span id="conflictCount">0 / 1</span></article>
+              <article class="status-item"><span class="dot warn" id="confirmDot"></span><strong>待确认</strong><span id="confirmCount">0 / 2</span></article>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>写入边界</h3>
+            <p>本页只修正草案内的问题处理结果，仍不会直接写入正式事实底座。</p>
+            <div class="impact-list">
+              <article class="impact-item"><span class="dot"></span><strong>保留原始来源前提</strong><span>不改写</span></article>
+              <article class="impact-item"><span class="dot warn"></span><strong>更新草案审查状态</strong><span>草案</span></article>
+              <article class="impact-item"><span class="dot warn"></span><strong>最终事实底座</strong><span>未写入</span></article>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>下一步</h3>
+            <p>所有必处理项完成后，可返回审阅确认并进入确认草案流程。</p>
+            <div class="mini-note" id="nextStepNote">当前仍需处理问题，继续确认暂不可用。</div>
+          </section>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const issues = [
+      {
+        id: "dragon-boundary",
+        type: "unknown",
+        label: "未知规则",
+        title: "未知传说的事实边界",
+        summary: "未知现象是传闻、残影，还是后续章节才揭示的真实现象。",
+        detail: "如果直接确认为真实存在，后续悬疑会更早转向奇幻真相；如果保留为传闻，调查线会有更长的推理空间。",
+        source: "旧势力档案反复出现未知现象记载。",
+        range: "特殊规则、历史脉络、章节伏笔。",
+        suggestion: "保留传闻，延后确认。",
+        note: "保留未知传说作为城市传闻与旧史残影之间的模糊项，后续章节再决定是否转为硬事实。",
+        options: [
+          ["保留为传闻", "草案只承认传闻存在，不确认源头。", "特殊规则保持开放", "草案记录未知传说存在，但不确认它的真实来源。", "章节仍保留悬疑空间", "角色和章节可以围绕证据、档案和禁区逐步逼近真相。"],
+          ["确认为历史残影", "草案把未知现象写入旧史残留现象。", "未知现象进入硬事实", "未知现象会成为世界事实的一部分，后续模块必须承认其真实存在。", "奇幻真相提前成形", "角色线和章节线会更早接触超常事实。"],
+          ["延后揭示", "草案标记为后续确认项。", "写入待揭示状态", "草案保留线索，但把最终判定移交给后续章节。", "悬疑节奏更慢", "章节可以先围绕证据矛盾展开，再逐步触碰未知现象。"]
+        ]
+      },
+      {
+        id: "memory-trigger",
+        type: "unknown",
+        label: "未知规则",
+        title: "异常缺口的触发条件",
+        summary: "草案尚未确认触发条件是否和关键异常信号绑定。",
+        detail: "触发条件如果过早写死，会限制后续推理空间；如果完全不处理，会影响世界规则稳定性。",
+        source: "关键事件证据均指向关键异常信号附近。",
+        range: "硬规则、证据系统、章节推理。",
+        suggestion: "先绑定异常信号窗口，不绑定唯一原因。",
+        note: "触发条件暂定为关键异常信号附近的时间窗口，但不确认唯一原因。",
+        options: [
+          ["绑定时间窗口", "确定触发发生在异常信号前后。", "形成稳定线索", "草案确认异常缺口发生在异常信号窗口内。", "推理锚点清晰", "章节可以围绕异常信号前后的证据差异推进。"],
+          ["绑定关键事件仪式", "把触发源指向关键事件中的仪式。", "仪式进入硬事实", "草案会把关键事件仪式作为异常核心。", "阴谋感增强", "旧势力和关键事件角色权重会提高。"],
+          ["保留未知", "只确认缺口发生，不确认触发源。", "规则保持模糊", "草案不写触发条件，只保留事件本身。", "自由度更高", "但后续推理需要额外线索支撑。"]
+        ]
+      },
+      {
+        id: "testimony-time",
+        type: "conflict",
+        label: "逻辑冲突",
+        title: "关键事件证据与关键地标时间",
+        summary: "部分证据显示异常信号前后时间感不一致。",
+        detail: "该冲突可以作为剧情线索保留，但需要确认它是世界规则导致，还是角色证据不可靠。",
+        source: "三份证据都提到同一段关键事件时间，但异常信号位置不同。",
+        range: "历史脉络、角色证据、推理线索。",
+        suggestion: "保留为线索，标记证据不可靠。",
+        note: "保留时间不一致作为推理线索，暂不把它修正为单一时间。",
+        options: [
+          ["保留为线索", "把冲突标记为有意保留。", "冲突转为线索", "草案保留证据差异，并说明它不是草案错误。", "推理张力增强", "章节可以通过证据差异推进调查。"],
+          ["修订证据", "把证据改成同一时间顺序。", "冲突被消除", "草案修正证据，使时间顺序更稳定。", "阅读更顺滑", "但会削弱推理线索密度。"],
+          ["修订关键地标规则", "解释关键地标时间感会被异常影响。", "规则补强", "草案新增关键地标影响时间感的规则。", "世界感更强", "但特殊规则会更早显露。"]
+        ]
+      },
+      {
+        id: "noble-truth",
+        type: "confirm",
+        label: "待确认",
+        title: "旧势力是否掌握真相",
+        summary: "草案提供了两种方向：知情隐瞒或只掌握残缺档案。",
+        detail: "这会影响后续角色关系和章节推进方式，建议在确认草案前处理。",
+        source: "旧势力保管档案，也主持关键事件礼仪。",
+        range: "阵营动机、角色关系、章节揭示。",
+        suggestion: "只掌握残缺档案。",
+        note: "旧势力掌握部分档案和仪式碎片，但并不完整掌握真相。",
+        options: [
+          ["知情隐瞒", "旧势力知道核心真相并主动遮掩。", "阵营动机明确", "草案把旧势力写成高风险知情方。", "对抗提前出现", "角色关系会更快进入冲突。"],
+          ["残缺档案", "旧势力只掌握碎片线索。", "保持灰度", "草案保留旧势力嫌疑，但不确认其掌握全貌。", "调查空间更大", "章节可以同时保留合作和怀疑。"],
+          ["完全无关", "旧势力只是被传闻卷入。", "嫌疑降低", "草案不把旧势力作为核心知情方。", "焦点转移", "调查重点会转向组织或禁区。"]
+        ]
+      },
+      {
+        id: "tide-zone",
+        type: "confirm",
+        label: "待确认",
+        title: "待探索区域的开放时机",
+        summary: "是否在前期就允许主角进入禁区仍未确定。",
+        detail: "提前开放会强化探索感，延后开放会强化悬疑压迫感。",
+        source: "待探索区域和未知传说、旧区域档案存在关联。",
+        range: "地理轮廓、章节节奏、探索入口。",
+        suggestion: "中段开启。",
+        note: "待探索区域在中段开启，前期只通过传闻和远景出现。",
+        options: [
+          ["前期进入", "主角早期就能进入禁区。", "探索感增强", "草案把禁区设为早期可触达地点。", "节奏更快", "章节较早进入实地调查。"],
+          ["中段开启", "先铺垫，再允许进入。", "节奏均衡", "草案把禁区设为中段关键地点。", "悬疑递进", "前期先通过证据和档案积累张力。"],
+          ["后期揭示", "禁区后期才开放。", "压迫感更强", "草案把禁区设为后期突破点。", "悬念延长", "前期需要更多外围线索支撑。"]
+        ]
+      }
+    ];
+
+    const issueState = new Map(issues.map((issue) => [issue.id, { resolved: false, optionIndex: 0, note: issue.note }]));
+    let selectedId = issues[0].id;
+    let activeFilter = "all";
+
+    const queueList = document.getElementById("queueList");
+    const filterButtons = document.querySelectorAll(".filter-button");
+    const resolverTitle = document.getElementById("resolverTitle");
+    const resolverSummary = document.getElementById("resolverSummary");
+    const resolverType = document.getElementById("resolverType");
+    const resolverDetail = document.getElementById("resolverDetail");
+    const sourceEvidence = document.getElementById("sourceEvidence");
+    const impactRange = document.getElementById("impactRange");
+    const suggestionText = document.getElementById("suggestionText");
+    const decisionGrid = document.getElementById("decisionGrid");
+    const draftWriteTitle = document.getElementById("draftWriteTitle");
+    const draftWriteCopy = document.getElementById("draftWriteCopy");
+    const downstreamTitle = document.getElementById("downstreamTitle");
+    const downstreamCopy = document.getElementById("downstreamCopy");
+    const resolutionNote = document.getElementById("resolutionNote");
+    const continueButton = document.getElementById("continueButton");
+    const progressCount = document.getElementById("progressCount");
+    const progressFill = document.getElementById("progressFill");
+    const progressCopy = document.getElementById("progressCopy");
+    const stateCardNumber = document.getElementById("stateCardNumber");
+    const pageState = document.getElementById("pageState");
+    const topDot = document.getElementById("topDot");
+    const nextStepNote = document.getElementById("nextStepNote");
+    const toast = document.getElementById("toast");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+    }
+
+    function dotClass(type, resolved) {
+      if (resolved) return "dot";
+      if (type === "conflict") return "dot danger";
+      if (type === "confirm") return "dot warn";
+      return "dot warn";
+    }
+
+    function visibleIssues() {
+      return issues.filter((issue) => activeFilter === "all" || issue.type === activeFilter);
+    }
+
+    function currentIssue() {
+      return issues.find((issue) => issue.id === selectedId) || issues[0];
+    }
+
+    function currentOption(issue) {
+      return issue.options[issueState.get(issue.id).optionIndex];
+    }
+
+    function renderQueue() {
+      const visible = visibleIssues();
+      queueList.innerHTML = visible.map((issue) => {
+        const state = issueState.get(issue.id);
+        return `
+          <button class="queue-item${issue.id === selectedId ? " active" : ""}${state.resolved ? " resolved" : ""}" type="button" data-id="${issue.id}">
+            <span class="${dotClass(issue.type, state.resolved)}"></span>
+            <span>
+              <strong>${issue.title}</strong>
+              <small>${issue.summary}</small>
+            </span>
+            <span class="queue-state">${state.resolved ? "已处理" : issue.label}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderResolver() {
+      const issue = currentIssue();
+      const state = issueState.get(issue.id);
+      const selectedOption = currentOption(issue);
+      resolverTitle.textContent = issue.title;
+      resolverSummary.textContent = issue.summary;
+      resolverType.textContent = issue.label;
+      resolverDetail.textContent = issue.detail;
+      sourceEvidence.textContent = issue.source;
+      impactRange.textContent = issue.range;
+      suggestionText.textContent = issue.suggestion;
+      resolutionNote.value = state.note;
+      decisionGrid.innerHTML = issue.options.map((option, index) => `
+        <button class="option-button${index === state.optionIndex ? " active" : ""}" type="button" data-option="${index}">
+          <strong>${option[0]}</strong>
+          <span>${option[1]}</span>
+        </button>
+      `).join("");
+      draftWriteTitle.textContent = selectedOption[2];
+      draftWriteCopy.textContent = selectedOption[3];
+      downstreamTitle.textContent = selectedOption[4];
+      downstreamCopy.textContent = selectedOption[5];
+    }
+
+    function renderProgress() {
+      const total = issues.length;
+      const resolved = issues.filter((issue) => issueState.get(issue.id).resolved).length;
+      progressCount.textContent = `${resolved} / ${total}`;
+      stateCardNumber.textContent = `${resolved} / ${total}`;
+      progressFill.style.setProperty("--resolved", resolved);
+      progressFill.style.setProperty("--total", total);
+
+      const types = {
+        unknown: issues.filter((issue) => issue.type === "unknown"),
+        conflict: issues.filter((issue) => issue.type === "conflict"),
+        confirm: issues.filter((issue) => issue.type === "confirm")
+      };
+      Object.entries(types).forEach(([type, list]) => {
+        const done = list.filter((issue) => issueState.get(issue.id).resolved).length;
+        const count = document.getElementById(`${type}Count`);
+        const dot = document.getElementById(`${type}Dot`);
+        count.textContent = `${done} / ${list.length}`;
+        dot.className = done === list.length ? "dot" : "dot warn";
+      });
+
+      if (resolved === total) {
+        continueButton.disabled = false;
+        pageState.textContent = "处理完成";
+        progressCopy.textContent = "所有问题已处理，可以继续确认。";
+        nextStepNote.textContent = "可以返回审阅确认页，进入确认草案流程。";
+        topDot.className = "dot";
+      } else {
+        continueButton.disabled = true;
+        pageState.textContent = "问题处理中";
+        progressCopy.textContent = "仍有问题需要处理。";
+        nextStepNote.textContent = "当前仍需处理问题，继续确认暂不可用。";
+        topDot.className = "dot warn";
+      }
+    }
+
+    function renderAll() {
+      renderQueue();
+      renderResolver();
+      renderProgress();
+    }
+
+    queueList.addEventListener("click", (event) => {
+      const item = event.target.closest(".queue-item");
+      if (!item) return;
+      issueState.get(selectedId).note = resolutionNote.value;
+      selectedId = item.dataset.id;
+      renderAll();
+    });
+
+    decisionGrid.addEventListener("click", (event) => {
+      const option = event.target.closest(".option-button");
+      if (!option) return;
+      const issue = currentIssue();
+      issueState.get(issue.id).optionIndex = Number(option.dataset.option);
+      issueState.get(issue.id).note = resolutionNote.value;
+      renderResolver();
+      showToast(option.querySelector("strong").textContent);
+    });
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        filterButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        activeFilter = button.dataset.filter;
+        const visible = visibleIssues();
+        if (!visible.some((issue) => issue.id === selectedId) && visible.length > 0) {
+          selectedId = visible[0].id;
+        }
+        renderAll();
+        showToast(button.textContent.trim());
+      });
+    });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      const state = issueState.get(selectedId);
+      state.resolved = true;
+      state.note = resolutionNote.value;
+      let next = visibleIssues().find((issue) => !issueState.get(issue.id).resolved);
+      if (!next) {
+        next = issues.find((issue) => !issueState.get(issue.id).resolved);
+        if (next) {
+          activeFilter = "all";
+          filterButtons.forEach((button) => button.classList.toggle("active", button.dataset.filter === "all"));
+        }
+      }
+      if (next) {
+        selectedId = next.id;
+      }
+      renderAll();
+      showToast("处理已保存");
+    });
+
+    document.getElementById("reviewButton").addEventListener("click", () => showToast("返回草案审阅"));
+    continueButton.addEventListener("click", () => {
+      if (!continueButton.disabled) {
+        showToast("进入确认草案");
+      }
+    });
+    document.getElementById("backButton").addEventListener("click", () => showToast("返回当前项目总览"));
+
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const messages = {
+          source: "返回来源前提",
+          generate: "查看生成草案",
+          review: "当前处于审阅确认",
+          fact: "确认草案后才会进入事实底座"
+        };
+        showToast(messages[button.dataset.stage]);
+      });
+    });
+
+    window.__resolveAllIssues = () => {
+      issues.forEach((issue) => issueState.get(issue.id).resolved = true);
+      renderAll();
+    };
+
+    renderAll();
+  </script>
+</body>
+</html>

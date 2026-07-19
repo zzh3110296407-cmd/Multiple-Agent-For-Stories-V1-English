@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>故事设定生成中 UI V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(250, 246, 235, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.93);
+      --paper-soft: rgba(241, 232, 214, 0.72);
+      --ink: #302d29;
+      --muted: #756b61;
+      --quiet: #9b8f82;
+      --line: rgba(126, 101, 78, 0.2);
+      --line-strong: rgba(126, 101, 78, 0.34);
+      --accent: #b48a78;
+      --accent-deep: #8e675b;
+      --sage: #6f7e76;
+      --sage-deep: #53665f;
+      --amber: #d5b982;
+      --shadow: 0 24px 72px rgba(76, 57, 39, 0.16);
+      --soft-shadow: 0 14px 34px rgba(76, 57, 39, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button {
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.95), rgba(236, 231, 220, 0.58) 48%, rgba(236, 231, 220, 0.24)),
+        url("assets/story-setup-desk-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 13%, rgba(255, 252, 244, 0.78), transparent 34%),
+        radial-gradient(circle at 88% 78%, rgba(180, 138, 120, 0.15), transparent 38%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.42), rgba(233, 221, 191, 0.2));
+    }
+
+    .backdrop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(90deg, rgba(82, 62, 45, 0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(82, 62, 45, 0.035) 1px, transparent 1px);
+      background-size: 42px 42px, 46px 46px;
+      mask-image: linear-gradient(90deg, black 0%, black 56%, transparent 100%);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1320px, calc(100vw - 72px));
+      height: calc(100vh - 68px);
+      margin: 34px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr) 184px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.07);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.68);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.11);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 540;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.42);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .model-pill span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 126, 118, 0.16);
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 28px;
+      padding-left: 20px;
+    }
+
+    h1 {
+      margin: 0 0 9px;
+      font-size: clamp(42px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      color: #2f302c;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .route-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 432px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      background: rgba(255, 252, 244, 0.3);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .route-step {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      padding: 10px 11px;
+      background: transparent;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 840;
+      white-space: nowrap;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .route-step:hover {
+      color: var(--ink);
+      background: rgba(255, 252, 244, 0.46);
+    }
+
+    .route-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 12px 26px rgba(83, 102, 95, 0.19);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 314px;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .main-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 28px 30px 24px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.89), rgba(241, 232, 214, 0.7)),
+        radial-gradient(circle at 92% 2%, rgba(180, 138, 120, 0.15), transparent 26%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .panel-title {
+      margin: 0;
+      color: #302d29;
+      font-size: 28px;
+      line-height: 1.16;
+      font-weight: 900;
+    }
+
+    .panel-note {
+      margin: 10px 0 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .status-chip {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      background: rgba(111, 126, 118, 0.12);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+      border: 1px solid rgba(111, 126, 118, 0.16);
+    }
+
+    .draft-stage {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 286px;
+      gap: 20px;
+    }
+
+    .paper-canvas {
+      position: relative;
+      min-height: 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--line-strong);
+      background:
+        linear-gradient(180deg, rgba(255, 252, 244, 0.9), rgba(252, 247, 236, 0.78)),
+        repeating-linear-gradient(180deg, transparent 0 34px, rgba(126, 101, 78, 0.04) 35px 36px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 20px 42px rgba(86, 64, 49, 0.08);
+      overflow: hidden;
+      padding: 28px;
+    }
+
+    .paper-canvas::before {
+      content: "";
+      position: absolute;
+      inset: -30% -15%;
+      background:
+        linear-gradient(100deg, transparent 18%, rgba(180, 138, 120, 0.12) 30%, rgba(111, 126, 118, 0.12) 45%, transparent 60%);
+      transform: translateX(-70%);
+      animation: scan 3.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .paper-canvas::after {
+      content: "";
+      position: absolute;
+      left: 60px;
+      right: 60px;
+      bottom: 46px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(142, 103, 91, 0.32), transparent);
+      opacity: 0.7;
+    }
+
+    @keyframes scan {
+      0% {
+        transform: translateX(-80%);
+        opacity: 0;
+      }
+      28% {
+        opacity: 0.72;
+      }
+      70% {
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateX(92%);
+        opacity: 0;
+      }
+    }
+
+    .canvas-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 26px;
+    }
+
+    .canvas-top h3 {
+      margin: 0;
+      color: #332f2a;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .canvas-top p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .progress-orb {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(var(--sage) var(--progress, 28%), rgba(111, 126, 118, 0.13) 0),
+        rgba(255, 252, 244, 0.72);
+      box-shadow: 0 12px 28px rgba(83, 102, 95, 0.12);
+      color: #fffaf2;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .progress-orb span {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--sage-deep);
+      background: rgba(255, 252, 244, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+    }
+
+    .module-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .module-card {
+      min-height: 132px;
+      border: 1px solid rgba(126, 101, 78, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      padding: 16px;
+      opacity: 0.44;
+      transform: translateY(10px);
+      transition: opacity 420ms ease, transform 420ms ease, background 420ms ease, border 420ms ease;
+    }
+
+    .module-card.revealed {
+      opacity: 1;
+      transform: translateY(0);
+      background: rgba(255, 252, 244, 0.66);
+      border-color: rgba(111, 126, 118, 0.26);
+    }
+
+    .module-card strong {
+      display: block;
+      color: #3b352f;
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .module-card p {
+      margin: 0;
+      min-height: 42px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 560;
+    }
+
+    .ink-lines {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .ink-line {
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(111, 126, 118, 0.28), rgba(180, 138, 120, 0.18), transparent);
+      transform-origin: left center;
+      animation: inkPulse 2.2s ease-in-out infinite;
+    }
+
+    .ink-line.short {
+      width: 62%;
+    }
+
+    .ink-line.mid {
+      width: 78%;
+      animation-delay: 180ms;
+    }
+
+    .ink-line.long {
+      width: 90%;
+      animation-delay: 320ms;
+    }
+
+    @keyframes inkPulse {
+      0%, 100% {
+        opacity: 0.34;
+        transform: scaleX(0.88);
+      }
+      50% {
+        opacity: 0.82;
+        transform: scaleX(1);
+      }
+    }
+
+    .stage-list {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .stage-item {
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.42);
+      padding: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 11px;
+      opacity: 0.58;
+      transition: opacity 260ms ease, transform 260ms ease, background 260ms ease, border 260ms ease;
+    }
+
+    .stage-item.active {
+      opacity: 1;
+      transform: translateX(-2px);
+      background: rgba(255, 252, 244, 0.66);
+      border-color: rgba(111, 126, 118, 0.28);
+    }
+
+    .stage-item.done {
+      opacity: 0.86;
+    }
+
+    .stage-dot {
+      width: 11px;
+      height: 11px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: var(--quiet);
+      box-shadow: 0 0 0 5px rgba(155, 143, 130, 0.1);
+    }
+
+    .stage-item.active .stage-dot {
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 126, 118, 0.15);
+      animation: dotPulse 1.2s ease-in-out infinite;
+    }
+
+    .stage-item.done .stage-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.12);
+    }
+
+    @keyframes dotPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.24);
+      }
+    }
+
+    .stage-item strong {
+      display: block;
+      color: #3b352f;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+
+    .stage-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 560;
+    }
+
+    .footer-row {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .boundary-copy {
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 560;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .primary-action {
+      min-width: 148px;
+      min-height: 48px;
+      border: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #fffaf2;
+      font-size: 14px;
+      font-weight: 880;
+      box-shadow: 0 18px 38px rgba(142, 103, 91, 0.24);
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease, opacity 180ms ease;
+    }
+
+    .primary-action:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+      filter: saturate(0.78);
+      box-shadow: none;
+    }
+
+    .primary-action:not(:disabled):hover {
+      transform: translateY(-1px);
+      filter: saturate(1.03);
+      box-shadow: 0 22px 44px rgba(142, 103, 91, 0.3);
+    }
+
+    .side {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .side-card {
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.38);
+      box-shadow: var(--soft-shadow);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .side-title {
+      margin: 0 0 4px;
+      color: #3b352f;
+      font-size: 16px;
+      font-weight: 880;
+    }
+
+    .side-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .meter {
+      margin-top: 14px;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(111, 126, 118, 0.13);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      width: 18%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--accent));
+      transition: width 520ms ease;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mini-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.35);
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .mini-item b {
+      color: var(--sage-deep);
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 230px;
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      background: rgba(48, 45, 41, 0.88);
+      color: #fffaf2;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: 0 18px 42px rgba(40, 30, 24, 0.2);
+      transform: translate(-50%, 16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: calc(100vw - 42px);
+        margin: 24px auto;
+      }
+
+      .hero {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .route-strip {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .layout,
+      .draft-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .hero,
+      .main-panel {
+        padding-left: 0;
+      }
+
+      .main-panel {
+        padding: 22px 18px;
+      }
+
+      .panel-head,
+      .footer-row,
+      .canvas-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .module-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: stretch;
+      }
+
+      .primary-action,
+      .soft-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button" id="backButton">返回设定</button>
+      <div class="crumb">主页 / 当前项目 / 故事设定 / 生成中</div>
+      <div class="model-pill"><span></span>模型已就绪</div>
+    </header>
+
+    <section class="hero" aria-label="故事设定生成中页头">
+      <div>
+        <h1>故事设定</h1>
+        <p>设定草案正在整理。完成后会进入草案审阅，后续仍需在对应工作台逐项确认。</p>
+      </div>
+      <nav class="route-strip" aria-label="故事设定阶段">
+        <button class="route-step" type="button" data-strip="entry">设定入口</button>
+        <button class="route-step active" type="button" data-strip="generating">生成草案</button>
+        <button class="route-step" type="button" data-strip="review">审阅补充</button>
+        <button class="route-step" type="button" data-strip="handoff">决策交接</button>
+      </nav>
+    </section>
+
+    <section class="layout" aria-label="故事设定生成中工作区">
+      <section class="main-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">草案生成</p>
+            <h2 class="panel-title">草案正在浮现</h2>
+            <p class="panel-note">系统正在把初始构想整理成可审阅的四类草案：世界、角色、Framework、章节路线。</p>
+          </div>
+          <span class="status-chip" id="setupState">生成中</span>
+        </div>
+
+        <div class="draft-stage">
+          <section class="paper-canvas" aria-label="生成中草案画布">
+            <div class="canvas-top">
+              <div>
+                <p class="eyebrow">港口城钟楼证词</p>
+                <h3 id="stageTitle">正在识别故事信号</h3>
+                <p id="stageCopy">题材、氛围、世界范围与核心冲突会先被整理成安全摘要。</p>
+              </div>
+              <div class="progress-orb" id="progressOrb" style="--progress: 18%">
+                <span id="progressText">18%</span>
+              </div>
+            </div>
+
+            <div class="module-grid">
+              <article class="module-card" data-module="world">
+                <strong>世界画布建议</strong>
+                <p>港口城、潮汐禁区、行会秩序。</p>
+                <div class="ink-lines">
+                  <div class="ink-line long"></div>
+                  <div class="ink-line mid"></div>
+                  <div class="ink-line short"></div>
+                </div>
+              </article>
+              <article class="module-card" data-module="cast">
+                <strong>角色方向</strong>
+                <p>调查者、证词持有者、旧贵族压力。</p>
+                <div class="ink-lines">
+                  <div class="ink-line mid"></div>
+                  <div class="ink-line long"></div>
+                  <div class="ink-line short"></div>
+                </div>
+              </article>
+              <article class="module-card" data-module="framework">
+                <strong>Framework 建议</strong>
+                <p>从日常秩序进入记忆缺口。</p>
+                <div class="ink-lines">
+                  <div class="ink-line short"></div>
+                  <div class="ink-line long"></div>
+                  <div class="ink-line mid"></div>
+                </div>
+              </article>
+              <article class="module-card" data-module="route">
+                <strong>章节路线</strong>
+                <p>线索、误导、禁区、证词回收。</p>
+                <div class="ink-lines">
+                  <div class="ink-line long"></div>
+                  <div class="ink-line short"></div>
+                  <div class="ink-line mid"></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <aside class="stage-list" aria-label="生成进度">
+            <div class="stage-item active" data-stage="0">
+              <span class="stage-dot"></span>
+              <div>
+                <strong>识别构想</strong>
+                <span>整理题材、氛围与核心冲突。</span>
+              </div>
+            </div>
+            <div class="stage-item" data-stage="1">
+              <span class="stage-dot"></span>
+              <div>
+                <strong>整理草案</strong>
+                <span>形成四类可审阅建议。</span>
+              </div>
+            </div>
+            <div class="stage-item" data-stage="2">
+              <span class="stage-dot"></span>
+              <div>
+                <strong>检查缺口</strong>
+                <span>确认是否需要补充问题。</span>
+              </div>
+            </div>
+            <div class="stage-item" data-stage="3">
+              <span class="stage-dot"></span>
+              <div>
+                <strong>准备审阅</strong>
+                <span>草案即将进入下一步。</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer class="footer-row">
+          <div class="boundary-copy">当前生成的是设定草案。不会直接写入最终故事事实，也不会激活后续工作台内容。</div>
+          <div class="actions">
+            <button class="soft-button" type="button" id="continueLater">后台继续</button>
+            <button class="primary-action" type="button" id="reviewButton" disabled>查看草案</button>
+          </div>
+        </footer>
+      </section>
+
+      <aside class="side" aria-label="故事设定生成中辅助信息">
+        <section class="side-card">
+          <h3 class="side-title">生成进度</h3>
+          <p class="side-copy" id="sideProgressCopy">正在识别初始构想。</p>
+          <div class="meter" aria-hidden="true">
+            <div class="meter-fill" id="meterFill"></div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <h3 class="side-title">本次草案</h3>
+          <p class="side-copy">草案会作为后续工作台的候选方向。</p>
+          <div class="mini-list">
+            <div class="mini-item"><span>交接目标</span><b>世界画布</b></div>
+            <div class="mini-item"><span>Framework 参考</span><b>港口城主骨架</b></div>
+            <div class="mini-item"><span>写入边界</span><b>草案</b></div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const stages = [
+        {
+          title: "正在识别故事信号",
+          copy: "题材、氛围、世界范围与核心冲突会先被整理成安全摘要。",
+          progress: 18,
+          side: "正在识别初始构想。",
+          reveal: []
+        },
+        {
+          title: "正在整理四类草案",
+          copy: "世界、角色、Framework 与章节路线会拆成可审阅模块。",
+          progress: 44,
+          side: "世界与角色方向已开始浮现。",
+          reveal: ["world", "cast"]
+        },
+        {
+          title: "正在检查缺失信息",
+          copy: "草案会标记还需要你确认的范围、冲突或角色线索。",
+          progress: 72,
+          side: "Framework 与章节路线正在补齐。",
+          reveal: ["world", "cast", "framework", "route"]
+        },
+        {
+          title: "草案已准备审阅",
+          copy: "下一步可以查看草案，并决定是否补充或交接。",
+          progress: 100,
+          side: "草案已经准备好。",
+          reveal: ["world", "cast", "framework", "route"]
+        }
+      ];
+
+      let activeStage = 0;
+      let paused = false;
+      const toast = document.getElementById("toast");
+      const stageTitle = document.getElementById("stageTitle");
+      const stageCopy = document.getElementById("stageCopy");
+      const setupState = document.getElementById("setupState");
+      const progressOrb = document.getElementById("progressOrb");
+      const progressText = document.getElementById("progressText");
+      const meterFill = document.getElementById("meterFill");
+      const sideProgressCopy = document.getElementById("sideProgressCopy");
+      const reviewButton = document.getElementById("reviewButton");
+      const continueLater = document.getElementById("continueLater");
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+
+      function renderStage(index) {
+        const stage = stages[index];
+        stageTitle.textContent = stage.title;
+        stageCopy.textContent = stage.copy;
+        sideProgressCopy.textContent = stage.side;
+        progressText.textContent = `${stage.progress}%`;
+        progressOrb.style.setProperty("--progress", `${stage.progress}%`);
+        meterFill.style.width = `${stage.progress}%`;
+        document.querySelectorAll(".stage-item").forEach((item, itemIndex) => {
+          item.classList.toggle("active", itemIndex === index);
+          item.classList.toggle("done", itemIndex < index);
+        });
+        document.querySelectorAll(".module-card").forEach((card) => {
+          card.classList.toggle("revealed", stage.reveal.includes(card.dataset.module));
+        });
+        const complete = stage.progress >= 100;
+        reviewButton.disabled = !complete;
+        setupState.textContent = complete ? "待审阅" : paused ? "后台继续" : "生成中";
+      }
+
+      const timer = window.setInterval(() => {
+        if (paused) {
+          return;
+        }
+        if (activeStage < stages.length - 1) {
+          activeStage += 1;
+          renderStage(activeStage);
+          return;
+        }
+        window.clearInterval(timer);
+      }, 1800);
+
+      document.querySelectorAll("[data-strip]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const messages = {
+            entry: "返回可编辑设定入口",
+            generating: "当前处于生成中",
+            review: reviewButton.disabled ? "草案生成后进入审阅补充" : "草案已可审阅",
+            handoff: "审阅确认后进入决策与交接"
+          };
+          showToast(messages[button.dataset.strip]);
+        });
+      });
+
+      continueLater.addEventListener("click", () => {
+        paused = !paused;
+        continueLater.textContent = paused ? "继续生成" : "后台继续";
+        setupState.textContent = paused ? "后台继续" : "生成中";
+        showToast(paused ? "生成已转入后台状态" : "继续整理草案");
+      });
+
+      reviewButton.addEventListener("click", () => {
+        showToast("下一步：草案审阅");
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        showToast("返回设定入口");
+      });
+
+      renderStage(activeStage);
+    })();
+  </script>
+</body>
+</html>

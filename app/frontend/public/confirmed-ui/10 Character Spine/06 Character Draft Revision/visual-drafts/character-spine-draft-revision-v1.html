@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>角色主轴 / 修订角色草案 V1</title>
+  <style>
+    :root {
+      --ink: #27312b;
+      --muted: #746d61;
+      --line: rgba(84, 72, 58, 0.2);
+      --line-strong: rgba(84, 72, 58, 0.34);
+      --paper: rgba(248, 241, 227, 0.84);
+      --sage: #63786e;
+      --sage-dark: #4c6259;
+      --clay: #af7d70;
+      --clay-dark: #926359;
+      --gold: #b69a64;
+      --shadow: 0 24px 70px rgba(55, 39, 25, 0.22);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+      color: var(--ink);
+      background: #e2d5c3;
+      overflow-x: hidden;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      padding: 36px 60px 54px;
+      isolation: isolate;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(242, 234, 219, 0.9) 0%, rgba(242, 234, 219, 0.68) 45%, rgba(242, 234, 219, 0.24) 100%),
+        url("assets/character-spine-background-v1.png") center / cover no-repeat;
+    }
+
+    .page::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255, 251, 239, 0.76), transparent 30%),
+        linear-gradient(180deg, rgba(251, 246, 235, 0.08), rgba(89, 69, 49, 0.2));
+      pointer-events: none;
+    }
+
+    .shell {
+      max-width: 1540px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .back-button,
+    .primary-button,
+    .ghost-button,
+    .stage-button,
+    .focus-card,
+    .choice-card,
+    .mode-button,
+    .protect-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(250, 246, 235, 0.74);
+      color: var(--ink);
+      font-weight: 800;
+      box-shadow: 0 12px 32px rgba(61, 48, 35, 0.1);
+      transition: transform 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+    }
+
+    .back-button {
+      width: 138px;
+    }
+
+    .back-button:hover,
+    .ghost-button:hover,
+    .stage-button:hover,
+    .focus-card:hover,
+    .choice-card:hover,
+    .mode-button:hover,
+    .protect-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 243, 0.9);
+      box-shadow: 0 18px 40px rgba(61, 48, 35, 0.16);
+    }
+
+    .crumbs {
+      color: rgba(39, 49, 43, 0.64);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status-pill {
+      min-width: 174px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      border-radius: var(--radius);
+      background: rgba(246, 240, 229, 0.66);
+      box-shadow: 0 12px 34px rgba(61, 48, 35, 0.12);
+      color: #4f5f57;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(99, 120, 110, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .dot.warn {
+      background: var(--gold);
+      box-shadow: 0 0 0 5px rgba(182, 154, 100, 0.15);
+    }
+
+    .dot.clay {
+      background: var(--clay);
+      box-shadow: 0 0 0 5px rgba(175, 125, 112, 0.14);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 470px;
+      align-items: end;
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #27312b;
+      font-size: 64px;
+      line-height: 0.96;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .lead {
+      max-width: 950px;
+      margin: 14px 0 0;
+      color: rgba(39, 49, 43, 0.7);
+      font-size: 17px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(247, 240, 225, 0.54);
+      box-shadow: 0 16px 40px rgba(61, 48, 35, 0.12);
+    }
+
+    .stage-button {
+      min-height: 46px;
+      border-color: transparent;
+      background: transparent;
+      color: rgba(39, 49, 43, 0.48);
+      box-shadow: none;
+    }
+
+    .stage-button.active {
+      background: var(--sage);
+      color: #fffdf5;
+      box-shadow: 0 14px 28px rgba(65, 84, 76, 0.28);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 355px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .main-card,
+    .side-card {
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(240, 228, 207, 0.68)),
+        var(--paper);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .main-card {
+      overflow: hidden;
+    }
+
+    .main-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 148px;
+      gap: 20px;
+      align-items: start;
+      padding: 30px 36px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--clay-dark);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    h2 {
+      margin: 0;
+      color: #27312b;
+      font-size: 34px;
+      line-height: 1.16;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    h3 {
+      margin: 0;
+      color: #27312b;
+      font-size: 25px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .subcopy {
+      margin: 14px 0 0;
+      color: rgba(39, 49, 43, 0.7);
+      font-size: 15px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .state-badge {
+      display: grid;
+      place-items: center;
+      min-height: 144px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: rgba(251, 246, 235, 0.64);
+      text-align: center;
+    }
+
+    .state-badge strong {
+      display: block;
+      color: var(--sage-dark);
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .state-badge span {
+      display: block;
+      margin-top: 8px;
+      color: rgba(39, 49, 43, 0.66);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .work-area {
+      display: grid;
+      grid-template-columns: 315px minmax(0, 1fr);
+      gap: 24px;
+      padding: 28px 36px 32px;
+    }
+
+    .focus-list,
+    .revision-panel {
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 239, 0.56);
+    }
+
+    .focus-list {
+      min-height: 590px;
+      padding: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .counter {
+      min-width: 86px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 242, 0.72);
+      color: rgba(39, 49, 43, 0.62);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .focus-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .focus-card {
+      width: 100%;
+      min-height: 96px;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 16px;
+      border-color: rgba(84, 72, 58, 0.12);
+      background: rgba(250, 246, 235, 0.58);
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .focus-card.active {
+      border-color: rgba(76, 98, 89, 0.42);
+      background: rgba(229, 231, 217, 0.82);
+    }
+
+    .focus-card.included {
+      opacity: 0.76;
+    }
+
+    .focus-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(216, 199, 159, 0.32);
+      color: #66766d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .focus-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .focus-card small {
+      display: block;
+      margin-top: 6px;
+      color: rgba(39, 49, 43, 0.6);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .focus-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .mini-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 4px 8px;
+      border: 1px solid rgba(84, 72, 58, 0.16);
+      border-radius: 6px;
+      background: rgba(255, 251, 242, 0.52);
+      color: rgba(39, 49, 43, 0.62);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .revision-panel {
+      min-height: 590px;
+      padding: 22px;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .revision-panel.switching {
+      opacity: 0.34;
+      transform: translateY(4px);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 230px;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .summary-box,
+    .risk-box {
+      min-height: 142px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 239, 0.5);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(39, 49, 43, 0.54);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .summary-box p,
+    .risk-box p {
+      margin: 0;
+      color: rgba(39, 49, 43, 0.72);
+      font-size: 15px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .risk-box p {
+      color: #27312b;
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 900;
+    }
+
+    .mode-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0 18px;
+    }
+
+    .mode-button {
+      min-height: 46px;
+      background: rgba(255, 250, 239, 0.48);
+      box-shadow: none;
+      color: rgba(39, 49, 43, 0.68);
+    }
+
+    .mode-button.active {
+      border-color: rgba(76, 98, 89, 0.46);
+      background: rgba(229, 231, 217, 0.9);
+      color: var(--ink);
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .choice-card {
+      min-height: 126px;
+      padding: 16px;
+      border-color: rgba(84, 72, 58, 0.16);
+      background: rgba(255, 250, 239, 0.54);
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .choice-card.active {
+      border-color: rgba(76, 98, 89, 0.44);
+      background: rgba(229, 231, 217, 0.88);
+    }
+
+    .choice-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .choice-card span {
+      display: block;
+      margin-top: 8px;
+      color: rgba(39, 49, 43, 0.64);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .protect-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 18px;
+    }
+
+    .protect-button {
+      min-height: 46px;
+      padding: 0 10px;
+      background: rgba(255, 250, 239, 0.5);
+      box-shadow: none;
+      color: rgba(39, 49, 43, 0.66);
+    }
+
+    .protect-button.active {
+      border-color: rgba(76, 98, 89, 0.42);
+      background: rgba(229, 231, 217, 0.86);
+      color: var(--ink);
+    }
+
+    .write-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 178px;
+      gap: 14px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(39, 49, 43, 0.66);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      padding: 16px;
+      border: 1px solid rgba(84, 72, 58, 0.25);
+      border-radius: var(--radius);
+      outline: none;
+      background: rgba(255, 251, 242, 0.74);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    textarea:focus {
+      border-color: rgba(76, 98, 89, 0.58);
+      box-shadow: 0 0 0 4px rgba(99, 120, 110, 0.13);
+    }
+
+    .primary-button,
+    .ghost-button {
+      width: 100%;
+      min-height: 54px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      border-color: rgba(76, 98, 89, 0.32);
+      background: var(--sage);
+      color: #fffdf5;
+      box-shadow: 0 18px 36px rgba(76, 98, 89, 0.22);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      background: var(--sage-dark);
+    }
+
+    .primary-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      background: rgba(99, 120, 110, 0.7);
+      box-shadow: none;
+    }
+
+    .result-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      padding: 0 36px 32px;
+    }
+
+    .result-card {
+      min-height: 92px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 239, 0.56);
+    }
+
+    .result-card span {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(39, 49, 43, 0.52);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .result-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1.45;
+      font-weight: 900;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 24px;
+    }
+
+    .side-card h3 {
+      margin-bottom: 12px;
+    }
+
+    .side-card p {
+      margin: 0 0 18px;
+      color: rgba(39, 49, 43, 0.67);
+      font-size: 14px;
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-item {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 242, 0.48);
+      color: rgba(39, 49, 43, 0.72);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .summary-item span:first-child {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .summary-item em {
+      color: rgba(39, 49, 43, 0.5);
+      font-style: normal;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .revision-list {
+      max-height: 196px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .revision-item {
+      padding: 12px;
+      border: 1px solid rgba(84, 72, 58, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 242, 0.5);
+    }
+
+    .revision-item strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .revision-item span {
+      display: block;
+      margin-top: 6px;
+      color: rgba(39, 49, 43, 0.58);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .action-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .submitted-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(44, 38, 29, 0.34);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 240ms ease;
+    }
+
+    .submitted-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .submitted-card {
+      width: min(520px, 100%);
+      padding: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.96), rgba(240, 228, 207, 0.86)),
+        #f8f1e3;
+      box-shadow: 0 34px 90px rgba(37, 28, 18, 0.3);
+      text-align: left;
+    }
+
+    .submitted-card h3 {
+      margin-bottom: 12px;
+      font-size: 31px;
+    }
+
+    .submitted-card p {
+      margin: 0 0 22px;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.75;
+      font-weight: 700;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 24px;
+      z-index: 10;
+      min-width: 250px;
+      max-width: 360px;
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: var(--radius);
+      background: rgba(255, 251, 242, 0.92);
+      color: rgba(39, 49, 43, 0.78);
+      box-shadow: 0 18px 44px rgba(50, 38, 25, 0.24);
+      font-size: 14px;
+      font-weight: 900;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .page {
+        padding: 28px 24px 42px;
+      }
+
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-strip {
+        max-width: 620px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .topbar,
+      .main-head,
+      .work-area,
+      .detail-grid,
+      .write-area,
+      .result-row {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 46px;
+      }
+
+      .choice-grid,
+      .mode-row,
+      .protect-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="shell">
+      <header class="topbar">
+        <button class="back-button" type="button" data-toast="已保留当前修订草稿，返回草案审阅。">返回审阅</button>
+        <div class="crumbs">主页 / 当前项目 / 角色主轴</div>
+        <div class="status-pill"><span class="dot warn" id="topDot"></span><span id="topStatus">等待修订要求</span></div>
+      </header>
+
+      <section class="hero" aria-labelledby="pageTitle">
+        <div>
+          <h1 id="pageTitle">角色主轴</h1>
+          <p class="lead">把需要调整的内容整理成清晰修订要求。修订会生成新的草案，仍需要用户再次审阅后才能写入角色底座。</p>
+        </div>
+        <nav class="stage-strip" aria-label="角色主轴阶段">
+          <button class="stage-button" type="button">生成入口</button>
+          <button class="stage-button" type="button">生成草案</button>
+          <button class="stage-button active" type="button">审阅确认</button>
+          <button class="stage-button" type="button">角色底座</button>
+        </nav>
+      </section>
+
+      <section class="layout">
+        <article class="main-card">
+          <div class="main-head">
+            <div>
+              <p class="eyebrow">修订角色草案</p>
+              <h2>先限定改动，再提交修订</h2>
+              <p class="subcopy">选择要改的焦点，说明希望怎样调整，同时保护已经确认的角色事实，避免修订时把正确内容一起改掉。</p>
+            </div>
+            <div class="state-badge">
+              <div>
+                <strong id="phaseWord">待整理</strong>
+                <span id="phaseHint">0 项修订</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="work-area">
+            <aside class="focus-list" aria-label="修订焦点">
+              <div class="section-title">
+                <h3>修订焦点</h3>
+                <span class="counter" id="focusCounter">0 项已选</span>
+              </div>
+              <div class="focus-stack" id="focusStack"></div>
+            </aside>
+
+            <section class="revision-panel" id="revisionPanel" aria-live="polite">
+              <p class="eyebrow" id="focusType">能力与代价</p>
+              <h3 id="focusTitle">记忆能力边界过宽</h3>
+              <div class="detail-grid">
+                <div class="summary-box">
+                  <span class="label">当前问题</span>
+                  <p id="focusDetail">草案让洛间几乎可以保存任何记忆，后续剧情容易被能力直接解决。</p>
+                </div>
+                <div class="risk-box">
+                  <span class="label">修订目标</span>
+                  <p id="focusGoal">缩小能力边界，保留代价和限制。</p>
+                </div>
+              </div>
+
+              <span class="label">改动强度</span>
+              <div class="mode-row" id="modeRow"></div>
+
+              <span class="label">建议修订方向</span>
+              <div class="choice-grid" id="choiceGrid"></div>
+
+              <span class="label">保护内容</span>
+              <div class="protect-row" id="protectRow"></div>
+
+              <div class="write-area">
+                <div class="field">
+                  <label for="revisionInput">修订要求</label>
+                  <textarea id="revisionInput" placeholder="写清楚要怎么改，以及哪些内容不要改。"></textarea>
+                </div>
+                <button class="primary-button" type="button" id="addButton">加入修订要求</button>
+              </div>
+            </section>
+          </div>
+
+          <div class="result-row">
+            <div class="result-card">
+              <span>当前角色</span>
+              <strong>洛间 / B 级 / 旧钟楼修复师</strong>
+            </div>
+            <div class="result-card">
+              <span>修订状态</span>
+              <strong id="revisionState">等待选择修订焦点。</strong>
+            </div>
+            <div class="result-card">
+              <span>下一步</span>
+              <strong id="nextState">提交后进入修订生成。</strong>
+            </div>
+          </div>
+        </article>
+
+        <aside class="side-stack">
+          <section class="side-card">
+            <h3>修订摘要</h3>
+            <p>修订请求会重新生成草案，不会直接写入角色底座。新草案仍需要再次审阅。</p>
+            <div class="summary-list">
+              <div class="summary-item"><span><span class="dot warn" id="selectedDot"></span>已选焦点</span><em id="selectedCount">0 项</em></div>
+              <div class="summary-item"><span><span class="dot" id="modeDot"></span>改动强度</span><em id="modeState">轻微调整</em></div>
+              <div class="summary-item"><span><span class="dot" id="protectDot"></span>保护内容</span><em id="protectCount">4 项</em></div>
+              <div class="summary-item"><span><span class="dot warn" id="readyDot"></span>提交状态</span><em id="readyState">未就绪</em></div>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>已整理要求</h3>
+            <p>这里展示会被合并进修订请求的内容。</p>
+            <div class="revision-list" id="revisionList">
+              <div class="revision-item"><strong>尚未加入修订要求</strong><span>选择焦点后，点击“加入修订要求”。</span></div>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>提交边界</h3>
+            <div class="summary-list">
+              <div class="summary-item"><span><span class="dot"></span>不写入底座</span><em>保护</em></div>
+              <div class="summary-item"><span><span class="dot"></span>生成新草案</span><em>重审</em></div>
+              <div class="summary-item"><span><span class="dot warn"></span>B/C/D 需回入口</span><em>限制</em></div>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h3>操作</h3>
+            <p id="actionHint">至少加入一项修订要求后，才能提交修订。</p>
+            <div class="action-stack">
+              <button class="ghost-button" type="button" data-toast="已保留当前修订草稿，返回草案审阅。">返回审阅</button>
+              <button class="primary-button" type="button" id="submitButton" disabled>提交修订</button>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <div class="submitted-overlay" id="submittedOverlay" aria-hidden="true">
+    <div class="submitted-card">
+      <p class="eyebrow">修订已提交</p>
+      <h3>新的角色草案正在生成</h3>
+      <p>修订请求已经整理完成。生成完成后应回到 02 生成中状态，再进入 03 草案审阅，用户重新确认后才能写入角色底座。</p>
+      <button class="primary-button" type="button" id="closeOverlay">回到页面</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const focuses = [
+      {
+        id: "memory",
+        mark: "记",
+        type: "能力与代价",
+        title: "记忆能力边界过宽",
+        short: "能力解决冲突的范围太大，需要压出限制。",
+        detail: "草案让洛间几乎可以保存任何记忆，后续剧情容易被能力直接解决。",
+        goal: "缩小能力边界，保留代价和限制。",
+        chips: ["能力", "代价"],
+        suggestions: [
+          { title: "增加触发条件", text: "把能力改为只能保存自愿交出的记忆，强迫取得的记忆会快速失真。" },
+          { title: "增加保存上限", text: "每次只能保存一段短记忆，超过上限会挤掉他自己的日常记忆。" },
+          { title: "改成媒介能力", text: "记忆必须缝入钟楼旧物，媒介损坏时记忆会出现错位。" }
+        ],
+        prompt: "请把洛间的记忆能力修订为有明确触发条件和代价，不要让能力可以解决所有冲突。"
+      },
+      {
+        id: "relation",
+        mark: "关",
+        type: "关系来源",
+        title: "旧债来源不够清楚",
+        short: "洛间与主角之间有旧债，但旧债从哪来还不明确。",
+        detail: "草案提到洛间与主角之间存在旧债，却没有说明这段旧债的起因。",
+        goal: "补出关系来源，让信任与隐瞒都更可信。",
+        chips: ["关系", "旧债"],
+        suggestions: [
+          { title: "改为共同事故", text: "旧债来自一次钟楼坠落事故，洛间保存了主角失去的证词，却隐瞒了代价。" },
+          { title: "改为修复委托", text: "主角曾委托洛间修复遗物，洛间发现真相但选择延后告知。" },
+          { title: "改为互相救助", text: "两人曾在雾夜互相救过对方，但其中一段记忆被洛间保存。" }
+        ],
+        prompt: "请补强洛间与主角之间旧债的来源，使关系既有信任基础，也保留隐瞒风险。"
+      },
+      {
+        id: "boundary",
+        mark: "禁",
+        type: "行动底线",
+        title: "角色底线不够硬",
+        short: "草案有善意，但还缺少可触发冲突的底线。",
+        detail: "草案里的洛间倾向于帮助他人，但没有明确他在什么情况下会拒绝帮助。",
+        goal: "明确不可触碰的底线，形成后续冲突。",
+        chips: ["底线", "冲突"],
+        suggestions: [
+          { title: "拒绝掩盖伤害", text: "洛间不会保存为了掩盖伤害而交出的记忆，即使委托人愿意付出代价。" },
+          { title: "拒绝孩童记忆", text: "洛间不会保存孩童记忆，因为他认为未成形的记忆不该被任何人保管。" },
+          { title: "拒绝亡者遗物", text: "洛间不会从亡者遗物中取走记忆，除非遗物正在伤害活人。" }
+        ],
+        prompt: "请为洛间加入清晰行动底线，让他在关键场景中可能拒绝使用能力。"
+      },
+      {
+        id: "identity",
+        mark: "身",
+        type: "身份气质",
+        title: "身份与气质偏散",
+        short: "修复师、证人、守密人三个方向还没有收束。",
+        detail: "草案同时强调修复师、证人和守密人，但视觉和行为气质还不够统一。",
+        goal: "收束成一个稳定形象，方便后续呈现。",
+        chips: ["身份", "气质"],
+        suggestions: [
+          { title: "收束为旧物修复师", text: "保留旧物修复师身份，把证人和守密人作为他工作的隐性功能。" },
+          { title: "收束为钟楼看守", text: "把修复师身份降为技能，把钟楼看守作为主要公开身份。" },
+          { title: "收束为记忆保管人", text: "强化守密人气质，让修复只是他保管记忆的一种外壳。" }
+        ],
+        prompt: "请把洛间的身份气质收束为一个清晰形象，减少修复师、证人、守密人之间的分散感。"
+      },
+      {
+        id: "function",
+        mark: "用",
+        type: "故事作用",
+        title: "故事作用不够独立",
+        short: "角色功能与已有线索角色接近，需要拉开分工。",
+        detail: "洛间既提供线索又承担证人功能，可能与已有证人角色重叠。",
+        goal: "保留独特性，明确他负责哪一类叙事任务。",
+        chips: ["功能", "分工"],
+        suggestions: [
+          { title: "负责记忆证据", text: "洛间只负责记忆证据，普通证词交给其他证人角色承担。" },
+          { title: "负责道德冲突", text: "洛间的主要作用改为推动道德选择，而不是提供直接线索。" },
+          { title: "负责代价揭示", text: "洛间负责揭示使用记忆能力的代价，减少普通调查功能。" }
+        ],
+        prompt: "请重新定位洛间的故事作用，避免他与已有线索角色功能重叠。"
+      }
+    ];
+
+    const modes = [
+      { id: "light", label: "轻微调整" },
+      { id: "partial", label: "局部重写" },
+      { id: "strong", label: "重做方向" }
+    ];
+
+    const protectOptions = ["角色等级", "核心气质", "已确认关系", "世界事实"];
+
+    const revisions = new Map();
+    const protectedItems = new Set(protectOptions);
+    let activeId = focuses[0].id;
+    let activeChoice = 0;
+    let activeMode = "light";
+    let switchTimer;
+
+    const focusStack = document.getElementById("focusStack");
+    const revisionPanel = document.getElementById("revisionPanel");
+    const focusType = document.getElementById("focusType");
+    const focusTitle = document.getElementById("focusTitle");
+    const focusDetail = document.getElementById("focusDetail");
+    const focusGoal = document.getElementById("focusGoal");
+    const modeRow = document.getElementById("modeRow");
+    const choiceGrid = document.getElementById("choiceGrid");
+    const protectRow = document.getElementById("protectRow");
+    const revisionInput = document.getElementById("revisionInput");
+    const addButton = document.getElementById("addButton");
+    const submitButton = document.getElementById("submitButton");
+    const phaseWord = document.getElementById("phaseWord");
+    const phaseHint = document.getElementById("phaseHint");
+    const focusCounter = document.getElementById("focusCounter");
+    const revisionState = document.getElementById("revisionState");
+    const nextState = document.getElementById("nextState");
+    const selectedCount = document.getElementById("selectedCount");
+    const modeState = document.getElementById("modeState");
+    const protectCount = document.getElementById("protectCount");
+    const readyState = document.getElementById("readyState");
+    const selectedDot = document.getElementById("selectedDot");
+    const readyDot = document.getElementById("readyDot");
+    const topDot = document.getElementById("topDot");
+    const topStatus = document.getElementById("topStatus");
+    const revisionList = document.getElementById("revisionList");
+    const actionHint = document.getElementById("actionHint");
+    const submittedOverlay = document.getElementById("submittedOverlay");
+    const toast = document.getElementById("toast");
+
+    function currentFocus() {
+      return focuses.find((focus) => focus.id === activeId);
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function renderFocuses() {
+      focusStack.innerHTML = "";
+      focuses.forEach((focus) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `focus-card${focus.id === activeId ? " active" : ""}${revisions.has(focus.id) ? " included" : ""}`;
+        button.innerHTML = `
+          <span class="focus-mark">${revisions.has(focus.id) ? "✓" : focus.mark}</span>
+          <span>
+            <strong>${focus.title}</strong>
+            <small>${focus.short}</small>
+            <span class="focus-meta">
+              <span class="mini-chip">${focus.type}</span>
+              ${focus.chips.map((chip) => `<span class="mini-chip">${chip}</span>`).join("")}
+            </span>
+          </span>
+        `;
+        button.addEventListener("click", () => {
+          activeId = focus.id;
+          activeChoice = 0;
+          activeMode = revisions.get(focus.id)?.mode || activeMode;
+          switchDetail();
+        });
+        focusStack.appendChild(button);
+      });
+    }
+
+    function renderModes() {
+      modeRow.innerHTML = "";
+      modes.forEach((mode) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `mode-button${mode.id === activeMode ? " active" : ""}`;
+        button.textContent = mode.label;
+        button.addEventListener("click", () => {
+          activeMode = mode.id;
+          renderModes();
+          updateSummary();
+        });
+        modeRow.appendChild(button);
+      });
+    }
+
+    function renderChoices(focus) {
+      choiceGrid.innerHTML = "";
+      focus.suggestions.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `choice-card${index === activeChoice ? " active" : ""}`;
+        button.innerHTML = `<strong>${choice.title}</strong><span>${choice.text}</span>`;
+        button.addEventListener("click", () => {
+          activeChoice = index;
+          revisionInput.value = `${focus.prompt}\n${choice.text}`;
+          renderChoices(focus);
+        });
+        choiceGrid.appendChild(button);
+      });
+    }
+
+    function renderProtect() {
+      protectRow.innerHTML = "";
+      protectOptions.forEach((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `protect-button${protectedItems.has(option) ? " active" : ""}`;
+        button.textContent = protectedItems.has(option) ? `保护：${option}` : option;
+        button.addEventListener("click", () => {
+          if (protectedItems.has(option)) {
+            protectedItems.delete(option);
+          } else {
+            protectedItems.add(option);
+          }
+          renderProtect();
+          updateSummary();
+        });
+        protectRow.appendChild(button);
+      });
+    }
+
+    function renderDetail() {
+      const focus = currentFocus();
+      const existing = revisions.get(focus.id);
+      focusType.textContent = focus.type;
+      focusTitle.textContent = focus.title;
+      focusDetail.textContent = focus.detail;
+      focusGoal.textContent = focus.goal;
+      if (existing) {
+        activeMode = existing.mode;
+        revisionInput.value = existing.text;
+      } else {
+        revisionInput.value = focus.prompt;
+      }
+      renderModes();
+      renderChoices(focus);
+      renderProtect();
+      addButton.textContent = existing ? "更新修订要求" : "加入修订要求";
+    }
+
+    function renderRevisionList() {
+      revisionList.innerHTML = "";
+      if (revisions.size === 0) {
+        revisionList.innerHTML = `<div class="revision-item"><strong>尚未加入修订要求</strong><span>选择焦点后，点击“加入修订要求”。</span></div>`;
+        return;
+      }
+      revisions.forEach((revision) => {
+        const item = document.createElement("div");
+        item.className = "revision-item";
+        item.innerHTML = `<strong>${revision.title} / ${revision.modeLabel}</strong><span>${revision.text}</span>`;
+        revisionList.appendChild(item);
+      });
+    }
+
+    function updateSummary() {
+      const count = revisions.size;
+      const modeLabel = modes.find((mode) => mode.id === activeMode)?.label || "轻微调整";
+      phaseHint.textContent = `${count} 项修订`;
+      focusCounter.textContent = `${count} 项已选`;
+      selectedCount.textContent = `${count} 项`;
+      modeState.textContent = modeLabel;
+      protectCount.textContent = `${protectedItems.size} 项`;
+      selectedDot.className = count > 0 ? "dot" : "dot warn";
+      readyDot.className = count > 0 ? "dot" : "dot warn";
+
+      if (count > 0) {
+        phaseWord.textContent = "已整理";
+        topStatus.textContent = "可提交修订";
+        topDot.className = "dot";
+        revisionState.textContent = `已整理 ${count} 项修订要求。`;
+        nextState.textContent = "提交后进入修订生成。";
+        readyState.textContent = "可提交";
+        actionHint.textContent = "修订要求已整理，可以提交生成新草案。";
+        submitButton.disabled = false;
+      } else {
+        phaseWord.textContent = "待整理";
+        topStatus.textContent = "等待修订要求";
+        topDot.className = "dot warn";
+        revisionState.textContent = "等待选择修订焦点。";
+        nextState.textContent = "提交后进入修订生成。";
+        readyState.textContent = "未就绪";
+        actionHint.textContent = "至少加入一项修订要求后，才能提交修订。";
+        submitButton.disabled = true;
+      }
+    }
+
+    function switchDetail() {
+      window.clearTimeout(switchTimer);
+      revisionPanel.classList.add("switching");
+      switchTimer = window.setTimeout(() => {
+        renderFocuses();
+        renderDetail();
+        updateSummary();
+        revisionPanel.classList.remove("switching");
+      }, 120);
+    }
+
+    addButton.addEventListener("click", () => {
+      const focus = currentFocus();
+      const modeLabel = modes.find((mode) => mode.id === activeMode)?.label || "轻微调整";
+      const protectedText = Array.from(protectedItems).join("、") || "无";
+      const text = revisionInput.value.trim() || focus.prompt;
+      revisions.set(focus.id, {
+        title: focus.title,
+        mode: activeMode,
+        modeLabel,
+        text: `${text}\n保护内容：${protectedText}`
+      });
+      showToast(`已加入：${focus.title}`);
+      renderFocuses();
+      renderRevisionList();
+      updateSummary();
+      addButton.textContent = "更新修订要求";
+    });
+
+    submitButton.addEventListener("click", () => {
+      if (submitButton.disabled) return;
+      submittedOverlay.classList.add("show");
+      submittedOverlay.setAttribute("aria-hidden", "false");
+      topStatus.textContent = "修订已提交";
+      topDot.className = "dot clay";
+      phaseWord.textContent = "修订中";
+    });
+
+    document.getElementById("closeOverlay").addEventListener("click", () => {
+      submittedOverlay.classList.remove("show");
+      submittedOverlay.setAttribute("aria-hidden", "true");
+      showToast("已停留在修订草案页。");
+    });
+
+    document.querySelectorAll("[data-toast]").forEach((button) => {
+      button.addEventListener("click", () => showToast(button.dataset.toast));
+    });
+
+    renderFocuses();
+    renderDetail();
+    renderRevisionList();
+    updateSummary();
+  </script>
+</body>
+</html>

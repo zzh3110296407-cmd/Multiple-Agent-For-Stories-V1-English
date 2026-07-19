@@ -348,9 +348,15 @@ def active_scene_gate_readiness_service() -> SceneGateReadinessService:
 
 
 @router.get("/current", response_model=SceneGenerationResponse)
-def get_current_scene() -> SceneGenerationResponse:
+def get_current_scene(
+    chapter_id: str | None = None,
+    scene_index: int | None = None,
+) -> SceneGenerationResponse:
     try:
-        return active_scene_generation_service().get_current_scene()
+        return active_scene_generation_service().get_current_scene(
+            chapter_id=chapter_id,
+            scene_index=scene_index,
+        )
     except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
         raise scene_error_response(exc) from exc
 
@@ -393,6 +399,9 @@ def regenerate_first_scene(
     try:
         return active_scene_generation_service().regenerate_first_scene(
             regeneration_hint=request.regeneration_hint,
+            scene_id=request.scene_id,
+            chapter_id=request.chapter_id,
+            scene_index=request.scene_index,
         )
     except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
         raise scene_error_response(exc) from exc

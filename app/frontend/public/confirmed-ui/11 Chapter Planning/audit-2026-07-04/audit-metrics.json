@@ -1,0 +1,1328 @@
+[
+    {
+        "id":  "01",
+        "name":  "source-preconditions-entry",
+        "url":  "http://127.0.0.1:8773/01%20Source%20Preconditions%20And%20Current%20Framework%20Entry/visual-drafts/chapter-planning-source-preconditions-entry-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/01-source-preconditions-entry.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/01 Source Preconditions And Current Framework Entry/visual-drafts/chapter-planning-source-preconditions-entry-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 来源前提与当前章框架入口 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  16,
+                        "textareas":  2,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  58,
+                                                            "y":  92,
+                                                            "w":  669,
+                                                            "h":  56
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "02",
+        "name":  "building-current-framework",
+        "url":  "http://127.0.0.1:8773/02%20Building%20Current%20Chapter%20Framework/visual-drafts/chapter-planning-building-current-framework-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/02-building-current-framework.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/02 Building Current Chapter Framework/visual-drafts/chapter-planning-building-current-framework-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 当前章框架构建中 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  7,
+                        "textareas":  0,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  58,
+                                                            "y":  92,
+                                                            "w":  554,
+                                                            "h":  56
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "map-card",
+                                               "text":  "1\n已承接\n2\n已承接\n3\n构建中\n4\n待规划\n5\n待规划\n当前章节点正在点亮\n完成后会生成可审阅的主骨架、承接关系和可用引用。",
+                                               "rect":  {
+                                                            "x":  71,
+                                                            "y":  359,
+                                                            "w":  584,
+                                                            "h":  520
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-rail",
+                                               "text":  "1\n已承接\n2\n已承接\n3\n构建中\n4\n待规划\n5\n待规划",
+                                               "rect":  {
+                                                            "x":  124,
+                                                            "y":  532,
+                                                            "w":  477,
+                                                            "h":  112
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-nodes",
+                                               "text":  "1\n已承接\n2\n已承接\n3\n构建中\n4\n待规划\n5\n待规划",
+                                               "rect":  {
+                                                            "x":  124,
+                                                            "y":  532,
+                                                            "w":  477,
+                                                            "h":  112
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-node past",
+                                               "text":  "1\n已承接",
+                                               "rect":  {
+                                                            "x":  126,
+                                                            "y":  570,
+                                                            "w":  37,
+                                                            "h":  37
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-node past",
+                                               "text":  "2\n已承接",
+                                               "rect":  {
+                                                            "x":  231,
+                                                            "y":  570,
+                                                            "w":  37,
+                                                            "h":  37
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-node current",
+                                               "text":  "3\n构建中",
+                                               "rect":  {
+                                                            "x":  334,
+                                                            "y":  559,
+                                                            "w":  58,
+                                                            "h":  58
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-node future",
+                                               "text":  "4\n待规划",
+                                               "rect":  {
+                                                            "x":  458,
+                                                            "y":  570,
+                                                            "w":  37,
+                                                            "h":  37
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-node future",
+                                               "text":  "5\n待规划",
+                                               "rect":  {
+                                                            "x":  563,
+                                                            "y":  570,
+                                                            "w":  37,
+                                                            "h":  37
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "03",
+        "name":  "current-framework-review",
+        "url":  "http://127.0.0.1:8773/03%20Current%20Chapter%20Framework%20Review/visual-drafts/chapter-planning-current-framework-review-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/03-current-framework-review.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/03 Current Chapter Framework Review/visual-drafts/chapter-planning-current-framework-review-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 当前章 Framework 审阅 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  17,
+                        "textareas":  0,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  92,
+                                                            "w":  630,
+                                                            "h":  56
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "04",
+        "name":  "route-generation-entry",
+        "url":  "http://127.0.0.1:8773/04%20Chapter%20Route%20Generation%20Entry/visual-drafts/chapter-planning-route-generation-entry-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/04-route-generation-entry.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/04 Chapter Route Generation Entry/visual-drafts/chapter-planning-route-generation-entry-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 章节路线生成入口 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  12,
+                        "textareas":  1,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  92,
+                                                            "w":  689,
+                                                            "h":  56
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "rail",
+                                               "text":  "1\n2\n3\n当前\n11\n12\n终章",
+                                               "rect":  {
+                                                            "x":  686,
+                                                            "y":  949,
+                                                            "w":  292,
+                                                            "h":  102
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "05",
+        "name":  "generating-route",
+        "url":  "http://127.0.0.1:8773/05%20Generating%20Chapter%20Route/visual-drafts/chapter-planning-generating-route-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/05-generating-route.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/05 Generating Chapter Route/visual-drafts/chapter-planning-generating-route-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 章节路线生成中 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  7,
+                        "textareas":  0,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  92,
+                                                            "w":  579,
+                                                            "h":  56
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "06",
+        "name":  "route-review",
+        "url":  "http://127.0.0.1:8773/06%20Chapter%20Route%20Review/visual-drafts/chapter-planning-route-review-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/06-route-review.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/06 Chapter Route Review/visual-drafts/chapter-planning-route-review-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 章节路线审阅 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  23,
+                        "textareas":  0,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  92,
+                                                            "w":  578,
+                                                            "h":  56
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-scroll",
+                                               "text":  "1\n港口晚宴\n建立港口城市的权力结构，让火漆印章作为第一个可追踪证据出现。\n已承接 / 4 场景\n2\n失踪巡夜人\n把晚宴线索接到钟楼巡夜制度，显示城市规则并不可靠。\n已承接 / 5 场景\n3\n",
+                                               "rect":  {
+                                                            "x":  65,
+                                                            "y":  398,
+                                                            "w":  930,
+                                                            "h":  195
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-track",
+                                               "text":  "1\n港口晚宴\n建立港口城市的权力结构，让火漆印章作为第一个可追踪证据出现。\n已承接 / 4 场景\n2\n失踪巡夜人\n把晚宴线索接到钟楼巡夜制度，显示城市规则并不可靠。\n已承接 / 5 场景\n3\n",
+                                               "rect":  {
+                                                            "x":  67,
+                                                            "y":  404,
+                                                            "w":  2268,
+                                                            "h":  175
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "route-card",
+                                               "text":  "8\n协议影子\n让协议轮廓浮现，但需要控制揭示速度，避免过早确认最终真相。\n需确认 / 6 场景",
+                                               "rect":  {
+                                                            "x":  1397,
+                                                            "y":  404,
+                                                            "w":  178,
+                                                            "h":  175
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "协议影子",
+                                               "rect":  {
+                                                            "x":  1411,
+                                                            "y":  465,
+                                                            "w":  150,
+                                                            "h":  18
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "让协议轮廓浮现，但需要控制揭示速度，避免过早确认最终真相。",
+                                               "rect":  {
+                                                            "x":  1411,
+                                                            "y":  489,
+                                                            "w":  150,
+                                                            "h":  51
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-meta",
+                                               "text":  "需确认 / 6 场景",
+                                               "rect":  {
+                                                            "x":  1411,
+                                                            "y":  550,
+                                                            "w":  150,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "route-card",
+                                               "text":  "9\n港口封锁\n让城市规则反过来限制主角团，使调查进入不可回避的公开压力。\n草案 / 5 场景",
+                                               "rect":  {
+                                                            "x":  1587,
+                                                            "y":  404,
+                                                            "w":  178,
+                                                            "h":  175
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "number",
+                                               "text":  "9",
+                                               "rect":  {
+                                                            "x":  1601,
+                                                            "y":  425,
+                                                            "w":  30,
+                                                            "h":  30
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "港口封锁",
+                                               "rect":  {
+                                                            "x":  1601,
+                                                            "y":  465,
+                                                            "w":  150,
+                                                            "h":  18
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "让城市规则反过来限制主角团，使调查进入不可回避的公开压力。",
+                                               "rect":  {
+                                                            "x":  1601,
+                                                            "y":  489,
+                                                            "w":  150,
+                                                            "h":  51
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-meta",
+                                               "text":  "草案 / 5 场景",
+                                               "rect":  {
+                                                            "x":  1601,
+                                                            "y":  550,
+                                                            "w":  150,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "route-card",
+                                               "text":  "10\n沉默审判\n把证据与角色选择集中到一次审判式场景中。\n草案 / 5 场景",
+                                               "rect":  {
+                                                            "x":  1777,
+                                                            "y":  404,
+                                                            "w":  178,
+                                                            "h":  175
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "number",
+                                               "text":  "10",
+                                               "rect":  {
+                                                            "x":  1791,
+                                                            "y":  433,
+                                                            "w":  30,
+                                                            "h":  30
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "沉默审判",
+                                               "rect":  {
+                                                            "x":  1791,
+                                                            "y":  473,
+                                                            "w":  150,
+                                                            "h":  18
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "把证据与角色选择集中到一次审判式场景中。",
+                                               "rect":  {
+                                                            "x":  1791,
+                                                            "y":  498,
+                                                            "w":  150,
+                                                            "h":  34
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-meta",
+                                               "text":  "草案 / 5 场景",
+                                               "rect":  {
+                                                            "x":  1791,
+                                                            "y":  542,
+                                                            "w":  150,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "route-card",
+                                               "text":  "11\n协议真相\n揭示协议真实目的，并让此前线索完成回收。\n草案 / 6 场景",
+                                               "rect":  {
+                                                            "x":  1967,
+                                                            "y":  404,
+                                                            "w":  178,
+                                                            "h":  175
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "number",
+                                               "text":  "11",
+                                               "rect":  {
+                                                            "x":  1981,
+                                                            "y":  433,
+                                                            "w":  30,
+                                                            "h":  30
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "协议真相",
+                                               "rect":  {
+                                                            "x":  1981,
+                                                            "y":  473,
+                                                            "w":  150,
+                                                            "h":  18
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "揭示协议真实目的，并让此前线索完成回收。",
+                                               "rect":  {
+                                                            "x":  1981,
+                                                            "y":  498,
+                                                            "w":  150,
+                                                            "h":  34
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-meta",
+                                               "text":  "草案 / 6 场景",
+                                               "rect":  {
+                                                            "x":  1981,
+                                                            "y":  542,
+                                                            "w":  150,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "route-card",
+                                               "text":  "12\n潮声之后\n完成主角团选择，给城市规则和角色关系留下结果。\n终章草案 / 5 场景",
+                                               "rect":  {
+                                                            "x":  2157,
+                                                            "y":  404,
+                                                            "w":  178,
+                                                            "h":  175
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "number",
+                                               "text":  "12",
+                                               "rect":  {
+                                                            "x":  2171,
+                                                            "y":  433,
+                                                            "w":  30,
+                                                            "h":  30
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "潮声之后",
+                                               "rect":  {
+                                                            "x":  2171,
+                                                            "y":  473,
+                                                            "w":  150,
+                                                            "h":  18
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "完成主角团选择，给城市规则和角色关系留下结果。",
+                                               "rect":  {
+                                                            "x":  2171,
+                                                            "y":  498,
+                                                            "w":  150,
+                                                            "h":  34
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "route-meta",
+                                               "text":  "终章草案 / 5 场景",
+                                               "rect":  {
+                                                            "x":  2171,
+                                                            "y":  542,
+                                                            "w":  150,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "detail-grid",
+                                               "text":  "路线职责\n让火漆印章与钟楼证词第一次交叉，主角团获得推进方向但无法确认真相。\n\n本章把上一章留下的印章转化为行动线索，同时让商会与旧贵族的压力开始进入主线。\n\n主要冲突\n是否公开证据\n\n公开会",
+                                               "rect":  {
+                                                            "x":  84,
+                                                            "y":  728,
+                                                            "w":  572,
+                                                            "h":  330
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "p",
+                                               "cls":  "",
+                                               "text":  "场景数已准备，可以进入后续审阅。",
+                                               "rect":  {
+                                                            "x":  99,
+                                                            "y":  1005,
+                                                            "w":  250,
+                                                            "h":  19
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "p",
+                                               "cls":  "",
+                                               "text":  "本章结尾将调查导向一个看似可靠但存在矛盾的人。",
+                                               "rect":  {
+                                                            "x":  391,
+                                                            "y":  1005,
+                                                            "w":  250,
+                                                            "h":  38
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "p",
+                                               "cls":  "",
+                                               "text":  "确认章节计划前，需要进入场景数设置流程补齐。",
+                                               "rect":  {
+                                                            "x":  727,
+                                                            "y":  988,
+                                                            "w":  236,
+                                                            "h":  38
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "07",
+        "name":  "scene-count-repair",
+        "url":  "http://127.0.0.1:8773/07%20Scene%20Count%20Setting%20And%20Repair/visual-drafts/chapter-planning-scene-count-repair-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/07-scene-count-repair.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/07 Scene Count Setting And Repair/visual-drafts/chapter-planning-scene-count-repair-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 场景数设置与修复 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  45,
+                        "textareas":  0,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  88,
+                                                            "w":  602,
+                                                            "h":  52
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-scroll",
+                                               "text":  "第 1 章 · 港口晚宴\n4 场景 / 引用可用\n第 2 章 · 失踪巡夜人\n5 场景 / 引用可用\n第 3 章 · 钟楼证词\n5 场景 / 引用可用\n第 4 章 · 潮汐禁区\n5 场景 / ",
+                                               "rect":  {
+                                                            "x":  65,
+                                                            "y":  369,
+                                                            "w":  930,
+                                                            "h":  91
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "chapter-track",
+                                               "text":  "第 1 章 · 港口晚宴\n4 场景 / 引用可用\n第 2 章 · 失踪巡夜人\n5 场景 / 引用可用\n第 3 章 · 钟楼证词\n5 场景 / 引用可用\n第 4 章 · 潮汐禁区\n5 场景 / ",
+                                               "rect":  {
+                                                            "x":  -382,
+                                                            "y":  373,
+                                                            "w":  1818,
+                                                            "h":  74
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "chapter-card",
+                                               "text":  "第 1 章 · 港口晚宴\n4 场景 / 引用可用",
+                                               "rect":  {
+                                                            "x":  -382,
+                                                            "y":  373,
+                                                            "w":  142,
+                                                            "h":  74
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "第 1 章 · 港口晚宴",
+                                               "rect":  {
+                                                            "x":  -370,
+                                                            "y":  391,
+                                                            "w":  118,
+                                                            "h":  16
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "4 场景 / 引用可用",
+                                               "rect":  {
+                                                            "x":  -370,
+                                                            "y":  413,
+                                                            "w":  118,
+                                                            "h":  16
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "chapter-card",
+                                               "text":  "第 2 章 · 失踪巡夜人\n5 场景 / 引用可用",
+                                               "rect":  {
+                                                            "x":  -230,
+                                                            "y":  373,
+                                                            "w":  144,
+                                                            "h":  74
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "第 2 章 · 失踪巡夜人",
+                                               "rect":  {
+                                                            "x":  -218,
+                                                            "y":  391,
+                                                            "w":  120,
+                                                            "h":  16
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "5 场景 / 引用可用",
+                                               "rect":  {
+                                                            "x":  -218,
+                                                            "y":  413,
+                                                            "w":  120,
+                                                            "h":  16
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "chapter-card",
+                                               "text":  "第 3 章 · 钟楼证词\n5 场景 / 引用可用",
+                                               "rect":  {
+                                                            "x":  -76,
+                                                            "y":  373,
+                                                            "w":  142,
+                                                            "h":  74
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "第 3 章 · 钟楼证词",
+                                               "rect":  {
+                                                            "x":  -64,
+                                                            "y":  391,
+                                                            "w":  118,
+                                                            "h":  16
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "5 场景 / 引用可用",
+                                               "rect":  {
+                                                            "x":  -64,
+                                                            "y":  413,
+                                                            "w":  118,
+                                                            "h":  16
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  false,
+                                               "outside":  true,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "scene-count-area",
+                                               "text":  "+\n5\n场景\n−\n选择 5 场景\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n尚未保存\n当前影响\n第 6 章会生成 5 个场景节点\n1",
+                                               "rect":  {
+                                                            "x":  66,
+                                                            "y":  572,
+                                                            "w":  446,
+                                                            "h":  202
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "strong",
+                                               "cls":  "",
+                                               "text":  "5",
+                                               "rect":  {
+                                                            "x":  127,
+                                                            "y":  638,
+                                                            "w":  31,
+                                                            "h":  45
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "count-panel",
+                                               "text":  "选择 5 场景\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n尚未保存\n当前影响\n第 6 章会生成 5 个场景节点\n1\n2\n3\n4\n5",
+                                               "rect":  {
+                                                            "x":  218,
+                                                            "y":  586,
+                                                            "w":  280,
+                                                            "h":  174
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "select-row",
+                                               "text":  "选择 5 场景\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n尚未保存",
+                                               "rect":  {
+                                                            "x":  218,
+                                                            "y":  586,
+                                                            "w":  280,
+                                                            "h":  44
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "div",
+                                               "cls":  "select-shell",
+                                               "text":  "选择 5 场景\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20",
+                                               "rect":  {
+                                                            "x":  218,
+                                                            "y":  586,
+                                                            "w":  138,
+                                                            "h":  44
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "current_chapter_brief.participating_character_ids · 角色状态已归档，不能继续作为章节参与角色。",
+                                               "rect":  {
+                                                            "x":  556,
+                                                            "y":  702,
+                                                            "w":  412,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           },
+                                           {
+                                               "tag":  "span",
+                                               "cls":  "",
+                                               "text":  "chapter_routes[6].supporting_role_refs · 角色层级与当前章节功能不匹配，需要移出 supporting role 引用。",
+                                               "rect":  {
+                                                            "x":  556,
+                                                            "y":  787,
+                                                            "w":  412,
+                                                            "h":  15
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "hidden",
+                                               "overflowY":  "hidden"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "08",
+        "name":  "issue-handling",
+        "url":  "http://127.0.0.1:8773/08%20Issue%20Handling/visual-drafts/chapter-planning-issue-handling-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/08-issue-handling.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/08 Issue Handling/visual-drafts/chapter-planning-issue-handling-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 问题处理 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  21,
+                        "textareas":  1,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  88,
+                                                            "w":  602,
+                                                            "h":  52
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           },
+                                           {
+                                               "tag":  "button",
+                                               "cls":  "stage-button",
+                                               "text":  "当前章 Framework",
+                                               "rect":  {
+                                                            "x":  773,
+                                                            "y":  122,
+                                                            "w":  118,
+                                                            "h":  42
+                                                        },
+                                               "clipsX":  true,
+                                               "clipsY":  false,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "09",
+        "name":  "revision",
+        "url":  "http://127.0.0.1:8773/09%20Revise%20Chapter%20Plan/visual-drafts/chapter-planning-revision-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/09-revision.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/09 Revise Chapter Plan/visual-drafts/chapter-planning-revision-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 修订章节计划 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  18,
+                        "textareas":  1,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  88,
+                                                            "w":  644,
+                                                            "h":  52
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    },
+    {
+        "id":  "10",
+        "name":  "confirm",
+        "url":  "http://127.0.0.1:8773/10%20Confirm%20Chapter%20Plan/visual-drafts/chapter-planning-confirm-v1.html",
+        "auditScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/audit-2026-07-04/10-confirm.png",
+        "visualScreenshot":  "app/frontend/public/confirmed-ui/11 Chapter Planning/10 Confirm Chapter Plan/visual-drafts/chapter-planning-confirm-v1.png",
+        "metrics":  {
+                        "title":  "章节计划 / 确认章节计划 V1",
+                        "overflowX":  0,
+                        "overflowY":  32,
+                        "buttons":  20,
+                        "textareas":  1,
+                        "inputs":  0,
+                        "suspicious":  [
+                                           {
+                                               "tag":  "h1",
+                                               "cls":  "",
+                                               "text":  "章节计划",
+                                               "rect":  {
+                                                            "x":  54,
+                                                            "y":  88,
+                                                            "w":  679,
+                                                            "h":  52
+                                                        },
+                                               "clipsX":  false,
+                                               "clipsY":  true,
+                                               "outside":  false,
+                                               "tiny":  false,
+                                               "overflowX":  "visible",
+                                               "overflowY":  "visible"
+                                           }
+                                       ]
+                    }
+    }
+]

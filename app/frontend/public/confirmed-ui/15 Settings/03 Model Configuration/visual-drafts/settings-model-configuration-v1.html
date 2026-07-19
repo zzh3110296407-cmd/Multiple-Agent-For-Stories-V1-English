@@ -1,0 +1,1266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>设置 / 模型配置 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 252, 244, 0.82);
+      --ink: #302f2a;
+      --muted: #6f665d;
+      --quiet: #968a7d;
+      --line: rgba(105, 82, 58, 0.16);
+      --accent: #80684e;
+      --accent-soft: #b48a78;
+      --support: #737d69;
+      --support-deep: #56614f;
+      --warning: #9a704e;
+      --shadow: 0 28px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.56), rgba(236, 231, 220, 0.32) 48%, rgba(236, 231, 220, 0.12)),
+        url("../../assets/settings-background-v1.png") center / cover no-repeat;
+    }
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 249, 232, 0.44), transparent 34%),
+        radial-gradient(circle at 78% 22%, rgba(180, 149, 111, 0.12), transparent 36%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.1), rgba(121, 94, 65, 0.1));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 226px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .button,
+    .nav-item,
+    .profile-card,
+    .ghost-button,
+    .minor-button,
+    .provider-pill {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    .button,
+    .ghost-button,
+    .minor-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .button:hover,
+    .nav-item:hover,
+    .profile-card:hover,
+    .ghost-button:hover,
+    .minor-button:hover,
+    .provider-pill:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+    .primary {
+      min-width: 154px;
+      border-color: rgba(86, 97, 79, 0.48);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--support-deep), var(--accent));
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #63705c, #8b7358);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+    .ghost-button {
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--support);
+      box-shadow: 0 0 0 5px rgba(115, 125, 105, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(38px, 3.8vw, 54px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.72);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+    .model-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+    .model-strip div,
+    .metric,
+    .form-field,
+    .side-stat,
+    .safe-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .model-strip span,
+    .metric span,
+    .profile-card span,
+    .form-field span,
+    .side-stat span,
+    .safe-item span,
+    .event span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: normal;
+      overflow: visible;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .model-strip strong,
+    .metric strong,
+    .profile-card strong,
+    .side-stat strong,
+    .safe-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: normal;
+      overflow: visible;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 216px minmax(0, 1fr) 344px;
+      gap: 22px;
+      align-items: stretch;
+    }
+    .panel {
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .nav-panel {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-self: start;
+      position: sticky;
+      top: 24px;
+    }
+    .nav-item {
+      width: 100%;
+      min-height: 58px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+    }
+    .nav-item.active {
+      border-color: rgba(86, 97, 79, 0.44);
+      background: rgba(255, 252, 244, 0.86);
+      box-shadow: 0 18px 40px rgba(71, 52, 31, 0.12);
+    }
+    .nav-symbol {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(180, 149, 111, 0.16);
+      color: #6f5a42;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .nav-item.active .nav-symbol {
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--support-deep), var(--accent));
+    }
+    .nav-copy strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-copy span {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .main-panel {
+      min-height: 650px;
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      align-content: start;
+      gap: 14px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 840;
+    }
+    h2, h3 {
+      margin: 0;
+      color: #33322c;
+      letter-spacing: 0;
+    }
+    h2 {
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+    h3 {
+      font-size: 16px;
+      line-height: 1.28;
+      font-weight: 900;
+    }
+    .subtle {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+    .badge {
+      flex: 0 0 auto;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(86, 97, 79, 0.24);
+      border-radius: 999px;
+      color: var(--support-deep);
+      background: rgba(248, 245, 235, 0.78);
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .badge.warn {
+      color: var(--warning);
+      border-color: rgba(154, 112, 78, 0.28);
+    }
+    .badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .config-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.28fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .section-card {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.54);
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .profile-list {
+      display: grid;
+      gap: 10px;
+      max-height: 392px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .profile-card {
+      width: 100%;
+      padding: 11px;
+      text-align: left;
+      display: grid;
+      gap: 10px;
+    }
+    .profile-card.active {
+      border-color: rgba(86, 97, 79, 0.46);
+      background: rgba(255, 252, 244, 0.88);
+      box-shadow: 0 18px 38px rgba(71, 52, 31, 0.13);
+    }
+    .profile-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .profile-top strong {
+      margin-top: 0;
+      font-size: 15px;
+    }
+    .status-tag {
+      flex: 0 0 auto;
+      min-height: 24px;
+      padding: 0 9px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      background: rgba(255, 252, 244, 0.64);
+      color: #665d54;
+      font-size: 11px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .status-tag.good {
+      color: var(--support-deep);
+      border-color: rgba(86, 97, 79, 0.22);
+    }
+    .status-tag.warn {
+      color: var(--warning);
+      border-color: rgba(154, 112, 78, 0.22);
+    }
+    .profile-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .profile-meta div {
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .provider-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .provider-pill {
+      min-height: 44px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 860;
+      text-align: center;
+    }
+    .provider-pill.active {
+      color: #fffaf0;
+      border-color: rgba(86, 97, 79, 0.48);
+      background: linear-gradient(135deg, var(--support-deep), var(--accent));
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .form-field {
+      display: grid;
+      gap: 7px;
+      min-height: 78px;
+    }
+    .form-field.wide {
+      grid-column: span 2;
+    }
+    .form-field.full {
+      grid-column: span 2;
+      min-height: 72px;
+    }
+    .form-field label {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 780;
+    }
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid rgba(105, 82, 58, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.74);
+      color: #383730;
+      padding: 0 11px;
+      outline: none;
+      font-size: 12px;
+      font-weight: 720;
+    }
+    .form-field input:focus,
+    .form-field select:focus {
+      border-color: rgba(86, 97, 79, 0.44);
+      box-shadow: 0 0 0 4px rgba(86, 97, 79, 0.12);
+    }
+    .toggle-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+    }
+    .switch {
+      width: 46px;
+      height: 26px;
+      position: relative;
+      flex: 0 0 auto;
+    }
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      inset: 0;
+    }
+    .switch span {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(111, 102, 93, 0.26);
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      transition: background 180ms ease;
+    }
+    .switch span::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 2px;
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: 0 4px 10px rgba(71, 52, 31, 0.18);
+      transition: transform 180ms ease;
+    }
+    .switch input:checked + span {
+      background: rgba(86, 97, 79, 0.72);
+    }
+    .switch input:checked + span::before {
+      transform: translateX(20px);
+    }
+    .result-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(86, 97, 79, 0.18);
+      background: rgba(255, 252, 244, 0.48);
+      color: rgba(48, 47, 42, 0.74);
+      font-size: 13px;
+      line-height: 1.52;
+      font-weight: 560;
+    }
+
+    .side-panel {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-self: stretch;
+    }
+    .side-card {
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+    }
+    .side-stats,
+    .safe-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .provider-options {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+    .provider-option {
+      padding: 11px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      border: 1px solid rgba(105, 82, 58, 0.1);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .provider-option strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      font-weight: 880;
+    }
+    .provider-option span {
+      display: block;
+      margin-top: 4px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 720;
+    }
+    .event-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .event {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+    .event::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: var(--support);
+      box-shadow: 0 0 0 5px rgba(115, 125, 105, 0.13);
+    }
+    .event strong {
+      display: block;
+      color: #37352f;
+      font-size: 13px;
+      line-height: 1.36;
+      font-weight: 860;
+    }
+    .event span {
+      margin-top: 3px;
+      white-space: normal;
+      line-height: 1.42;
+    }
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      padding-top: 2px;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 6;
+      max-width: min(560px, calc(100vw - 36px));
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.7);
+      border-radius: var(--radius);
+      background: rgba(51, 47, 40, 0.9);
+      color: #fffaf0;
+      box-shadow: 0 18px 44px rgba(44, 32, 20, 0.24);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 620;
+      transform: translate(-50%, 24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace { width: min(1000px, calc(100vw - 44px)); }
+      .hero,
+      .layout,
+      .config-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-panel {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .side-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .side-card:first-child {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: calc(100vw - 28px);
+        min-height: calc(100vh - 28px);
+        margin: 14px auto;
+        gap: 14px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        gap: 14px;
+        padding-left: 0;
+      }
+      h1 { font-size: 38px; }
+      .layout {
+        display: flex;
+        flex-direction: column;
+      }
+      .main-panel { order: 1; }
+      .nav-panel {
+        order: 2;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .side-panel { order: 3; }
+      .model-strip,
+      .metrics,
+      .form-grid,
+      .provider-row,
+      .profile-meta,
+      .side-panel,
+      .side-stats,
+      .safe-grid {
+        grid-template-columns: 1fr;
+      }
+      .main-panel {
+        padding: 16px;
+        min-height: auto;
+      }
+      .panel-header {
+        display: grid;
+      }
+      .form-field.wide,
+      .form-field.full {
+        grid-column: 1 / -1;
+      }
+      .action-bar {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .button,
+      .minor-button,
+      .ghost-button,
+      .primary {
+        width: 100%;
+      }
+      .backdrop {
+        background-position: 58% center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="button" type="button" data-action="返回设置总览">返回总览</button>
+      <div class="crumb">主页 / 当前项目 / 设置 / 模型配置</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">模型可用</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">模型配置</h1>
+        <p>管理 Provider Profile、当前模型选择和连接健康。这里不展示真实密钥，只使用安全引用。</p>
+      </div>
+      <div class="model-strip" aria-label="当前模型摘要">
+        <div>
+          <span>当前 Provider</span>
+          <strong id="heroProvider">Qwen</strong>
+        </div>
+        <div>
+          <span>当前模型</span>
+          <strong id="heroModel">qwen-plus</strong>
+        </div>
+        <div>
+          <span>Active Profile</span>
+          <strong id="heroProfile">qwen_default</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <nav class="panel nav-panel" aria-label="设置分类">
+        <button class="nav-item" type="button" data-target="设置总览">
+          <span class="nav-symbol">01</span>
+          <span class="nav-copy"><strong>设置总览</strong><span>环境状态入口</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="外观与主题">
+          <span class="nav-symbol">02</span>
+          <span class="nav-copy"><strong>外观与主题</strong><span>色卡与预览</span></span>
+        </button>
+        <button class="nav-item active" type="button" data-target="模型配置">
+          <span class="nav-symbol">03</span>
+          <span class="nav-copy"><strong>模型配置</strong><span>模型档案</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="当前模型">
+          <span class="nav-symbol">04</span>
+          <span class="nav-copy"><strong>当前模型</strong><span>健康检查</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="密钥与安全">
+          <span class="nav-symbol">05</span>
+          <span class="nav-copy"><strong>密钥与安全</strong><span>引用与策略</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="创作偏好">
+          <span class="nav-symbol">06</span>
+          <span class="nav-copy"><strong>创作偏好</strong><span>默认语言容量</span></span>
+        </button>
+        <button class="nav-item" type="button" data-target="帮助与引导">
+          <span class="nav-symbol">07</span>
+          <span class="nav-copy"><strong>帮助与引导</strong><span>新手提示</span></span>
+        </button>
+      </nav>
+
+      <section class="panel main-panel" aria-label="模型配置内容">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Model Settings</p>
+            <h2>Provider Profile 管理</h2>
+            <p class="subtle">用户只需要管理能影响创作结果的连接配置。调试日志和 runtime calls 不进入默认设置页。</p>
+          </div>
+          <span class="badge" id="workbenchBadge">ready</span>
+        </div>
+
+        <div class="metrics" aria-label="当前模型指标">
+          <div class="metric"><span>Provider</span><strong id="metricProvider">Qwen</strong></div>
+          <div class="metric"><span>Model</span><strong id="metricModel">qwen-plus</strong></div>
+          <div class="metric"><span>Profile</span><strong id="metricProfile">qwen_default</strong></div>
+          <div class="metric"><span>Selection</span><strong>active</strong></div>
+          <div class="metric"><span>Key</span><strong id="metricKey">configured</strong></div>
+          <div class="metric"><span>Health</span><strong id="metricHealth">healthy</strong></div>
+        </div>
+
+        <div class="config-grid">
+          <section class="section-card" aria-label="Provider Profile 列表">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Provider Profiles</p>
+                <h3>已保存配置</h3>
+              </div>
+              <span class="status-tag good">3 profiles</span>
+            </div>
+            <div class="profile-list" id="profileList">
+              <button class="profile-card active" type="button" data-profile="qwen_default">
+                <div class="profile-top">
+                  <span><span>Qwen</span><strong>qwen_default</strong></span>
+                  <span class="status-tag good">当前</span>
+                </div>
+                <div class="profile-meta">
+                  <div><span>Model</span><strong>qwen-plus</strong></div>
+                  <div><span>Key</span><strong>configured</strong></div>
+                </div>
+              </button>
+              <button class="profile-card" type="button" data-profile="deepseek_draft">
+                <div class="profile-top">
+                  <span><span>DeepSeek</span><strong>deepseek_draft</strong></span>
+                  <span class="status-tag">可用</span>
+                </div>
+                <div class="profile-meta">
+                  <div><span>Model</span><strong>deepseek-chat</strong></div>
+                  <div><span>Key</span><strong>configured</strong></div>
+                </div>
+              </button>
+              <button class="profile-card" type="button" data-profile="local_mock">
+                <div class="profile-top">
+                  <span><span>Local Mock</span><strong>local_mock</strong></span>
+                  <span class="status-tag warn">开发</span>
+                </div>
+                <div class="profile-meta">
+                  <div><span>Model</span><strong>deterministic</strong></div>
+                  <div><span>Key</span><strong>not required</strong></div>
+                </div>
+              </button>
+            </div>
+          </section>
+
+          <section class="section-card" aria-label="新增或编辑模型配置">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Add / Edit Provider</p>
+                <h3>新增或更新配置</h3>
+              </div>
+              <span class="status-tag" id="formStatus">Qwen</span>
+            </div>
+
+            <div class="provider-row" aria-label="Provider 类型">
+              <button class="provider-pill active" type="button" data-provider="qwen">Qwen</button>
+              <button class="provider-pill" type="button" data-provider="deepseek">DeepSeek</button>
+              <button class="provider-pill" type="button" data-provider="local">Local Mock</button>
+            </div>
+
+            <div class="form-grid">
+              <label class="form-field">
+                <span>Profile ID</span>
+                <input id="profileId" value="qwen_default" />
+              </label>
+              <label class="form-field">
+                <span>Display Name</span>
+                <input id="displayName" value="Qwen 主模型" />
+              </label>
+              <label class="form-field">
+                <span>Model Name</span>
+                <input id="modelName" value="qwen-plus" />
+              </label>
+              <label class="form-field full">
+                <span>API Key Ref</span>
+                <input id="apiKeyRef" value="env:QWEN_API_KEY" />
+              </label>
+              <label class="form-field wide">
+                <span>Base URL</span>
+                <input id="baseUrl" value="https://dashscope.aliyuncs.com/compatible-mode/v1" />
+              </label>
+            </div>
+
+            <div class="toggle-line">
+              <div>
+                <strong>启用此 Profile</strong>
+                <p class="subtle">关闭后不能设为当前模型，但配置仍保留。</p>
+              </div>
+              <label class="switch">
+                <input id="enabledToggle" type="checkbox" checked />
+                <span aria-hidden="true"></span>
+              </label>
+            </div>
+            <div class="result-box" id="resultBox">当前编辑 `qwen_default`。真实密钥不会出现在前端，只保存 `apiKeyRef`。</div>
+          </section>
+        </div>
+
+        <div class="action-bar">
+          <button class="ghost-button" type="button" id="newProfileButton">新建 Profile</button>
+          <button class="minor-button" type="button" id="saveButton">更新 Profile</button>
+          <button class="minor-button" type="button" id="activeButton">设为当前</button>
+          <button class="button primary" type="button" id="healthButton">健康检查</button>
+        </div>
+      </section>
+
+      <aside class="panel side-panel" aria-label="模型配置状态">
+        <section class="side-card">
+          <p class="eyebrow">当前模型</p>
+          <h3>当前模型选择</h3>
+          <p class="subtle">这些字段来自 `activeModelSelection` 与 `modelSettingsWorkbench`。</p>
+          <div class="side-stats">
+            <div class="side-stat"><span>服务商</span><strong id="sideProvider">Qwen</strong></div>
+            <div class="side-stat"><span>模型</span><strong id="sideModel">qwen-plus</strong></div>
+            <div class="side-stat"><span>回退策略</span><strong>允许</strong></div>
+            <div class="side-stat"><span>必须真实模型</span><strong>否</strong></div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">服务商选项</p>
+          <h3>可用 Provider</h3>
+          <div class="provider-options">
+            <div class="provider-option">
+              <div><strong>Qwen</strong><span>Phase 8.5 M1 已启用</span></div>
+              <span class="status-tag good">enabled</span>
+            </div>
+            <div class="provider-option">
+              <div><strong>DeepSeek</strong><span>Phase 8.5 M1 enabled</span></div>
+              <span class="status-tag good">enabled</span>
+            </div>
+            <div class="provider-option">
+              <div><strong>Local Mock</strong><span>开发环境可见</span></div>
+              <span class="status-tag warn">dev</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">密钥策略</p>
+          <h3>密钥策略</h3>
+          <div class="safe-grid">
+            <div class="safe-item"><span>原始密钥</span><strong>隐藏</strong></div>
+            <div class="safe-item"><span>末四位</span><strong>隐藏</strong></div>
+            <div class="safe-item"><span>可解析</span><strong>env:</strong></div>
+            <div class="safe-item"><span>显示方式</span><strong>env:</strong></div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">Latest Action</p>
+          <h3>最近操作</h3>
+          <div class="event-list">
+            <div class="event">
+              <div>
+                <strong id="latestEvent">健康检查通过</strong>
+                <span id="latestEventDetail">Qwen / qwen-plus 当前可用。</span>
+              </div>
+            </div>
+            <div class="event">
+              <div>
+                <strong>密钥引用安全</strong>
+                <span>仅使用 `env:` 引用，不在前端显示真实 key。</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const profiles = {
+      qwen_default: {
+        provider: "qwen",
+        providerLabel: "Qwen",
+        profileId: "qwen_default",
+        displayName: "Qwen 主模型",
+        modelName: "qwen-plus",
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKeyRef: "env:QWEN_API_KEY",
+        enabled: true,
+        key: "configured",
+        status: "healthy"
+      },
+      deepseek_draft: {
+        provider: "deepseek",
+        providerLabel: "DeepSeek",
+        profileId: "deepseek_draft",
+        displayName: "DeepSeek 备选",
+        modelName: "deepseek-chat",
+        baseUrl: "https://api.deepseek.com",
+        apiKeyRef: "env:DEEPSEEK_API_KEY",
+        enabled: true,
+        key: "configured",
+        status: "unknown"
+      },
+      local_mock: {
+        provider: "local",
+        providerLabel: "Local Mock",
+        profileId: "local_mock",
+        displayName: "确定性本地回退",
+        modelName: "deterministic",
+        baseUrl: "",
+        apiKeyRef: "",
+        enabled: true,
+        key: "not required",
+        status: "dev"
+      }
+    };
+
+    const defaultsByProvider = {
+      qwen: {
+        providerLabel: "Qwen",
+        displayName: "Qwen 主模型",
+        modelName: "qwen-plus",
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKeyRef: "env:QWEN_API_KEY"
+      },
+      deepseek: {
+        providerLabel: "DeepSeek",
+        displayName: "DeepSeek 备选",
+        modelName: "deepseek-chat",
+        baseUrl: "https://api.deepseek.com",
+        apiKeyRef: "env:DEEPSEEK_API_KEY"
+      },
+      local: {
+        providerLabel: "Local Mock",
+        displayName: "确定性本地回退",
+        modelName: "deterministic",
+        baseUrl: "",
+        apiKeyRef: ""
+      }
+    };
+
+    const toast = document.getElementById("toast");
+    const topStatus = document.getElementById("topStatus");
+    const workbenchBadge = document.getElementById("workbenchBadge");
+    const resultBox = document.getElementById("resultBox");
+    const profileId = document.getElementById("profileId");
+    const displayName = document.getElementById("displayName");
+    const modelName = document.getElementById("modelName");
+    const baseUrl = document.getElementById("baseUrl");
+    const apiKeyRef = document.getElementById("apiKeyRef");
+    const enabledToggle = document.getElementById("enabledToggle");
+    let activeProfile = "qwen_default";
+    let toastTimer = null;
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("show");
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    const settingsRoutes = {
+      "设置总览": "../../01 Settings Overview/visual-drafts/settings-overview-v1.html",
+      "外观与主题": "../../02 Appearance And Theme/visual-drafts/settings-appearance-theme-v1.html",
+      "模型配置": "../../03 Model Configuration/visual-drafts/settings-model-configuration-v1.html",
+      "当前模型": "../../04 Current Model And Health Check/visual-drafts/settings-current-model-health-v1.html",
+      "密钥与安全": "../../05 Secrets And Security/visual-drafts/settings-secrets-security-v1.html",
+      "创作偏好": "../../06 Creative Preferences/visual-drafts/settings-creative-preferences-v1.html"
+    };
+
+    function openSettingsTarget(target, currentTarget, currentLabel) {
+      if (target === currentTarget) {
+        showToast("当前已在" + currentLabel + "。");
+        return;
+      }
+      const route = settingsRoutes[target];
+      if (route) {
+        window.location.href = route;
+        return;
+      }
+      showToast("「" + target + "」尚未设计。");
+    }
+
+    function providerDisplay(provider) {
+      return defaultsByProvider[provider]?.providerLabel || provider;
+    }
+
+    function setProvider(provider) {
+      document.querySelectorAll(".provider-pill").forEach((button) => {
+        button.classList.toggle("active", button.dataset.provider === provider);
+      });
+      const defaults = defaultsByProvider[provider];
+      document.getElementById("formStatus").textContent = defaults.providerLabel;
+      displayName.value = defaults.displayName;
+      modelName.value = defaults.modelName;
+      baseUrl.value = defaults.baseUrl;
+      apiKeyRef.value = defaults.apiKeyRef;
+      if (provider === "local") {
+        profileId.value = "local_mock";
+      } else if (provider === "deepseek") {
+        profileId.value = "deepseek_draft";
+      } else {
+        profileId.value = "qwen_default";
+      }
+      resultBox.textContent = "已切换 Provider 类型：" + defaults.providerLabel + "。";
+    }
+
+    function loadProfile(id) {
+      const profile = profiles[id];
+      if (!profile) return;
+      activeProfile = id;
+      document.querySelectorAll(".profile-card").forEach((card) => {
+        card.classList.toggle("active", card.dataset.profile === id);
+      });
+      document.querySelectorAll(".provider-pill").forEach((button) => {
+        button.classList.toggle("active", button.dataset.provider === profile.provider);
+      });
+      profileId.value = profile.profileId;
+      displayName.value = profile.displayName;
+      modelName.value = profile.modelName;
+      baseUrl.value = profile.baseUrl;
+      apiKeyRef.value = profile.apiKeyRef;
+      enabledToggle.checked = profile.enabled;
+      document.getElementById("formStatus").textContent = profile.providerLabel;
+      document.getElementById("metricProvider").textContent = profile.providerLabel;
+      document.getElementById("metricModel").textContent = profile.modelName;
+      document.getElementById("metricProfile").textContent = profile.profileId;
+      document.getElementById("metricKey").textContent = profile.key;
+      document.getElementById("metricHealth").textContent = profile.status;
+      resultBox.textContent = "当前编辑 `" + profile.profileId + "`。真实密钥不会出现在前端，只保存 `apiKeyRef`。";
+      showToast("已载入 " + profile.profileId + "。");
+    }
+
+    function setActiveModel() {
+      const provider = document.querySelector(".provider-pill.active").dataset.provider;
+      const providerLabel = providerDisplay(provider);
+      document.getElementById("heroProvider").textContent = providerLabel;
+      document.getElementById("heroModel").textContent = modelName.value || "missing";
+      document.getElementById("heroProfile").textContent = profileId.value || "missing";
+      document.getElementById("sideProvider").textContent = providerLabel;
+      document.getElementById("sideModel").textContent = modelName.value || "missing";
+      document.getElementById("latestEvent").textContent = "已设为当前模型";
+      document.getElementById("latestEventDetail").textContent = providerLabel + " / " + (modelName.value || "missing") + " 已成为当前选择。";
+      topStatus.textContent = "当前模型已更新";
+      showToast("已将 " + (profileId.value || "当前配置") + " 设为当前模型。");
+    }
+
+    document.querySelectorAll("[data-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.target;
+        openSettingsTarget(target, "模型配置", "模型配置");
+      });
+    });
+
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => showToast(button.dataset.action + "。"));
+    });
+
+    document.querySelectorAll(".profile-card").forEach((card) => {
+      card.addEventListener("click", () => loadProfile(card.dataset.profile));
+    });
+
+    document.querySelectorAll(".provider-pill").forEach((button) => {
+      button.addEventListener("click", () => setProvider(button.dataset.provider));
+    });
+
+    document.getElementById("newProfileButton").addEventListener("click", () => {
+      const provider = document.querySelector(".provider-pill.active").dataset.provider;
+      const defaults = defaultsByProvider[provider];
+      profileId.value = "";
+      displayName.value = defaults.displayName;
+      modelName.value = defaults.modelName;
+      baseUrl.value = defaults.baseUrl;
+      apiKeyRef.value = defaults.apiKeyRef;
+      enabledToggle.checked = true;
+      resultBox.textContent = "正在创建新的 " + defaults.providerLabel + " Profile。";
+      showToast("已切换到新建 Profile。");
+    });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      const action = profileId.value ? "patch-profile" : "create-profile";
+      workbenchBadge.textContent = "saving";
+      window.setTimeout(() => {
+        workbenchBadge.textContent = "ready";
+        resultBox.textContent = "已准备提交 `" + action + "`。payload 使用 providerType、displayName、baseUrl、modelName、apiKeyRef、enabled。";
+        showToast(profileId.value ? "Profile 更新完成。" : "Profile 新增完成。");
+      }, 480);
+    });
+
+    document.getElementById("activeButton").addEventListener("click", setActiveModel);
+
+    document.getElementById("healthButton").addEventListener("click", () => {
+      const button = document.getElementById("healthButton");
+      button.disabled = true;
+      button.textContent = "检查中";
+      workbenchBadge.textContent = "checking";
+      workbenchBadge.classList.add("warn");
+      document.getElementById("metricHealth").textContent = "checking";
+      topStatus.textContent = "正在检查";
+      window.setTimeout(() => {
+        button.disabled = false;
+        button.textContent = "健康检查";
+        workbenchBadge.textContent = "ready";
+        workbenchBadge.classList.remove("warn");
+        document.getElementById("metricHealth").textContent = "healthy";
+        topStatus.textContent = "模型可用";
+        document.getElementById("latestEvent").textContent = "健康检查通过";
+        document.getElementById("latestEventDetail").textContent = providerDisplay(document.querySelector(".provider-pill.active").dataset.provider) + " / " + (modelName.value || "missing") + " 当前可用。";
+        showToast("健康检查完成，当前 Profile 可用。");
+      }, 900);
+    });
+  </script>
+</body>
+</html>

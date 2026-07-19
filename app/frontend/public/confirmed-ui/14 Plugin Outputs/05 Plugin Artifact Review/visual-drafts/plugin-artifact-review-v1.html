@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>插件输出 / 插件成果审阅 V1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --cream: #fffdf6;
+      --panel: rgba(255, 252, 244, 0.74);
+      --panel-strong: rgba(255, 252, 244, 0.9);
+      --vellum: #f4ecde;
+      --ink: #303029;
+      --soft-ink: rgba(48, 47, 42, 0.72);
+      --quiet: rgba(48, 47, 42, 0.5);
+      --line: rgba(105, 82, 58, 0.16);
+      --line-strong: rgba(105, 82, 58, 0.28);
+      --sage: #76806f;
+      --sage-deep: #55614f;
+      --brass: #b4956f;
+      --rose: #a07266;
+      --blue: #6f8182;
+      --shadow: 0 24px 60px rgba(70, 52, 31, 0.18);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--paper); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      letter-spacing: 0;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.94) 0%, rgba(236, 231, 220, 0.83) 45%, rgba(236, 231, 220, 0.55) 100%),
+        url("../../assets/plugin-outputs-background-v1.png") center right / cover fixed no-repeat;
+    }
+
+    button { font: inherit; border: 0; cursor: pointer; letter-spacing: 0; }
+
+    .page {
+      max-width: 1536px;
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 34px 38px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .ghost-button,
+    .status-pill {
+      min-height: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.62);
+      color: rgba(48, 47, 42, 0.8);
+      box-shadow: 0 18px 40px rgba(70, 52, 31, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .ghost-button {
+      min-width: 138px;
+      padding: 0 22px;
+      font-weight: 820;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 26px;
+      font-size: 14px;
+      font-weight: 820;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(118, 128, 111, 0.18);
+    }
+
+    .crumb {
+      flex: 1;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 440px;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 10px;
+      color: #2f312b;
+      font-size: clamp(44px, 5vw, 68px);
+      line-height: 0.98;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 840px;
+      margin-bottom: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 16px;
+      line-height: 1.75;
+      font-weight: 520;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: var(--radius);
+      background: rgba(115, 95, 71, 0.24);
+      box-shadow: 0 18px 48px rgba(70, 52, 31, 0.16);
+      backdrop-filter: blur(18px);
+    }
+
+    .summary-card,
+    .field,
+    .artifact-button,
+    .side-card,
+    .preview-card,
+    .meta-card {
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .summary-card {
+      min-width: 0;
+      padding: 14px;
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .summary-card span,
+    .field span,
+    .mini span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .summary-card strong,
+    .field strong,
+    .mini strong {
+      display: block;
+      margin-top: 5px;
+      color: #2f302b;
+      font-size: 16px;
+      font-weight: 920;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(244, 236, 222, 0.74)),
+        rgba(255, 252, 244, 0.68);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      color: #33332d;
+      font-size: 27px;
+      line-height: 1.2;
+      font-weight: 920;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      color: #33332d;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 920;
+    }
+
+    h4 {
+      margin-bottom: 8px;
+      color: #33332d;
+      font-size: 14px;
+      line-height: 1.36;
+      font-weight: 900;
+    }
+
+    p {
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    .mode-badge {
+      flex: 0 0 172px;
+      padding: 10px 12px;
+      border: 1px solid rgba(115, 125, 105, 0.3);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      text-align: center;
+    }
+
+    .mode-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #52614f;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 26px 18px;
+    }
+
+    .stage-item {
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.32);
+    }
+
+    .stage-item span,
+    .stage-item strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage-item span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .stage-item strong {
+      margin-top: 5px;
+      color: rgba(57, 56, 50, 0.58);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .stage-item.current {
+      border-color: rgba(86, 97, 79, 0.34);
+      background: rgba(115, 125, 105, 0.14);
+    }
+
+    .stage-item.current strong { color: #42483d; }
+    .stage-item.done strong { color: rgba(76, 91, 70, 0.92); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(270px, 330px) minmax(0, 1fr) minmax(310px, 380px);
+      gap: 24px;
+      padding: 0 26px 22px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .artifact-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .artifact-button {
+      width: 100%;
+      padding: 15px 14px;
+      color: var(--ink);
+      text-align: left;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .artifact-button:hover,
+    .artifact-button.active {
+      transform: translateY(-1px);
+      border-color: rgba(86, 97, 79, 0.36);
+      background: rgba(255, 252, 244, 0.78);
+    }
+
+    .artifact-button header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .artifact-button strong {
+      display: block;
+      color: #34342e;
+      font-size: 14px;
+      font-weight: 920;
+    }
+
+    .artifact-button small {
+      display: block;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 620;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: #53615f;
+      background: rgba(111, 129, 130, 0.16);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .tag.warn { color: #7a5f3f; background: rgba(180, 149, 111, 0.18); }
+    .tag.reject { color: #855b51; background: rgba(160, 114, 102, 0.2); }
+
+    .review-card {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      min-height: 650px;
+      overflow: hidden;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .review-head {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .review-head-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .review-head p { margin-bottom: 0; }
+
+    .tabbar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 14px 22px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .tab-button {
+      min-height: 40px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      color: rgba(48, 47, 42, 0.68);
+      background: rgba(255, 252, 244, 0.42);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .tab-button.active {
+      color: #fffaf0;
+      background: var(--sage);
+      border-color: rgba(86, 97, 79, 0.38);
+    }
+
+    .review-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 22px 22px;
+    }
+
+    .preview-card {
+      min-height: 430px;
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.64), rgba(244, 236, 222, 0.5)),
+        rgba(255, 252, 244, 0.5);
+    }
+
+    .preview-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .doc-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    .doc-section {
+      padding: 14px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .doc-section h4 { margin-bottom: 6px; }
+    .doc-section p { margin-bottom: 0; }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .meta-card,
+    .field {
+      min-width: 0;
+      padding: 13px;
+    }
+
+    .meta-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #33332d;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .meta-card p { margin-bottom: 0; }
+
+    .side-card {
+      padding: 18px;
+    }
+
+    .side-card p { margin-bottom: 0; }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .guard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .guard {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .guard span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .guard strong {
+      display: block;
+      margin-top: 5px;
+      color: #35352f;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 26px 22px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .action-note {
+      max-width: 600px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 560;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .action-button {
+      min-height: 44px;
+      min-width: 112px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 860;
+      transition: transform 160ms ease, opacity 160ms ease;
+    }
+
+    .action-button:hover { transform: translateY(-1px); }
+    .action-button.primary {
+      min-width: 148px;
+      color: #fffaf0;
+      background: var(--sage);
+    }
+
+    .action-button.secondary {
+      color: #534d42;
+      background: rgba(255, 252, 244, 0.72);
+      border: 1px solid rgba(105, 82, 58, 0.14);
+    }
+
+    .action-button.danger {
+      color: #fffaf0;
+      background: var(--rose);
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 20;
+      max-width: min(380px, calc(100vw - 40px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      color: #33332d;
+      box-shadow: 0 18px 48px rgba(70, 52, 31, 0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 200ms ease, transform 200ms ease;
+      font-size: 13px;
+      font-weight: 760;
+      line-height: 1.5;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .hero { grid-template-columns: 1fr; }
+      .summary-strip { max-width: 620px; }
+      .workspace { grid-template-columns: 1fr; }
+      .review-card { min-height: 0; }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        background:
+          linear-gradient(180deg, rgba(236, 231, 220, 0.94), rgba(236, 231, 220, 0.78)),
+          url("../../assets/plugin-outputs-background-v1.png") center top / cover fixed no-repeat;
+      }
+      .page { padding: 10px 7px 18px; }
+      .topbar {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .ghost-button,
+      .status-pill {
+        width: 100%;
+        justify-content: center;
+      }
+      .crumb {
+        order: -1;
+        font-size: 11px;
+      }
+      .hero {
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      h1 { font-size: 38px; }
+      .hero p { font-size: 13px; }
+      .summary-strip {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .panel-head {
+        display: grid;
+        padding: 18px 14px 14px;
+      }
+      .mode-badge {
+        width: 100%;
+        flex-basis: auto;
+      }
+      .stage-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 0 14px 14px;
+      }
+      .workspace {
+        padding: 0 14px 16px;
+        gap: 14px;
+      }
+      .review-head,
+      .tabbar,
+      .review-scroll {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .review-head-row,
+      .meta-grid,
+      .field-grid,
+      .guard-grid {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+      .tabbar { grid-template-columns: 1fr; }
+      .action-bar {
+        display: grid;
+        padding: 14px;
+      }
+      .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .action-button { width: 100%; }
+      .toast {
+        right: 12px;
+        bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" aria-labelledby="pageTitle">
+    <div class="topbar">
+      <button class="ghost-button" type="button">返回检查点</button>
+      <div class="crumb">主页 / 工作台 / 插件输出 / 插件成果审阅</div>
+      <div class="status-pill"><span class="dot"></span><span>成果可审阅</span></div>
+    </div>
+
+    <section class="hero">
+      <div>
+        <h1 id="pageTitle">插件成果审阅</h1>
+        <p>插件已经完成派生成果。这里用于检查成果内容、安全边界和可交付状态；如果发现问题，可以进入输出问题处理，不会直接修改源故事。</p>
+      </div>
+      <div class="summary-strip" aria-label="插件成果摘要">
+        <div class="summary-card"><span>当前插件</span><strong>剧本锻造</strong></div>
+        <div class="summary-card"><span>运行状态</span><strong>completed</strong></div>
+        <div class="summary-card"><span>成果数量</span><strong id="artifactTotal">4</strong></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="panelTitle">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">PLUGIN ARTIFACT REVIEW</div>
+          <h2 id="panelTitle">审阅插件派生成果</h2>
+          <p>审阅页只展示已确认可见的派生成果摘要、结构和文件信息，不展示插件原始响应或内部推理。</p>
+        </div>
+        <div class="mode-badge">
+          <span>当前成果</span>
+          <strong id="modeBadge">成稿包</strong>
+        </div>
+      </div>
+
+      <div class="stage-strip" aria-label="插件输出流程">
+        <div class="stage-item done"><span>01</span><strong>成果入口</strong></div>
+        <div class="stage-item done"><span>02</span><strong>插件选择</strong></div>
+        <div class="stage-item done"><span>03</span><strong>运行中</strong></div>
+        <div class="stage-item done"><span>04</span><strong>检查点</strong></div>
+        <div class="stage-item current"><span>05</span><strong>成果审阅</strong></div>
+        <div class="stage-item"><span>06</span><strong>问题处理</strong></div>
+      </div>
+
+      <div class="workspace">
+        <aside class="stack" aria-labelledby="artifactListTitle">
+          <div>
+            <div class="eyebrow">ARTIFACTS</div>
+            <h3 id="artifactListTitle">成果清单</h3>
+            <p>单击切换成果。每个成果的预览内容都可以独立滚动。</p>
+          </div>
+          <div class="artifact-list" id="artifactList"></div>
+        </aside>
+
+        <section class="review-card" aria-labelledby="artifactTitle">
+          <div class="review-head">
+            <div class="review-head-row">
+              <div>
+                <div class="eyebrow" id="artifactType">MANUSCRIPT PACKAGE</div>
+                <h3 id="artifactTitle">成稿导出包</h3>
+                <p id="artifactCopy">由最终故事包快照派生出的完整成稿结构，包含正文、目录、角色表、世界摘要、事件线和锁定约束。</p>
+              </div>
+              <span class="tag" id="artifactStatus">confirmed</span>
+            </div>
+          </div>
+
+          <div class="tabbar" role="tablist" aria-label="成果审阅视图">
+            <button class="tab-button active" type="button" data-tab="preview">成果预览</button>
+            <button class="tab-button" type="button" data-tab="meta">文件信息</button>
+            <button class="tab-button" type="button" data-tab="safety">安全摘要</button>
+          </div>
+
+          <div class="review-scroll">
+            <article class="preview-card" id="previewPanel"></article>
+          </div>
+        </section>
+
+        <aside class="stack" aria-labelledby="sideTitle">
+          <div class="side-card">
+            <div class="eyebrow">RUN DETAIL</div>
+            <h3 id="sideTitle">运行详情</h3>
+            <div class="field-grid">
+              <div class="field"><span>plugin_run_id</span><strong>run_0427</strong></div>
+              <div class="field"><span>plugin_id</span><strong>script_forging</strong></div>
+              <div class="field"><span>快照</span><strong>正式成稿快照</strong></div>
+              <div class="field"><span>版本</span><strong>0.7.0</strong></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <div class="eyebrow">SAFETY REPORT</div>
+            <h3>成果安全</h3>
+            <p>所有成果均来自最终故事包快照；插件没有写回源故事，也没有读取未确认草稿。</p>
+            <div class="guard-grid">
+              <div class="guard"><span>源故事写入</span><strong>禁止</strong></div>
+              <div class="guard"><span>最终快照</span><strong>只读</strong></div>
+              <div class="guard"><span>原始响应</span><strong>隐藏</strong></div>
+              <div class="guard"><span>隐藏推理</span><strong>不可见</strong></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <div class="eyebrow">NEXT</div>
+            <h3>下一步</h3>
+            <p id="nextCopy">如果成果没有问题，可打开成果包或返回项目总览；如果存在缺失、格式错误或安全警告，进入 06 输出问题处理。</p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="action-bar">
+        <p class="action-note" id="actionNote">当前成果处于可审阅状态。这里不会把任何内容反写回源故事。</p>
+        <div class="action-buttons">
+          <button class="action-button secondary" id="refreshButton" type="button">刷新成果</button>
+          <button class="action-button danger" id="issueButton" type="button">报告问题</button>
+          <button class="action-button primary" id="openButton" type="button">打开成果包</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const artifacts = [
+      {
+        id: "artifact_manuscript_package",
+        title: "成稿导出包",
+        type: "MANUSCRIPT PACKAGE",
+        status: "confirmed",
+        short: "正文、目录、附录与锁定约束",
+        copy: "由最终故事包快照派生出的完整成稿结构，包含正文、目录、角色表、世界摘要、事件线和锁定约束。",
+        preview: [
+          ["正文", "12 章 / 60 幕已经整理为连续成稿结构。正文仅来自已确认的最终故事包快照。"],
+          ["目录", "章节与场景顺序已固定为可导出的目录索引。"],
+          ["附录", "角色表、世界摘要、事件线、锁定约束会作为只读附录。"],
+          ["限制", "派生成果不会回写故事事实，不会修改最终故事包。"]
+        ],
+        meta: [
+          ["output_artifact_id", "artifact_manuscript_package"],
+          ["artifact_status", "confirmed"],
+          ["format", "package"],
+          ["source", "final_story_package_snapshot"],
+          ["size", "2.4 MB"],
+          ["created_at", "2026-07-04 21:18"]
+        ],
+        safety: [
+          ["读取范围", "只读取最终故事包快照。"],
+          ["写入限制", "没有写入场景正文、事件线、记忆记录或最终故事包。"],
+          ["隐藏内容", "不展示原始 prompt、原始响应或隐藏推理。"]
+        ]
+      },
+      {
+        id: "artifact_outline_index",
+        title: "目录与索引",
+        type: "OUTLINE INDEX",
+        status: "confirmed",
+        short: "章节目录、场景索引与页内锚点",
+        copy: "用于帮助用户快速定位成稿章节、场景和附录内容的导航索引。",
+        preview: [
+          ["章节目录", "第 1 章至第 12 章按最终章节计划排序。"],
+          ["场景索引", "每章下挂 5 个场景，保留场景标题和简短公开摘要。"],
+          ["附录锚点", "角色表、世界摘要、事件线、锁定约束均带有可跳转锚点。"],
+          ["可见性", "索引只引用公开标题和安全摘要。"]
+        ],
+        meta: [
+          ["output_artifact_id", "artifact_outline_index"],
+          ["artifact_status", "confirmed"],
+          ["format", "json + markdown"],
+          ["source", "artifact_manuscript_package"],
+          ["size", "184 KB"],
+          ["created_at", "2026-07-04 21:19"]
+        ],
+        safety: [
+          ["章节来源", "来自已确认章节计划。"],
+          ["场景来源", "来自已确认场景写作结果。"],
+          ["不可见内容", "不包含推理链、草稿差异或调试字段。"]
+        ]
+      },
+      {
+        id: "artifact_appendix_pack",
+        title: "附录资料包",
+        type: "APPENDIX PACK",
+        status: "confirmed",
+        short: "角色表、世界摘要、事件线",
+        copy: "将项目中的角色、世界与事件信息压缩为可交付附录，帮助读者或后续插件理解故事基础。",
+        preview: [
+          ["角色表", "保留主角团、关键关系和当前状态，不覆盖角色事实。"],
+          ["世界摘要", "包含地理、规则、文化和未知限制。"],
+          ["事件线", "保留主线事件顺序与关键转折点。"],
+          ["锁定约束", "导出后继续作为只读边界。"]
+        ],
+        meta: [
+          ["output_artifact_id", "artifact_appendix_pack"],
+          ["artifact_status", "confirmed"],
+          ["format", "markdown"],
+          ["source", "story_bible_snapshot"],
+          ["size", "620 KB"],
+          ["created_at", "2026-07-04 21:20"]
+        ],
+        safety: [
+          ["事实来源", "只使用已确认事实。"],
+          ["未知规则", "以未知或待补充形式保留，不自动推断。"],
+          ["敏感内容", "不包含外部密钥、隐藏推理或原始响应。"]
+        ]
+      },
+      {
+        id: "artifact_safety_report",
+        title: "安全报告",
+        type: "SAFETY REPORT",
+        status: "confirmed",
+        short: "护栏结果、警告与不可见内容声明",
+        copy: "记录本次插件输出的安全护栏结果和用户可见边界。",
+        preview: [
+          ["通过项", "实时故事状态、未确认草稿、Phase 6 提案均已阻断或标记。"],
+          ["不可写入", "没有写入场景正文、事件线、记忆、章节归档、叙事债务和最终故事包。"],
+          ["不可展示", "原始 prompt、原始响应、隐藏推理和 API key 不展示。"],
+          ["警告", "当前没有阻塞性违规。"]
+        ],
+        meta: [
+          ["output_artifact_id", "artifact_safety_report"],
+          ["artifact_status", "confirmed"],
+          ["format", "safe_summary"],
+          ["source", "plugin_run_safety_report"],
+          ["size", "48 KB"],
+          ["created_at", "2026-07-04 21:21"]
+        ],
+        safety: [
+          ["passed", "true"],
+          ["violations", "0"],
+          ["warnings", "0"],
+          ["user_visible", "safe_summary only"]
+        ]
+      }
+    ];
+
+    const artifactList = document.querySelector("#artifactList");
+    const artifactType = document.querySelector("#artifactType");
+    const artifactTitle = document.querySelector("#artifactTitle");
+    const artifactCopy = document.querySelector("#artifactCopy");
+    const artifactStatus = document.querySelector("#artifactStatus");
+    const previewPanel = document.querySelector("#previewPanel");
+    const modeBadge = document.querySelector("#modeBadge");
+    const actionNote = document.querySelector("#actionNote");
+    const toast = document.querySelector("#toast");
+    const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
+    let selectedIndex = 0;
+    let selectedTab = "preview";
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function renderList() {
+      artifactList.innerHTML = artifacts.map((item, index) => `
+        <button class="artifact-button ${index === selectedIndex ? "active" : ""}" type="button" data-index="${index}">
+          <header>
+            <strong>${item.title}</strong>
+            <span class="tag">${item.status}</span>
+          </header>
+          <small>${item.short}</small>
+        </button>
+      `).join("");
+      artifactList.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedIndex = Number(button.dataset.index);
+          selectedTab = "preview";
+          render();
+          showToast("已切换审阅成果。");
+        });
+      });
+    }
+
+    function renderPreview(item) {
+      return `
+        <div class="preview-title">
+          <div>
+            <div class="eyebrow">SAFE PREVIEW</div>
+            <h3>${item.title}</h3>
+          </div>
+          <span class="tag">${item.status}</span>
+        </div>
+        <div class="doc-block">
+          ${item.preview.map(([label, value]) => `
+            <section class="doc-section">
+              <h4>${label}</h4>
+              <p>${value}</p>
+            </section>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderMeta(item) {
+      return `
+        <div class="preview-title">
+          <div>
+            <div class="eyebrow">ARTIFACT META</div>
+            <h3>文件信息</h3>
+          </div>
+          <span class="tag">${item.status}</span>
+        </div>
+        <div class="meta-grid">
+          ${item.meta.map(([label, value]) => `
+            <div class="field"><span>${label}</span><strong>${value}</strong></div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderSafety(item) {
+      return `
+        <div class="preview-title">
+          <div>
+            <div class="eyebrow">SAFETY SUMMARY</div>
+            <h3>安全摘要</h3>
+          </div>
+          <span class="tag">passed</span>
+        </div>
+        <div class="doc-block">
+          ${item.safety.map(([label, value]) => `
+            <section class="doc-section">
+              <h4>${label}</h4>
+              <p>${value}</p>
+            </section>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function render() {
+      const item = artifacts[selectedIndex];
+      artifactType.textContent = item.type;
+      artifactTitle.textContent = item.title;
+      artifactCopy.textContent = item.copy;
+      artifactStatus.textContent = item.status;
+      modeBadge.textContent = item.title;
+      tabButtons.forEach((button) => button.classList.toggle("active", button.dataset.tab === selectedTab));
+      previewPanel.innerHTML = selectedTab === "preview" ? renderPreview(item) : selectedTab === "meta" ? renderMeta(item) : renderSafety(item);
+      renderList();
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedTab = button.dataset.tab;
+        render();
+      });
+    });
+
+    document.querySelector("#refreshButton").addEventListener("click", () => {
+      showToast("成果状态已刷新。");
+      actionNote.textContent = "最近一次刷新：成果仍处于 confirmed 状态。";
+    });
+
+    document.querySelector("#issueButton").addEventListener("click", () => {
+      showToast("将进入 06 输出问题处理。");
+      actionNote.textContent = "下一步：进入 06 插件输出问题处理。";
+    });
+
+    document.querySelector("#openButton").addEventListener("click", () => {
+      showToast("将打开当前成果包。");
+      actionNote.textContent = `打开成果：${artifacts[selectedIndex].title}。`;
+    });
+    document.querySelector(".topbar .ghost-button").addEventListener("click", () => {
+      showToast("将返回 04 检查点处理。");
+      actionNote.textContent = "下一步：返回检查点处理。";
+    });
+
+    render();
+  </script>
+</body>
+</html>

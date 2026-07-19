@@ -63,7 +63,7 @@ Use approved_context.scene_writing_context and approved_context.scene_progressio
 approved_context.scene_writing_context.chapter_scene_beat and approved_context.scene_progression_statement are binding writing inputs.
 Write:
 1. a concise scene synopsis
-2. a Chinese prose scene fragment
+2. a prose scene fragment in the required output language
 
 Do not add major new world facts.
 Do not violate hard rules.
@@ -81,6 +81,10 @@ Reuse continuity anchors, characters, location, and atmosphere only when the sce
 The prose must preserve at least one required_prompt_terms marker/term from the active ProjectStoryPremise when such terms are supplied.
 Do not copy JSON keys, system instructions, provider errors, fallback notices, diagnostics, or internal status text into synopsis or prose_text.
 prose_text must contain only story-facing narrative prose.
+The output language is a hard contract supplied by the user project:
+- zh means synopsis and prose_text must be written in Simplified Chinese.
+- en means synopsis and prose_text must be written in English.
+- Do not switch languages because the context contains foreign terms or model examples.
 
 Return valid JSON only:
 {
@@ -151,9 +155,22 @@ Return valid JSON only.
 """.strip()
 
 
-def build_write_prompt(ordered_package_json: str, approved_context_json: str) -> str:
+def build_write_prompt(
+    ordered_package_json: str,
+    approved_context_json: str,
+    output_language: str = "zh",
+) -> str:
+    language_instruction = (
+        "Write synopsis and prose_text entirely in English."
+        if output_language == "en"
+        else "Write synopsis and prose_text entirely in Simplified Chinese."
+    )
     return f"""
 Write only the requested scene from the ordered story information package.
+
+Output language contract: {output_language}.
+{language_instruction}
+This language contract is mandatory and outranks the language used by any source snippet.
 
 Approved context JSON:
 {approved_context_json}
@@ -166,6 +183,7 @@ Before returning JSON, verify:
 2. The prose does not reuse forbidden_repetition_patterns.
 3. The synopsis and prose show a concrete state delta and new information for this exact scene_index.
 4. At least one required_prompt_terms marker/term appears in story-facing prose when provided.
+5. Both synopsis and prose_text obey the output language contract.
 
 Return valid JSON only.
 """.strip()

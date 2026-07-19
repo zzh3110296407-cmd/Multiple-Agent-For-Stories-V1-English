@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>主页确认稿</title>
+  <style>
+    :root {
+      --ink: #2f2b25;
+      --muted: rgba(47, 43, 37, 0.68);
+      --paper: rgba(248, 243, 232, 0.72);
+      --paper-strong: rgba(251, 247, 238, 0.9);
+      --rose: #b48a78;
+      --rose-deep: #9f7768;
+      --line: rgba(92, 76, 62, 0.14);
+      --shadow: rgba(69, 48, 31, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #e9ddbf;
+      font-family: Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-width: 960px;
+      min-height: 600px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(236, 231, 220, 0.1), rgba(180, 138, 120, 0.06)),
+        url("../01 Main Page/main-page-background-16x10-v1.png") center / cover no-repeat;
+    }
+
+    .brand {
+      position: absolute;
+      left: 3.85vw;
+      top: 5.1vh;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 9px;
+      background: rgba(180, 138, 120, 0.62);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 12px 26px rgba(84, 56, 38, 0.16);
+      position: relative;
+    }
+
+    .brand-mark::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 17px;
+      width: 22px;
+      height: 12px;
+      border: 3px solid rgba(255, 249, 239, 0.9);
+      border-bottom: 0;
+      border-radius: 22px 22px 0 0;
+      transform: rotate(-7deg);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: rgba(47, 43, 37, 0.56);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .top-actions {
+      position: absolute;
+      right: 5.3vw;
+      top: 5.1vh;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .guide {
+      color: rgba(47, 43, 37, 0.74);
+      font-size: 14px;
+      font-weight: 600;
+      background: transparent;
+      border: 0;
+      padding: 12px 2px;
+      cursor: pointer;
+    }
+
+    .settings {
+      min-width: 86px;
+      height: 46px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.46);
+      background: rgba(250, 247, 239, 0.86);
+      color: rgba(47, 43, 37, 0.8);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(84, 56, 38, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .hero {
+      position: absolute;
+      left: 50%;
+      top: 52.3%;
+      transform: translate(-50%, -50%);
+      width: min(1000px, 76vw);
+      text-align: center;
+    }
+
+    .eyebrow {
+      font-size: 15px;
+      line-height: 1.4;
+      color: rgba(47, 43, 37, 0.66);
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 5vw, 62px);
+      line-height: 1;
+      letter-spacing: 0;
+      font-weight: 800;
+      color: #2d2a26;
+      white-space: nowrap;
+      text-wrap: balance;
+    }
+
+    .subtitle {
+      margin: 24px 0 0;
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.45;
+      color: rgba(47, 43, 37, 0.66);
+      font-weight: 500;
+    }
+
+    .start {
+      margin-top: 58px;
+      width: 236px;
+      height: 60px;
+      border: 0;
+      border-radius: 8px;
+      background: linear-gradient(180deg, var(--rose), var(--rose-deep));
+      color: #2f2b25;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+      cursor: pointer;
+      box-shadow: 0 18px 34px rgba(105, 70, 50, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .dock {
+      position: absolute;
+      left: 50%;
+      bottom: 13.6vh;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(4, 156px);
+      gap: 22px;
+    }
+
+    .dock button {
+      height: 62px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      background: rgba(249, 246, 238, 0.82);
+      color: rgba(47, 43, 37, 0.86);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 14px 26px rgba(84, 56, 38, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.46);
+      backdrop-filter: blur(5px);
+    }
+
+    .dock svg {
+      width: 18px;
+      height: 18px;
+      stroke: rgba(70, 58, 48, 0.82);
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .recent {
+      position: absolute;
+      left: 6.1vw;
+      bottom: 10.2vh;
+      color: rgba(47, 43, 37, 0.42);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .recent strong {
+      display: block;
+      margin-top: 7px;
+      color: rgba(47, 43, 37, 0.65);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .theme {
+      position: absolute;
+      right: 6.1vw;
+      bottom: 10.2vh;
+      color: rgba(47, 43, 37, 0.36);
+      text-align: right;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .theme strong {
+      display: block;
+      color: rgba(47, 43, 37, 0.48);
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 500;
+    }
+
+    button:focus-visible {
+      outline: 2px solid rgba(159, 119, 104, 0.82);
+      outline-offset: 4px;
+    }
+
+    @media (max-width: 980px) {
+      .stage {
+        min-width: 0;
+        min-height: 680px;
+        background-position: center;
+      }
+
+      .brand {
+        left: 24px;
+        top: 28px;
+      }
+
+      .top-actions {
+        right: 24px;
+        top: 28px;
+        gap: 16px;
+      }
+
+      .hero {
+        top: 48%;
+        width: min(86vw, 680px);
+      }
+
+      h1 {
+        white-space: normal;
+      }
+
+      .dock {
+        bottom: 76px;
+        grid-template-columns: repeat(2, minmax(142px, 1fr));
+        width: min(84vw, 360px);
+        gap: 12px;
+      }
+
+      .dock button {
+        height: 54px;
+        font-size: 14px;
+      }
+
+      .recent,
+      .theme {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="主页确认稿">
+    <section class="brand" aria-label="Multiple Agent For Stories">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div>
+        <div class="brand-title">Multiple Agent</div>
+        <div class="brand-subtitle">For Stories</div>
+      </div>
+    </section>
+
+    <div class="top-actions">
+      <button class="guide" type="button">新手引导</button>
+      <button class="settings" type="button">设置</button>
+    </div>
+
+    <section class="hero">
+      <div class="eyebrow">故事创作工作台</div>
+      <h1>Multiple Agent For Stories</h1>
+      <p class="subtitle">让世界、角色与章节在同一张长卷中苏醒</p>
+      <button class="start" type="button">开始创作</button>
+    </section>
+
+    <nav class="dock" aria-label="主页快捷入口">
+      <button class="works" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 12 8 4 8-4"/><path d="m4 17 8 4 8-4"/></svg>
+        作品集
+      </button>
+      <button class="import" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14a2 2 0 0 0 2-2v-3"/><path d="M3 16v3a2 2 0 0 0 2 2"/></svg>
+        导入故事
+      </button>
+      <button class="ideas" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M8.4 14.8a6 6 0 1 1 7.2 0c-.7.5-1.1 1.2-1.1 2.2h-5c0-1-.4-1.7-1.1-2.2Z"/></svg>
+        灵感库
+      </button>
+      <button class="materials" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>
+        创作资料库
+      </button>
+    </nav>
+
+    <aside class="recent">
+      上次草稿
+      <strong>第三章 · 雨夜港口</strong>
+      继续创作会从最近生成的篇章恢复
+    </aside>
+
+    <aside class="theme">
+      当前主题
+      <strong>Morandi · Dragon Parchment</strong>
+      #ECE7DC · #E9DDBF · #B48A78
+    </aside>
+  </main>
+</body>
+</html>

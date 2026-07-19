@@ -162,7 +162,7 @@ def active_chapter_plan_service() -> ChapterPlanService:
 def get_current_chapter_plan() -> ChapterPlanWorkflowResponse:
     try:
         return active_chapter_plan_service().get_current_plan()
-    except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
+    except Exception as exc:
         raise chapter_plan_error_response(exc) from exc
 
 
@@ -177,7 +177,7 @@ def generate_chapter_plan(
             current_chapter_index=request.current_chapter_index,
             framework_composition_id=request.framework_composition_id,
         )
-    except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
+    except Exception as exc:
         raise chapter_plan_error_response(exc) from exc
 
 
@@ -187,7 +187,7 @@ def revise_chapter_plan(
 ) -> ChapterPlanWorkflowResponse:
     try:
         return active_chapter_plan_service().revise_chapter_plan(request.revision_prompt)
-    except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
+    except Exception as exc:
         raise chapter_plan_error_response(exc) from exc
 
 
@@ -200,7 +200,7 @@ def set_scene_count(
             chapter_index=request.chapter_index,
             scene_count=request.scene_count,
         )
-    except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
+    except Exception as exc:
         raise chapter_plan_error_response(exc) from exc
 
 
@@ -211,7 +211,7 @@ def set_scene_count(
 def repair_supporting_role_references() -> ChapterPlanRepairSupportingRoleReferencesResponse:
     try:
         return active_chapter_plan_service().repair_supporting_role_references()
-    except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
+    except Exception as exc:
         raise chapter_plan_error_response(exc) from exc
 
 
@@ -221,5 +221,5 @@ def confirm_chapter_plan(
 ) -> ChapterPlanWorkflowResponse:
     try:
         return active_chapter_plan_service().confirm_chapter_plan(request.user_input)
-    except (StorageError, ModelConfigurationError, ModelJsonParseError, ModelCallError) as exc:
+    except Exception as exc:
         raise chapter_plan_error_response(exc) from exc

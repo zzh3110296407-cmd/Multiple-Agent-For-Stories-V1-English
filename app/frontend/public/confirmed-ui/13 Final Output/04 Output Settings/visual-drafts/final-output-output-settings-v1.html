@@ -1,0 +1,1314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最终输出 / 输出设置 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(237, 226, 207, 0.72);
+      --ink: #302f2a;
+      --muted: #71685f;
+      --quiet: #978c7f;
+      --line: rgba(105, 82, 58, 0.2);
+      --line-strong: rgba(105, 82, 58, 0.34);
+      --brass: #b4956f;
+      --brass-deep: #856947;
+      --sage: #767f6c;
+      --sage-deep: #59614f;
+      --blue-gray: #738284;
+      --clay: #b48a78;
+      --danger: #9b665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.82), rgba(236, 231, 220, 0.6) 43%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/final-output-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.58), transparent 31%),
+        radial-gradient(circle at 72% 28%, rgba(180, 149, 111, 0.13), transparent 35%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.22), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 230px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .format-card,
+    .mini-button,
+    .status-pill {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .mini-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .mini-button:hover,
+    .format-card:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+
+    .primary-button {
+      min-width: 178px;
+      border-color: rgba(89, 97, 79, 0.46);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+
+    .primary-button:not(:disabled):hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #65705d, #806d50);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .primary-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px rgba(71, 52, 31, 0.08);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(118, 127, 108, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      min-height: 136px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      gap: 24px;
+      align-items: end;
+      padding: 8px 18px 2px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: #28312b;
+      font-size: 56px;
+      line-height: 1.05;
+      font-weight: 920;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.85;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      backdrop-filter: blur(10px);
+    }
+
+    .summary-strip div {
+      min-height: 58px;
+      padding: 12px 14px;
+      border-radius: 7px;
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .summary-strip span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.2;
+      font-weight: 820;
+      text-transform: uppercase;
+    }
+
+    .summary-strip strong {
+      display: block;
+      margin-top: 7px;
+      color: #302f2a;
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 24px;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.68);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.87), rgba(246, 238, 223, 0.78)),
+        rgba(255, 252, 244, 0.8);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .main-panel {
+      min-width: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px;
+      align-items: center;
+      gap: 16px;
+      padding: 26px 26px 20px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .panel-head h2 {
+      margin: 8px 0 0;
+      color: #302f2a;
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 920;
+    }
+
+    .panel-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .stage-card {
+      min-height: 62px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(180, 149, 111, 0.24);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b4c3a;
+      font-size: 13px;
+      font-weight: 860;
+      text-align: center;
+    }
+
+    .stage-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .flow-strip {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      padding: 0 26px 18px;
+    }
+
+    .flow-strip::before {
+      content: "";
+      position: absolute;
+      left: 44px;
+      right: 44px;
+      top: 15px;
+      height: 1px;
+      background: rgba(105, 82, 58, 0.18);
+    }
+
+    .flow-item {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      display: grid;
+      justify-items: start;
+      gap: 10px;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .flow-item span {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.78);
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .flow-item strong {
+      color: inherit;
+      font-weight: 820;
+    }
+
+    .flow-item.current {
+      color: #373c34;
+    }
+
+    .flow-item.current span {
+      border-color: rgba(89, 97, 79, 0.4);
+      background: var(--sage-deep);
+      color: #fffaf0;
+    }
+
+    .content-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+      gap: 18px;
+      padding: 0 26px 22px;
+      overflow: hidden;
+    }
+
+    .section-block {
+      min-width: 0;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .section-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.1);
+    }
+
+    .section-head h3 {
+      margin: 6px 0 0;
+      color: #302f2a;
+      font-size: 21px;
+      line-height: 1.2;
+      font-weight: 910;
+    }
+
+    .section-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .format-options {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .format-card {
+      min-height: 108px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) 32px;
+      gap: 14px;
+      align-items: center;
+      padding: 15px;
+      text-align: left;
+    }
+
+    .format-card.active {
+      border-color: rgba(89, 97, 79, 0.44);
+      background:
+        linear-gradient(135deg, rgba(244, 239, 225, 0.94), rgba(236, 225, 204, 0.7)),
+        rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 18px 36px rgba(71, 52, 31, 0.13);
+    }
+
+    .file-badge {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(105, 82, 58, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.64);
+      color: var(--sage-deep);
+      font-size: 13px;
+      font-weight: 920;
+    }
+
+    .format-card strong {
+      display: block;
+      color: #302f2a;
+      font-size: 16px;
+      line-height: 1.3;
+      font-weight: 900;
+    }
+
+    .format-card p {
+      margin: 6px 0 0;
+      color: rgba(48, 47, 42, 0.64);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+    }
+
+    .format-card small {
+      display: block;
+      margin-top: 8px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.25;
+      font-weight: 760;
+    }
+
+    .radio-dot {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(105, 82, 58, 0.24);
+      border-radius: 50%;
+      background: rgba(255, 252, 244, 0.74);
+    }
+
+    .format-card.active .radio-dot::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--sage-deep);
+    }
+
+    .file-preview {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .file-card {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      align-items: start;
+      min-height: 114px;
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+    }
+
+    .file-card > div,
+    .format-card > span,
+    .history-item > div {
+      min-width: 0;
+    }
+
+    .file-icon {
+      width: 68px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(105, 82, 58, 0.18);
+      border-radius: 7px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(237, 226, 207, 0.7)),
+        rgba(255, 252, 244, 0.8);
+      color: var(--brass-deep);
+      font-size: 15px;
+      font-weight: 930;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .file-card strong {
+      display: block;
+      color: #302f2a;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 900;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+
+    .file-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 560;
+    }
+
+    .progress-shell {
+      overflow: hidden;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(105, 82, 58, 0.12);
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--brass));
+      transition: width 420ms ease;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .meta-grid div,
+    .include-item,
+    .check-item,
+    .history-item {
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+    }
+
+    .meta-grid div {
+      min-width: 0;
+      min-height: 72px;
+      padding: 13px 14px;
+    }
+
+    .meta-grid span,
+    .include-item span,
+    .check-item span,
+    .history-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.25;
+      font-weight: 780;
+    }
+
+    .meta-grid strong,
+    .include-item strong,
+    .check-item strong,
+    .history-item strong {
+      display: block;
+      margin-top: 6px;
+      color: #34332e;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .include-panel {
+      margin: 0 26px 20px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      overflow: hidden;
+    }
+
+    .include-head {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.1);
+    }
+
+    .include-head h3 {
+      margin: 6px 0 0;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 910;
+    }
+
+    .include-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+    }
+
+    .include-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px 16px 18px;
+    }
+
+    .include-item {
+      min-height: 86px;
+      padding: 13px 14px;
+      position: relative;
+    }
+
+    .include-item::before {
+      content: "";
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(118, 127, 108, 0.12);
+    }
+
+    .action-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 18px 26px 24px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .action-bar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .side-card {
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.54);
+      padding: 18px;
+    }
+
+    .side-card h3 {
+      margin: 6px 0 0;
+      color: #302f2a;
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 910;
+    }
+
+    .side-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .check-list,
+    .history-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .check-item,
+    .history-item {
+      padding: 12px 13px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .check-mark {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(118, 127, 108, 0.16);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .history-item strong {
+      margin-top: 0;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+
+    .history-item em {
+      color: var(--quiet);
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .boundary-note {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .boundary-note div {
+      min-height: 46px;
+      padding: 11px 12px;
+      border-radius: var(--radius);
+      background: rgba(246, 238, 223, 0.54);
+      color: #4c463e;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 640;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      min-width: 220px;
+      max-width: min(360px, calc(100vw - 48px));
+      padding: 15px 18px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.92);
+      color: #403934;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        width: min(1000px, calc(100vw - 48px));
+      }
+
+      .hero,
+      .layout,
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        min-height: auto;
+      }
+
+      .include-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: min(100vw - 16px, 520px);
+        min-height: calc(100vh - 16px);
+        margin: 8px auto;
+        gap: 12px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .back-button,
+      .status-pill {
+        width: 100%;
+      }
+
+      .crumb {
+        white-space: normal;
+        font-size: 12px;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 8px 0 0;
+      }
+
+      .hero h1 {
+        font-size: 38px;
+      }
+
+      .hero p {
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .action-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .flow-strip,
+      .content-grid,
+      .action-bar {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .flow-strip {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .flow-strip::before {
+        left: 31px;
+        right: auto;
+        top: 15px;
+        bottom: 34px;
+        width: 1px;
+        height: auto;
+      }
+
+      .flow-item {
+        grid-template-columns: 32px minmax(0, 1fr);
+        align-items: center;
+        justify-items: start;
+      }
+
+      .flow-item span {
+        grid-column: 1;
+      }
+
+      .flow-item strong {
+        grid-column: 2;
+      }
+
+      .format-card {
+        grid-template-columns: 50px minmax(0, 1fr) 24px;
+        gap: 12px;
+      }
+
+      .file-badge {
+        width: 50px;
+        height: 50px;
+      }
+
+      .file-card,
+      .meta-grid,
+      .include-grid,
+      .history-item {
+        grid-template-columns: 1fr;
+      }
+
+      .file-icon {
+        width: 64px;
+        height: 72px;
+      }
+
+      .include-panel {
+        margin-left: 16px;
+        margin-right: 16px;
+      }
+
+      .side-panel {
+        padding: 16px;
+      }
+
+      .toast {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button" id="backButton">返回审阅</button>
+      <div class="crumb">主页 / 工作台 / 最终输出 / 输出设置</div>
+      <div class="status-pill" aria-label="当前页面状态">
+        <span class="dot"></span>
+        <span id="topStatus">等待交付</span>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">输出设置</h1>
+        <p>选择最终故事包的下载格式，确认本次交付会包含的内容和安全边界。这里不再修改故事事实，只负责把已确认快照交付给用户。</p>
+      </div>
+      <div class="summary-strip" aria-label="最终输出摘要">
+        <div>
+          <span>快照</span>
+          <strong>真实最终包</strong>
+        </div>
+        <div>
+          <span>正文规模</span>
+          <strong>128,640 字符</strong>
+        </div>
+        <div>
+          <span>审阅状态</span>
+          <strong>已确认</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="输出设置">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">FINAL DELIVERY SETTINGS</p>
+            <h2>交付文件设置</h2>
+            <p>下载动作只读取已确认的 FinalStoryPackageSnapshot，不会回写正文、设定、角色或插件运行数据。</p>
+          </div>
+          <div class="stage-card">
+            <span>当前阶段</span>
+            输出设置
+          </div>
+        </div>
+
+        <div class="flow-strip" role="list" aria-label="最终输出阶段">
+          <div class="flow-item" role="listitem">
+            <span>01</span>
+            <strong>完成度检查</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>02</span>
+            <strong>成稿组装</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>03</span>
+            <strong>成稿审阅</strong>
+          </div>
+          <div class="flow-item current" role="listitem" aria-current="step">
+            <span>04</span>
+            <strong>输出设置</strong>
+          </div>
+        </div>
+
+        <div class="content-grid">
+          <section class="section-block" aria-labelledby="formatTitle">
+            <div class="section-head">
+              <p class="eyebrow">DOWNLOAD FORMAT</p>
+              <h3 id="formatTitle">选择交付格式</h3>
+              <p>Phase 8.5 当前支持 TXT、Markdown、JSON 三种下载格式。选择后右侧会同步显示文件后缀和包含内容。</p>
+            </div>
+            <div class="format-options" role="radiogroup" aria-label="交付格式">
+              <button class="format-card active" type="button" role="radio" aria-checked="true" data-format="txt">
+                <span class="file-badge">TXT</span>
+                <span>
+                  <strong>TXT 正文文件</strong>
+                  <p>只导出完整故事正文，适合直接阅读、备份或交给外部排版工具。</p>
+                  <small>后缀：final_story.txt</small>
+                </span>
+                <span class="radio-dot" aria-hidden="true"></span>
+              </button>
+              <button class="format-card" type="button" role="radio" aria-checked="false" data-format="markdown">
+                <span class="file-badge">MD</span>
+                <span>
+                  <strong>Markdown 成稿</strong>
+                  <p>包含基础快照元信息和最终正文，适合继续排版、发布或版本归档。</p>
+                  <small>后缀：final_story.md</small>
+                </span>
+                <span class="radio-dot" aria-hidden="true"></span>
+              </button>
+              <button class="format-card" type="button" role="radio" aria-checked="false" data-format="json">
+                <span class="file-badge">JSON</span>
+                <span>
+                  <strong>JSON 快照包</strong>
+                  <p>导出结构化快照、预览分区、证据索引和安全审计摘要，适合作为插件或后续工具输入。</p>
+                  <small>后缀：final_story_snapshot.json</small>
+                </span>
+                <span class="radio-dot" aria-hidden="true"></span>
+              </button>
+            </div>
+          </section>
+
+          <section class="section-block" aria-labelledby="fileTitle">
+            <div class="section-head">
+              <p class="eyebrow">FILE PREVIEW</p>
+              <h3 id="fileTitle">文件预览</h3>
+              <p>文件名由后端根据项目 ID、快照 ID 和格式生成。前端只展示和触发下载。</p>
+            </div>
+            <div class="file-preview">
+              <div class="file-card">
+                <div class="file-icon" id="fileIcon">TXT</div>
+                <div>
+                  <strong id="fileName">phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story.txt</strong>
+                  <span id="fileDesc">纯文本正文文件，media type 为 text/plain; charset=utf-8。</span>
+                </div>
+              </div>
+              <div class="progress-shell" aria-label="下载准备进度">
+                <div class="progress-bar" id="progressBar"></div>
+              </div>
+              <div class="meta-grid">
+                <div>
+                  <span>Snapshot ID</span>
+                  <strong>117eebfbb2</strong>
+                </div>
+                <div>
+                  <span>Package</span>
+                  <strong>正式项目</strong>
+                </div>
+                <div>
+                  <span>Hash</span>
+                  <strong>bc9f3a57...117e</strong>
+                </div>
+                <div>
+                  <span>安全审计</span>
+                  <strong>通过</strong>
+                </div>
+              </div>
+              <button class="mini-button" type="button" id="copyName">复制文件名</button>
+            </div>
+          </section>
+        </div>
+
+        <section class="include-panel" aria-labelledby="includeTitle">
+          <div class="include-head">
+            <p class="eyebrow">INCLUDED CONTENT</p>
+            <h3 id="includeTitle">当前格式包含</h3>
+            <p id="includeDesc">TXT 只包含完整正文。目录、角色表、世界摘要、事件线和审计信息仍保留在快照中，不会写入该文本文件。</p>
+          </div>
+          <div class="include-grid" id="includeGrid"></div>
+        </section>
+
+        <div class="action-bar">
+          <p id="actionNote">下载前请确认所选格式。本页不会修改快照，只会调用已确认快照的下载接口。</p>
+          <button class="soft-button" type="button" id="reviewButton">回到成稿审阅</button>
+          <button class="primary-button" type="button" id="downloadButton">下载所选格式</button>
+        </div>
+      </article>
+
+      <aside class="side-panel" aria-label="输出设置侧栏">
+        <section class="side-card">
+          <p class="eyebrow">DELIVERY HEALTH</p>
+          <h3>交付状态</h3>
+          <p>当前快照满足下载条件。若后端返回阻塞状态，应在此展示阻塞原因并禁用下载按钮。</p>
+          <div class="check-list">
+            <div class="check-item">
+              <span class="check-mark">✓</span>
+              <div>
+                <span>真实项目包</span>
+                <strong>不是 fixture，允许下载。</strong>
+              </div>
+            </div>
+            <div class="check-item">
+              <span class="check-mark">✓</span>
+              <div>
+                <span>正文完整</span>
+                <strong>字符数和正文 Hash 已匹配。</strong>
+              </div>
+            </div>
+            <div class="check-item">
+              <span class="check-mark">✓</span>
+              <div>
+                <span>安全边界</span>
+                <strong>下载不会创建插件运行文件。</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">BOUNDARY</p>
+          <h3>交付边界</h3>
+          <p>导出设置不负责重新生成故事，也不允许修改已确认快照。</p>
+          <div class="boundary-note">
+            <div>TXT 和 Markdown 适合用户阅读；JSON 适合作为结构化归档或后续工具输入。</div>
+            <div>PDF、DOCX、EPUB 等格式不属于当前 Phase 8.5 已实现下载能力，后续可作为扩展入口。</div>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <p class="eyebrow">DOWNLOAD HISTORY</p>
+          <h3>本次记录</h3>
+          <p>仅展示当前前端会话里的下载动作反馈。正式接入时可读取 export runs 或浏览器下载结果。</p>
+          <div class="history-list" id="historyList">
+            <div class="history-item">
+              <div>
+                <span>等待下载</span>
+                <strong>尚未触发交付文件</strong>
+              </div>
+              <em>--</em>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const formatData = {
+      txt: {
+        icon: "TXT",
+        fileName: "phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story.txt",
+        fileDesc: "纯文本正文文件，media type 为 text/plain; charset=utf-8。",
+        includeDesc: "TXT 只包含完整正文。目录、角色表、世界摘要、事件线和审计信息仍保留在快照中，不会写入该文本文件。",
+        includes: [
+          ["完整故事正文", "complete_story_text"],
+          ["正文 Hash 校验", "complete_story_text_hash"],
+          ["纯文本阅读", "适合备份和外部排版"],
+          ["后端安全校验", "真实项目包和正文一致性"]
+        ]
+      },
+      markdown: {
+        icon: "MD",
+        fileName: "phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story.md",
+        fileDesc: "Markdown 文档，media type 为 text/markdown; charset=utf-8。",
+        includeDesc: "Markdown 包含项目 ID、快照 ID、包类型、就绪状态、正文 Hash、字符数和最终正文，适合发布前排版。",
+        includes: [
+          ["基础快照元信息", "project / snapshot / package"],
+          ["完整故事正文", "complete_story_text"],
+          ["正文 Hash 与字符数", "可用于外部核对"],
+          ["Markdown 标题层级", "便于继续排版"]
+        ]
+      },
+      json: {
+        icon: "JSON",
+        fileName: "phase85_final_outputs_project_final_story_package_snapshot_117eebfbb2_final_story_snapshot.json",
+        fileDesc: "结构化快照文件，media type 为 application/json; charset=utf-8。",
+        includeDesc: "JSON 包含完整快照、预览分区、证据索引和安全审计摘要，适合作为后续工具、插件或归档系统输入。",
+        includes: [
+          ["完整快照", "FinalStoryPackageSnapshot"],
+          ["预览分区", "preview_sections"],
+          ["证据索引", "evidence_index"],
+          ["安全审计摘要", "safety_audit_summary"]
+        ]
+      }
+    };
+
+    const formatCards = Array.from(document.querySelectorAll(".format-card"));
+    const fileIcon = document.querySelector("#fileIcon");
+    const fileName = document.querySelector("#fileName");
+    const fileDesc = document.querySelector("#fileDesc");
+    const includeDesc = document.querySelector("#includeDesc");
+    const includeGrid = document.querySelector("#includeGrid");
+    const progressBar = document.querySelector("#progressBar");
+    const downloadButton = document.querySelector("#downloadButton");
+    const actionNote = document.querySelector("#actionNote");
+    const topStatus = document.querySelector("#topStatus");
+    const historyList = document.querySelector("#historyList");
+    const toast = document.querySelector("#toast");
+
+    let selectedFormat = "txt";
+    let toastTimer = null;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function renderFormat(format) {
+      selectedFormat = format;
+      const data = formatData[format];
+      fileIcon.textContent = data.icon;
+      fileName.textContent = data.fileName;
+      fileDesc.textContent = data.fileDesc;
+      includeDesc.textContent = data.includeDesc;
+      includeGrid.innerHTML = data.includes.map(([title, detail]) => `
+        <div class="include-item">
+          <span>${title}</span>
+          <strong>${detail}</strong>
+        </div>
+      `).join("");
+      formatCards.forEach((card) => {
+        const active = card.dataset.format === format;
+        card.classList.toggle("active", active);
+        card.setAttribute("aria-checked", String(active));
+      });
+      progressBar.style.width = "0%";
+      topStatus.textContent = "等待交付";
+      actionNote.textContent = "下载前请确认所选格式。本页不会修改快照，只会调用已确认快照的下载接口。";
+    }
+
+    function addHistory(format) {
+      const data = formatData[format];
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      historyList.innerHTML = `
+        <div class="history-item">
+          <div>
+            <span>${data.icon} 已准备</span>
+            <strong>${data.fileName}</strong>
+          </div>
+          <em>${time}</em>
+        </div>
+      `;
+    }
+
+    formatCards.forEach((card) => {
+      card.addEventListener("click", () => {
+        renderFormat(card.dataset.format);
+        showToast(`已切换为 ${formatData[card.dataset.format].icon} 格式。`);
+      });
+    });
+
+    document.querySelector("#copyName").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(fileName.textContent);
+        showToast("文件名已复制。");
+      } catch {
+        showToast("当前环境无法写入剪贴板，文件名已在预览中显示。");
+      }
+    });
+
+    document.querySelector("#backButton").addEventListener("click", () => {
+      showToast("将返回成稿审阅页。");
+    });
+
+    document.querySelector("#reviewButton").addEventListener("click", () => {
+      showToast("将返回成稿审阅页。");
+    });
+
+    downloadButton.addEventListener("click", () => {
+      const data = formatData[selectedFormat];
+      downloadButton.disabled = true;
+      topStatus.textContent = "正在准备";
+      actionNote.textContent = `正在准备 ${data.icon} 文件。正式接入时调用 downloadFinalStoryPackageSnapshot(snapshotId, "${selectedFormat}")。`;
+      progressBar.style.width = "36%";
+      window.setTimeout(() => {
+        progressBar.style.width = "72%";
+      }, 420);
+      window.setTimeout(() => {
+        progressBar.style.width = "100%";
+        downloadButton.disabled = false;
+        topStatus.textContent = "交付完成";
+        actionNote.textContent = `${data.icon} 文件已准备完成。浏览器会开始下载，文件名由后端返回。`;
+        addHistory(selectedFormat);
+        showToast(`${data.icon} 下载已准备完成。`);
+      }, 960);
+    });
+
+    renderFormat("txt");
+  </script>
+</body>
+</html>

@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>最终输出 / 成稿审阅 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(237, 226, 207, 0.7);
+      --ink: #302f2a;
+      --muted: #71685f;
+      --quiet: #978c7f;
+      --line: rgba(105, 82, 58, 0.2);
+      --line-strong: rgba(105, 82, 58, 0.34);
+      --brass: #b4956f;
+      --brass-deep: #856947;
+      --clay: #b48a78;
+      --sage: #767f6c;
+      --sage-deep: #59614f;
+      --blue-gray: #738284;
+      --danger: #9b665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.82), rgba(236, 231, 220, 0.62) 43%, rgba(236, 231, 220, 0.18)),
+        url("../../assets/final-output-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.58), transparent 31%),
+        radial-gradient(circle at 76% 28%, rgba(180, 149, 111, 0.13), transparent 34%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.22), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 230px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .tab-button,
+    .mini-button,
+    .status-pill {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .mini-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .tab-button:hover,
+    .mini-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+
+    .primary-button {
+      min-width: 178px;
+      border-color: rgba(89, 97, 79, 0.46);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #75634b);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+
+    .primary-button:not(:disabled):hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #65705d, #806d50);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .primary-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      transform: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px rgba(71, 52, 31, 0.08);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(118, 127, 108, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(40px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.36);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(238, 227, 208, 0.72)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 860;
+      letter-spacing: 0;
+    }
+
+    h2,
+    h3,
+    h4 {
+      margin: 0;
+      color: #33332d;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 27px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    h3 {
+      font-size: 16px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    h4 {
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .panel-head p:last-child,
+    .muted {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.63);
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    .review-badge {
+      align-self: start;
+      min-width: 146px;
+      padding: 10px 12px;
+      border: 1px solid rgba(180, 149, 111, 0.28);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      text-align: center;
+    }
+
+    .review-badge span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .review-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #5f604f;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .flow-strip {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      padding: 0 26px 18px;
+    }
+
+    .flow-strip::before {
+      content: "";
+      position: absolute;
+      left: 44px;
+      right: 44px;
+      top: 15px;
+      height: 1px;
+      background: rgba(105, 82, 58, 0.18);
+    }
+
+    .flow-item {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      padding: 0 10px;
+      background: transparent;
+    }
+
+    .flow-item span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(105, 82, 58, 0.18);
+      border-radius: 50%;
+      color: #8f8477;
+      font-size: 11px;
+      font-weight: 860;
+      background: rgba(255, 252, 244, 0.84);
+    }
+
+    .flow-item.current span {
+      color: #fffaf0;
+      background: var(--sage-deep);
+      border-color: rgba(89, 97, 79, 0.42);
+      box-shadow: 0 10px 20px rgba(71, 52, 31, 0.18);
+    }
+
+    .flow-item strong {
+      display: block;
+      margin-top: 9px;
+      color: #393832;
+      font-size: 13px;
+      line-height: 1.3;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .flow-item:not(.current) strong {
+      color: rgba(57, 56, 50, 0.55);
+      font-weight: 820;
+    }
+
+    .section-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 26px 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .section-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-button {
+      min-height: 36px;
+      padding: 0 13px;
+      color: #5c5348;
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .tab-button.active {
+      border-color: rgba(89, 97, 79, 0.42);
+      background: rgba(118, 127, 108, 0.16);
+      color: #454b3f;
+    }
+
+    .review-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+      padding: 0 26px 20px;
+      overflow: hidden;
+    }
+
+    .reader {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.82), rgba(244, 235, 218, 0.68)),
+        rgba(255, 252, 244, 0.5);
+      overflow: hidden;
+    }
+
+    .reader-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .reader-head p {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.58;
+      font-weight: 540;
+    }
+
+    .reader-meta {
+      min-width: 138px;
+      align-self: start;
+      padding: 9px 10px;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+      text-align: right;
+    }
+
+    .reader-meta span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .reader-meta strong {
+      display: block;
+      margin-top: 5px;
+      color: #3c3a34;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .reader-body {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      padding: 22px 18px 22px 24px;
+    }
+
+    .reader-body::after {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 18px;
+      bottom: 0;
+      height: 34px;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(250, 247, 238, 0), rgba(250, 247, 238, 0.92));
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    .module-scroll {
+      width: 100%;
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      padding: 0 8px 6px 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(129, 99, 72, 0.42) rgba(255, 252, 244, 0.36);
+    }
+
+    .module-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .module-scroll::-webkit-scrollbar-track {
+      background: rgba(255, 252, 244, 0.36);
+      border-radius: 999px;
+    }
+
+    .module-scroll::-webkit-scrollbar-thumb {
+      background: rgba(129, 99, 72, 0.42);
+      border-radius: 999px;
+    }
+
+    .module-scroll:focus-visible {
+      outline: 2px solid rgba(168, 123, 96, 0.46);
+      outline-offset: 3px;
+    }
+
+    .manuscript {
+      max-width: 940px;
+      margin: 0;
+      color: #35332e;
+      font-size: 15px;
+      line-height: 1.95;
+      font-weight: 520;
+    }
+
+    .manuscript h3 {
+      margin-bottom: 14px;
+      font-size: 22px;
+    }
+
+    .manuscript p {
+      margin: 0 0 16px;
+    }
+
+    .index-list,
+    .data-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .index-row,
+    .data-row,
+    .warning-row,
+    .check-row {
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .index-row,
+    .data-row {
+      padding: 13px 14px;
+    }
+
+    .index-row strong,
+    .data-row strong {
+      display: block;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .index-row span,
+    .data-row span {
+      display: block;
+      margin-top: 5px;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 540;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 26px 24px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+      background: rgba(255, 252, 244, 0.24);
+    }
+
+    .action-note {
+      margin-right: auto;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .side-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .side-card {
+      padding: 17px;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .side-card p {
+      margin: 8px 0 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 12px;
+      line-height: 1.66;
+      font-weight: 540;
+    }
+
+    .health-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .health-grid div {
+      min-width: 0;
+      padding: 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+    }
+
+    .health-grid span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .health-grid strong {
+      display: block;
+      margin-top: 4px;
+      color: #363530;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .warning-list,
+    .check-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .warning-row,
+    .check-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 10px;
+      padding: 11px;
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .warning-row.selected {
+      border-color: rgba(180, 149, 111, 0.48);
+      background: rgba(245, 237, 219, 0.7);
+    }
+
+    .mark {
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fffaf0;
+      background: var(--sage);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .mark.warning {
+      background: var(--brass);
+    }
+
+    .warning-row strong,
+    .check-row strong {
+      display: block;
+      color: #383730;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .warning-row span,
+    .check-row span {
+      display: block;
+      margin-top: 4px;
+      color: rgba(48, 47, 42, 0.6);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .check-row {
+      align-items: start;
+      cursor: pointer;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--sage-deep);
+      margin: 1px 0 0;
+    }
+
+    .detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 13px;
+    }
+
+    .mini-button {
+      min-height: 34px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      min-width: 240px;
+      max-width: min(380px, calc(100vw - 56px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: var(--shadow);
+      color: #3b3933;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 760;
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(16px);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1120px) {
+      .workspace {
+        width: min(100% - 36px, 980px);
+        margin: 22px auto;
+      }
+
+      .hero,
+      .layout,
+      .review-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-left: 0;
+      }
+
+      .summary-strip {
+        max-width: 540px;
+      }
+
+      .main-panel,
+      .reader {
+        min-height: auto;
+      }
+
+      .reader-body {
+        max-height: 520px;
+      }
+
+      body {
+        overflow-y: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace {
+        width: min(100% - 24px, 640px);
+        min-height: auto;
+        margin: 14px auto 22px;
+        gap: 14px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .back-button,
+      .status-pill {
+        width: 100%;
+      }
+
+      .crumb {
+        white-space: normal;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-strip {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .flow-strip::before {
+        left: 31px;
+        right: auto;
+        top: 15px;
+        bottom: 34px;
+        width: 1px;
+        height: auto;
+      }
+
+      .flow-item {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        padding: 0;
+      }
+
+      .flow-item strong {
+        margin-top: 0;
+      }
+
+      .panel-head,
+      .reader-head,
+      .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .flow-strip,
+      .section-tabs,
+      .review-grid,
+      .action-bar,
+      .side-panel {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .section-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        overflow: visible;
+      }
+
+      .tab-button {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .review-badge,
+      .reader-meta {
+        width: 100%;
+        text-align: left;
+      }
+
+      .reader-body {
+        padding: 18px 16px 22px;
+        max-height: 520px;
+      }
+
+      .reader-body::after {
+        left: 16px;
+        right: 16px;
+      }
+
+      .module-scroll {
+        max-height: 480px;
+      }
+
+      .manuscript {
+        font-size: 14px;
+        line-height: 1.88;
+      }
+
+      .health-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-note {
+        margin-right: 0;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button" aria-label="返回成稿组装">返回组装</button>
+      <div class="crumb">主页 / 工作台 / 最终输出 / 成稿审阅</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">成稿可审阅</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">成稿审阅</h1>
+        <p>在进入导出交付前，检查最终故事包快照的正文、目录、设定摘要、来源边界和保留警告。确认后，后续页面才会进入下载与交付设置。</p>
+      </div>
+      <div class="summary-strip" aria-label="成稿审阅摘要">
+        <div class="summary-item">
+          <span>快照</span>
+          <strong>真实最终包</strong>
+        </div>
+        <div class="summary-item">
+          <span>正文规模</span>
+          <strong>128,640 字符</strong>
+        </div>
+        <div class="summary-item">
+          <span>审阅状态</span>
+          <strong id="summaryStatus">待确认</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <section class="main-panel" aria-labelledby="reviewTitle">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">FINAL STORY SNAPSHOT</p>
+            <h2 id="reviewTitle">成稿快照审阅</h2>
+            <p>这里展示的是受控快照内容。查看和确认不会改写原始故事事实，也不会把插件输出写回正文。</p>
+          </div>
+          <div class="review-badge" aria-live="polite">
+            <span>当前阶段</span>
+            <strong id="badgeLabel">审阅中</strong>
+          </div>
+        </div>
+
+        <div class="flow-strip" role="list" aria-label="最终输出阶段">
+          <div class="flow-item" role="listitem">
+            <span>01</span>
+            <strong>完成度检查</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>02</span>
+            <strong>成稿组装</strong>
+          </div>
+          <div class="flow-item current" role="listitem" aria-current="step">
+            <span>03</span>
+            <strong>成稿审阅</strong>
+          </div>
+          <div class="flow-item" role="listitem">
+            <span>04</span>
+            <strong>导出交付</strong>
+          </div>
+        </div>
+
+        <div class="section-tabs" role="tablist" aria-label="成稿分区">
+          <button class="tab-button active" type="button" role="tab" aria-selected="true" data-section="story">正文</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-section="index">目录</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-section="characters">角色表</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-section="world">世界摘要</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-section="events">事件线</button>
+          <button class="tab-button" type="button" role="tab" aria-selected="false" data-section="constraints">锁定约束</button>
+        </div>
+
+        <div class="review-grid">
+          <article class="reader" aria-live="polite">
+            <div class="reader-head">
+              <div>
+                <p class="eyebrow" id="readerEyebrow">COMPLETE STORY TEXT</p>
+                <h3 id="readerTitle">最终故事正文预览</h3>
+                <p id="readerDesc">当前仅展示前段内容，完整正文保存在最终故事包快照中。</p>
+              </div>
+              <div class="reader-meta">
+                <span id="readerMetaLabel">字符</span>
+                <strong id="readerMetaValue">128,640</strong>
+              </div>
+            </div>
+        <div class="reader-body" id="readerBody"></div>
+      </article>
+    </div>
+
+        <div class="action-bar">
+          <div class="action-note" id="actionNote">请完成右侧两项审阅确认。</div>
+          <button class="soft-button" type="button" id="reviseButton">要求修订</button>
+          <button class="primary-button" type="button" id="confirmButton" disabled>确认成稿</button>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="审阅状态与确认">
+        <div class="side-card">
+          <p class="eyebrow">REVIEW HEALTH</p>
+          <h3>快照状态</h3>
+          <p>当前成稿来自真实最终包快照，警告项保留到审阅记录中。</p>
+          <div class="health-grid">
+            <div>
+              <span>包类型</span>
+              <strong>真实最终包</strong>
+            </div>
+            <div>
+              <span>状态</span>
+              <strong>可审阅</strong>
+            </div>
+            <div>
+              <span>警告</span>
+              <strong>2 条</strong>
+            </div>
+            <div>
+              <span>插件读取</span>
+              <strong>允许</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <p class="eyebrow">WARNINGS</p>
+          <h3>保留警告</h3>
+          <div class="warning-list">
+            <button class="warning-row selected" type="button" data-warning="tone">
+              <span class="mark warning">!</span>
+              <span>
+                <strong>风格基调需最终确认</strong>
+                <span>来自早期设定与后续场景综合结果。</span>
+              </span>
+            </button>
+            <button class="warning-row" type="button" data-warning="residual">
+              <span class="mark warning">!</span>
+              <span>
+                <strong>存在已知残留说明</strong>
+                <span>非阻塞残留将作为成稿附注保留。</span>
+              </span>
+            </button>
+          </div>
+          <p id="warningDetail">风格基调会跟随快照进入成稿审阅记录。若用户认为不再适合当前成稿，应返回故事设定或场景写作修订。</p>
+          <div class="detail-actions">
+            <button class="mini-button" type="button" id="resolveWarning">标记已读</button>
+            <button class="mini-button" type="button" id="openSource">查看来源</button>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <p class="eyebrow">CONFIRMATION</p>
+          <h3>审阅确认</h3>
+          <div class="check-list">
+            <label class="check-row">
+              <input type="checkbox" id="readCheck" />
+              <span>
+                <strong>已审阅成稿内容</strong>
+                <span>正文与主要分区已检查。</span>
+              </span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" id="warningCheck" />
+              <span>
+                <strong>接受保留警告</strong>
+                <span>警告会进入后续交付记录。</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const sections = {
+      story: {
+        eyebrow: "COMPLETE STORY TEXT",
+        title: "最终故事正文预览",
+        desc: "当前仅展示前段内容，完整正文保存在最终故事包快照中。",
+        metaLabel: "字符",
+        metaValue: "128,640",
+        html: `
+          <div class="manuscript">
+            <h3>第一章 远钟之后</h3>
+            <p>港城的钟声在黎明前落下，潮雾沿着石阶向上漫过门廊。艾琳把最后一页手稿压进木匣时，远处的塔楼已经亮起了第二盏灯。</p>
+            <p>那不是警讯，也不是节庆。它代表一段旧约被重新打开，代表城中每一个记得旧名的人都必须做出选择。</p>
+            <p>她听见楼下传来脚步声，轻而急，像有人不愿惊动沉睡的城市。门被推开时，来人只说了一句话：海上的船回来了，但船上没有人。</p>
+            <p>故事的终章并没有把所有答案说尽。它只把人物带到他们必须面对自己的地方，让世界的规则在最后一场风里显形。</p>
+          </div>
+        `,
+      },
+      index: {
+        eyebrow: "CHAPTER SCENE INDEX",
+        title: "章节与场景索引",
+        desc: "按最终快照顺序展示章节与场景定位。",
+        metaLabel: "条目",
+        metaValue: "60",
+        html: `
+          <div class="index-list">
+            <div class="index-row"><strong>第 01 章 远钟之后</strong><span>Scene 1-5 · 港城、塔楼、海雾、旧约线索。</span></div>
+            <div class="index-row"><strong>第 02 章 暗潮名单</strong><span>Scene 6-10 · 角色关系展开，第一处叙事债务建立。</span></div>
+            <div class="index-row"><strong>第 06 章 龙影落城</strong><span>Scene 26-30 · 世界规则显性化，城堡袭击事件进入主线。</span></div>
+            <div class="index-row"><strong>第 12 章 最后的灯</strong><span>Scene 56-60 · 主线闭合，保留番外入口。</span></div>
+          </div>
+        `,
+      },
+      characters: {
+        eyebrow: "CHARACTER TABLE",
+        title: "角色表与关系状态",
+        desc: "用于最终成稿审阅，不会反向修改角色主轴。",
+        metaLabel: "角色",
+        metaValue: "18",
+        html: `
+          <div class="data-list">
+            <div class="data-row"><strong>艾琳 · A 级主角</strong><span>完成从守密者到见证者的转变，最终状态为主动公开旧约真相。</span></div>
+            <div class="data-row"><strong>莱昂 · A 级同行者</strong><span>关系状态由互相试探转为共同承担风险。</span></div>
+            <div class="data-row"><strong>钟楼书记 · B 级关键角色</strong><span>作为历史证词来源，最终段落保留未完全解释的动机。</span></div>
+          </div>
+        `,
+      },
+      world: {
+        eyebrow: "WORLD CANVAS SUMMARY",
+        title: "世界画布摘要",
+        desc: "展示世界事实摘要和硬性边界。",
+        metaLabel: "分区",
+        metaValue: "7",
+        html: `
+          <div class="data-list">
+            <div class="data-row"><strong>地理</strong><span>港城、钟楼、旧城堡和外海航线构成主要舞台。</span></div>
+            <div class="data-row"><strong>硬规则</strong><span>钟声只能记录已发生的事实，不能改写事件。</span></div>
+            <div class="data-row"><strong>未知限制</strong><span>飞龙袭击的真实驱动仍保留部分未知，作为后续扩展空间。</span></div>
+          </div>
+        `,
+      },
+      events: {
+        eyebrow: "KEY EVENT TIMELINE",
+        title: "关键事件时间线",
+        desc: "按因果顺序展示主要事件，不作为详细正文替代。",
+        metaLabel: "事件",
+        metaValue: "24",
+        html: `
+          <div class="index-list">
+            <div class="index-row"><strong>旧约被发现</strong><span>推动主角离开普通生活，进入世界规则核心。</span></div>
+            <div class="index-row"><strong>飞龙袭击城堡</strong><span>将私人调查转化为公共危机。</span></div>
+            <div class="index-row"><strong>钟楼证词公开</strong><span>解决主要误导，但保留部分历史债务。</span></div>
+            <div class="index-row"><strong>最后一盏灯点亮</strong><span>主线闭合，人物选择完成。</span></div>
+          </div>
+        `,
+      },
+      constraints: {
+        eyebrow: "USER LOCKED CONSTRAINTS",
+        title: "用户锁定约束",
+        desc: "导出前继续保留为只读边界。",
+        metaLabel: "约束",
+        metaValue: "9",
+        html: `
+          <div class="data-list">
+            <div class="data-row"><strong>不可改写已确认死亡</strong><span>角色结局必须遵守用户锁定事实。</span></div>
+            <div class="data-row"><strong>钟声不是时间回溯装置</strong><span>它只能记录和揭示，不能让人物重来。</span></div>
+            <div class="data-row"><strong>结尾保持开放但不悬空</strong><span>主线需要闭合，番外入口可以保留。</span></div>
+          </div>
+        `,
+      },
+    };
+
+    const warnings = {
+      tone: "风格基调会跟随快照进入成稿审阅记录。若用户认为不再适合当前成稿，应返回故事设定或场景写作修订。",
+      residual: "已知残留不会阻止确认成稿，但会作为后续交付说明保留。若用户不希望保留，应返回相关场景清理。"
+    };
+
+    const readerEyebrow = document.querySelector("#readerEyebrow");
+    const readerTitle = document.querySelector("#readerTitle");
+    const readerDesc = document.querySelector("#readerDesc");
+    const readerMetaLabel = document.querySelector("#readerMetaLabel");
+    const readerMetaValue = document.querySelector("#readerMetaValue");
+    const readerBody = document.querySelector("#readerBody");
+    const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
+    const miniSections = Array.from(document.querySelectorAll(".mini-section"));
+    const warningRows = Array.from(document.querySelectorAll(".warning-row"));
+    const warningDetail = document.querySelector("#warningDetail");
+    const readCheck = document.querySelector("#readCheck");
+    const warningCheck = document.querySelector("#warningCheck");
+    const confirmButton = document.querySelector("#confirmButton");
+    const actionNote = document.querySelector("#actionNote");
+    const summaryStatus = document.querySelector("#summaryStatus");
+    const badgeLabel = document.querySelector("#badgeLabel");
+    const topStatus = document.querySelector("#topStatus");
+    const toast = document.querySelector("#toast");
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2200);
+    }
+
+    function renderSection(key, silent = false) {
+      const section = sections[key];
+      readerEyebrow.textContent = section.eyebrow;
+      readerTitle.textContent = section.title;
+      readerDesc.textContent = section.desc;
+      readerMetaLabel.textContent = section.metaLabel;
+      readerMetaValue.textContent = section.metaValue;
+      readerBody.innerHTML = `<div class="module-scroll" tabindex="0" aria-label="${section.title}滚动内容">${section.html}</div>`;
+      const scrollRegion = readerBody.querySelector(".module-scroll");
+      if (scrollRegion) {
+        scrollRegion.scrollTop = 0;
+      }
+      tabButtons.forEach((button) => {
+        const active = button.dataset.section === key;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+      miniSections.forEach((item) => item.classList.toggle("active", item.dataset.mini === key));
+      if (!silent) {
+        showToast(`已切换到${section.title}`);
+      }
+    }
+
+    function updateConfirmState() {
+      const ready = readCheck.checked && warningCheck.checked;
+      confirmButton.disabled = !ready;
+      actionNote.textContent = ready ? "可以确认成稿并进入导出交付。" : "请完成右侧两项审阅确认。";
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => renderSection(button.dataset.section));
+    });
+
+    miniSections.forEach((item) => {
+      item.addEventListener("click", () => renderSection(item.dataset.mini));
+    });
+
+    warningRows.forEach((row) => {
+      row.addEventListener("click", () => {
+        warningRows.forEach((item) => item.classList.toggle("selected", item === row));
+        warningDetail.textContent = warnings[row.dataset.warning];
+      });
+    });
+
+    readCheck.addEventListener("change", updateConfirmState);
+    warningCheck.addEventListener("change", updateConfirmState);
+
+    document.querySelector("#resolveWarning").addEventListener("click", () => {
+      warningCheck.checked = true;
+      updateConfirmState();
+      showToast("已记录：保留警告已读。");
+    });
+
+    document.querySelector("#openSource").addEventListener("click", () => {
+      renderSection("world");
+      showToast("已切换到相关来源摘要。");
+    });
+
+    document.querySelector("#reviseButton").addEventListener("click", () => {
+      actionNote.textContent = "将返回相关模块发起修订。";
+      showToast("后续会进入修订入口，当前为设计交互。");
+    });
+
+    confirmButton.addEventListener("click", () => {
+      badgeLabel.textContent = "已确认";
+      topStatus.textContent = "成稿已确认";
+      summaryStatus.textContent = "已确认";
+      actionNote.textContent = "成稿已确认，下一步进入导出交付。";
+      confirmButton.textContent = "进入导出交付";
+      showToast("成稿已确认。");
+    });
+
+    renderSection("story", true);
+    updateConfirmState();
+  </script>
+</body>
+</html>

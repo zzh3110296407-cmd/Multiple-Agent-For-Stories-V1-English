@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>故事设定入口 UI V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(250, 246, 235, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.93);
+      --paper-soft: rgba(241, 232, 214, 0.72);
+      --ink: #302d29;
+      --muted: #756b61;
+      --quiet: #9b8f82;
+      --line: rgba(126, 101, 78, 0.2);
+      --line-strong: rgba(126, 101, 78, 0.34);
+      --accent: #b48a78;
+      --accent-deep: #8e675b;
+      --sage: #6f7e76;
+      --sage-deep: #53665f;
+      --amber: #d5b982;
+      --shadow: 0 24px 72px rgba(76, 57, 39, 0.16);
+      --soft-shadow: 0 14px 34px rgba(76, 57, 39, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.94), rgba(236, 231, 220, 0.54) 48%, rgba(236, 231, 220, 0.2)),
+        url("assets/story-setup-desk-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 13%, rgba(255, 252, 244, 0.76), transparent 34%),
+        radial-gradient(circle at 86% 76%, rgba(180, 138, 120, 0.16), transparent 38%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.38), rgba(233, 221, 191, 0.2));
+    }
+
+    .backdrop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(90deg, rgba(82, 62, 45, 0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(82, 62, 45, 0.035) 1px, transparent 1px);
+      background-size: 42px 42px, 46px 46px;
+      mask-image: linear-gradient(90deg, black 0%, black 56%, transparent 100%);
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1320px, calc(100vw - 72px));
+      height: calc(100vh - 68px);
+      margin: 34px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr) 184px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.07);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.68);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.11);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 540;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.42);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .model-pill span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 126, 118, 0.16);
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 28px;
+      padding-left: 20px;
+    }
+
+    h1 {
+      margin: 0 0 9px;
+      font-size: clamp(42px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      color: #2f302c;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .route-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 432px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.52);
+      background: rgba(255, 252, 244, 0.3);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .route-step {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      padding: 10px 11px;
+      background: transparent;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 840;
+      white-space: nowrap;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .route-step:hover {
+      color: var(--ink);
+      background: rgba(255, 252, 244, 0.46);
+    }
+
+    .route-step.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+      box-shadow: 0 12px 26px rgba(83, 102, 95, 0.19);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 314px;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .main-panel {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 28px 30px 24px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.88), rgba(241, 232, 214, 0.68)),
+        radial-gradient(circle at 92% 2%, rgba(180, 138, 120, 0.16), transparent 26%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .panel-title {
+      margin: 0;
+      color: #302d29;
+      font-size: 28px;
+      line-height: 1.16;
+      font-weight: 900;
+    }
+
+    .panel-note {
+      margin: 10px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .status-chip {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      background: rgba(111, 126, 118, 0.12);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+      border: 1px solid rgba(111, 126, 118, 0.16);
+    }
+
+    .input-shell {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .input-meta {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .meta-field {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.54);
+      padding: 12px 14px;
+      display: grid;
+      gap: 6px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .meta-field label,
+    .prompt-label {
+      color: #665b51;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .meta-field input,
+    .meta-field select {
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 680;
+    }
+
+    .prompt-area {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .prompt-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .word-count {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 330px;
+      resize: none;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      outline: none;
+      padding: 24px 26px;
+      color: #3c352f;
+      background:
+        linear-gradient(180deg, rgba(255, 252, 244, 0.9), rgba(252, 247, 236, 0.78)),
+        repeating-linear-gradient(180deg, transparent 0 34px, rgba(126, 101, 78, 0.04) 35px 36px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 20px 42px rgba(86, 64, 49, 0.08);
+      font-size: 16px;
+      line-height: 1.9;
+      font-weight: 520;
+    }
+
+    textarea:focus {
+      border-color: rgba(111, 126, 118, 0.55);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 0 0 4px rgba(111, 126, 118, 0.1), 0 22px 44px rgba(86, 64, 49, 0.1);
+    }
+
+    .footer-row {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .boundary-copy {
+      max-width: 690px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 560;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .primary-action {
+      min-width: 168px;
+      min-height: 48px;
+      border: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #fffaf2;
+      font-size: 14px;
+      font-weight: 880;
+      box-shadow: 0 18px 38px rgba(142, 103, 91, 0.24);
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+    }
+
+    .primary-action:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.03);
+      box-shadow: 0 22px 44px rgba(142, 103, 91, 0.3);
+    }
+
+    .primary-action.loading {
+      pointer-events: none;
+      filter: saturate(0.84);
+    }
+
+    .side {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .side-card {
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.38);
+      box-shadow: var(--soft-shadow);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .side-title {
+      margin: 0 0 4px;
+      color: #3b352f;
+      font-size: 16px;
+      font-weight: 880;
+    }
+
+    .side-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+
+    .target-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .target-button {
+      min-height: 42px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 820;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .target-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.7);
+    }
+
+    .target-button.active {
+      color: #fffaf2;
+      border-color: rgba(83, 102, 95, 0.32);
+      background: linear-gradient(135deg, var(--sage), var(--sage-deep));
+    }
+
+    .safety-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .safety-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      color: #5f554d;
+      font-size: 12px;
+      font-weight: 660;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(111, 126, 118, 0.12);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      min-width: 230px;
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      background: rgba(48, 45, 41, 0.88);
+      color: #fffaf2;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: 0 18px 42px rgba(40, 30, 24, 0.2);
+      transform: translate(-50%, 16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: calc(100vw - 42px);
+        margin: 24px auto;
+      }
+
+      .hero {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .route-strip {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .hero,
+      .main-panel {
+        padding-left: 0;
+      }
+
+      .main-panel {
+        padding: 22px 18px;
+      }
+
+      .panel-head,
+      .footer-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .input-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: stretch;
+      }
+
+      .primary-action,
+      .soft-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar">
+      <button class="back-button" type="button" id="backButton">返回项目</button>
+      <div class="crumb">主页 / 当前项目 / 故事设定</div>
+      <div class="model-pill"><span></span>模型已就绪</div>
+    </header>
+
+    <section class="hero" aria-label="故事设定页头">
+      <div>
+        <h1>故事设定</h1>
+        <p>从你的初始想法整理出一份可审阅的设定草案。这里不会直接写入最终世界观、角色、Framework 或章节事实。</p>
+      </div>
+      <nav class="route-strip" aria-label="故事设定阶段">
+        <button class="route-step active" type="button" data-strip="entry">设定入口</button>
+        <button class="route-step" type="button" data-strip="generating">生成草案</button>
+        <button class="route-step" type="button" data-strip="review">审阅补充</button>
+        <button class="route-step" type="button" data-strip="handoff">决策交接</button>
+      </nav>
+    </section>
+
+    <section class="layout" aria-label="故事设定入口工作区">
+      <section class="main-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">设定提示</p>
+            <h2 class="panel-title">你想让这个故事从哪里开始？</h2>
+            <p class="panel-note">写下题材、氛围、主角、冲突、世界范围或任何你已经确定的内容。无需按格式填写，系统会在下一步整理成草案。</p>
+          </div>
+          <span class="status-chip" id="promptState">待生成</span>
+        </div>
+
+        <div class="input-shell">
+          <div class="input-meta">
+            <div class="meta-field">
+              <label for="projectName">当前项目</label>
+              <input id="projectName" value="" placeholder="未命名故事项目" />
+            </div>
+            <div class="meta-field">
+              <label for="frameworkSelect">Framework 参考</label>
+              <select id="frameworkSelect">
+                <option value="" selected>暂不绑定</option>
+                <option value="project-framework">使用当前项目 Framework</option>
+                <option value="library-framework">从 Framework 素材库选择</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label for="languageSelect">语言</label>
+              <select id="languageSelect">
+                <option selected>中文</option>
+                <option>英文</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="prompt-area">
+            <div class="prompt-label-row">
+              <label class="prompt-label" for="storyPrompt">设定构想</label>
+              <span class="word-count" id="wordCount">0 字</span>
+            </div>
+            <textarea id="storyPrompt" placeholder="写下题材、世界范围、主角、冲突、氛围或任何你已经确定的故事想法。"></textarea>
+          </div>
+        </div>
+
+        <footer class="footer-row">
+          <div class="boundary-copy">生成后会先形成故事设定草案。草案需要你审阅，后续进入对应工作台后仍需逐项确认。</div>
+          <div class="actions">
+            <button class="soft-button" type="button" id="loadPrompt">载入项目提示词</button>
+            <button class="primary-action" type="button" id="generateButton">生成设定草案</button>
+          </div>
+        </footer>
+      </section>
+
+      <aside class="side" aria-label="故事设定辅助信息">
+        <section class="side-card">
+          <h3 class="side-title">交接目标</h3>
+          <p class="side-copy" id="targetCopy">默认先进入世界画布，让草案变成可确认的事实底座。</p>
+          <div class="target-grid" role="group" aria-label="选择交接目标">
+            <button class="target-button active" type="button" data-target="世界画布">世界画布</button>
+            <button class="target-button" type="button" data-target="角色主轴">角色主轴</button>
+            <button class="target-button" type="button" data-target="Framework">Framework</button>
+            <button class="target-button" type="button" data-target="章节计划">章节计划</button>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <h3 class="side-title">边界</h3>
+          <p class="side-copy">本页只生成和确认设定草案，不直接创建最终故事事实。</p>
+          <div class="safety-list">
+            <div class="safety-item"><span class="dot"></span><span>不会确认最终世界画布</span></div>
+            <div class="safety-item"><span class="dot"></span><span>不会确认最终角色</span></div>
+            <div class="safety-item"><span class="dot"></span><span>不会激活最终 Framework</span></div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const prompt = document.getElementById("storyPrompt");
+      const wordCount = document.getElementById("wordCount");
+      const promptState = document.getElementById("promptState");
+      const toast = document.getElementById("toast");
+      const generateButton = document.getElementById("generateButton");
+      const targetCopy = document.getElementById("targetCopy");
+
+      function countText(value) {
+        const trimmed = value.trim();
+        const cjk = (trimmed.match(/[\u4e00-\u9fff]/g) || []).length;
+        const words = trimmed.replace(/[\u4e00-\u9fff]/g, " ").split(/\s+/).filter(Boolean).length;
+        return cjk + words;
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+
+      function updateCount() {
+        const count = countText(prompt.value);
+        wordCount.textContent = `${count} 字`;
+        promptState.textContent = count ? "待生成" : "需要输入";
+      }
+
+      document.querySelectorAll("[data-strip]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-strip]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          const messages = {
+            entry: "当前处于设定入口",
+            generating: "生成后进入草案生成状态",
+            review: "草案生成后进入审阅与补充",
+            handoff: "审阅确认后进入决策与交接"
+          };
+          showToast(messages[button.dataset.strip]);
+        });
+      });
+
+      document.querySelectorAll("[data-target]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-target]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          targetCopy.textContent = `草案确认后优先交接到${button.dataset.target}。`;
+          showToast(`交接目标：${button.dataset.target}`);
+        });
+      });
+
+      document.getElementById("loadPrompt").addEventListener("click", () => {
+        showToast("正在从当前项目读取原始提示词");
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        showToast("返回当前项目总览");
+      });
+
+      generateButton.addEventListener("click", () => {
+        if (!prompt.value.trim()) {
+          showToast("请先写下故事设定构想");
+          prompt.focus();
+          return;
+        }
+        generateButton.classList.add("loading");
+        generateButton.textContent = "整理中";
+        promptState.textContent = "生成中";
+        showToast("正在整理设定草案");
+        window.setTimeout(() => {
+          generateButton.classList.remove("loading");
+          generateButton.textContent = "生成设定草案";
+          promptState.textContent = "草案待审阅";
+          showToast("下一步：草案审阅");
+        }, 1100);
+      });
+
+      prompt.addEventListener("input", updateCount);
+      updateCount();
+    })();
+  </script>
+</body>
+</html>

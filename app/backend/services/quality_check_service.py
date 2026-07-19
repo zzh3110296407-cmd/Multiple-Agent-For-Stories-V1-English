@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -37,8 +38,14 @@ from app.backend.services.model_gateway_service import (
 from app.backend.services.scene_content_quality_signal_service import (
     SceneContentQualitySignalService,
 )
+from app.backend.services.scene_character_visibility import text_mentions_character
 from app.backend.services.tracing_service import traceable_operation
 from app.backend.storage.json_store import JsonStore, StorageError
+
+
+SEMANTIC_QUALITY_MAX_OUTPUT_TOKENS = 900
+SEMANTIC_QUALITY_TIMEOUT_SECONDS = 45
+SEMANTIC_QUALITY_MAX_ATTEMPTS = 1
 
 
 LOCAL_PROJECT_ID = "local_project"
@@ -46,6 +53,48 @@ QUALITY_VERSION_ID = "quality_m9_001"
 SHANGHAI_TZ = timezone(timedelta(hours=8))
 SECRET_MARKERS = ["s" + "k-", "lsv2_pt", "API_KEY", "LANGSMITH", "DEEPSEEK"]
 VALID_SCENE_CHARACTER_TIERS = {"A", "B", "C", "D"}
+SEMANTIC_BLOCKING_CATEGORY_KEYS = {
+    "hardrule",
+    "hardrules",
+    "worldhardrule",
+    "worldhardrules",
+    "continuity",
+    "statecontinuity",
+    "confirmedstate",
+    "confirmedstatecontinuity",
+}
+SEMANTIC_HARD_RULE_BLOCKING_MARKERS = (
+    "违反",
+    "违背",
+    "冲突",
+    "绕过",
+    "凭空创造",
+    "超出",
+    "已确认状态",
+    "耗尽",
+    "用尽",
+    "销毁",
+    "contradict",
+    "violate",
+    "bypass",
+    "invented ability",
+    "exhausted",
+    "depleted",
+    "destroyed",
+)
+SEMANTIC_HARD_RULE_UNCERTAINTY_MARKERS = (
+    "可能",
+    "如果",
+    "鉴于",
+    "未明确",
+    "建议确认",
+    "暂定为非阻塞",
+    "may ",
+    "might ",
+    "if ",
+    "unclear",
+    "not explicit",
+)
 NON_STORY_PROSE_FAILURE_MARKERS = (
     "MODEL_FALLBACK_PLACEHOLDER",
     "External model output was not valid story prose",
@@ -295,14 +344,7 @@ class QualityCheckService:
             character = characters_by_id.get(character_id)
             if character is None:
                 continue
-            names = self._unique_strings(
-                [
-                    character.character_id,
-                    character.name,
-                    character.profile.identity,
-                ]
-            )
-            if any(name and name in text for name in names):
+            if text_mentions_character(text, character):
                 visible.append(character_id)
         return self._unique_strings(visible)
 
@@ -513,7 +555,55 @@ class QualityCheckService:
                 model_to_dict(framework) if framework else {}
             ),
             "framework_package": model_to_dict(package) if package else {},
+            "recent_confirmed_scenes": self._recent_confirmed_scene_context(
+                scene,
+                chapters,
+            ),
         }
+
+    def _recent_confirmed_scene_context(
+        self,
+        scene: Scene,
+        chapters: list[Chapter],
+        limit: int = 6,
+    ) -> list[dict[str, Any]]:
+        chapter_order = {
+            chapter.chapter_id: chapter.chapter_index
+            for chapter in chapters
+        }
+        current_position = (
+            chapter_order.get(scene.chapter_id, 0),
+            scene.scene_index,
+        )
+        candidates = [
+            prior
+            for prior in self._read_scenes()
+            if prior.scene_id != scene.scene_id
+            and prior.project_id == scene.project_id
+            and prior.status in {"confirmed", "committed"}
+            and (
+                chapter_order.get(prior.chapter_id, 0),
+                prior.scene_index,
+            )
+            < current_position
+        ]
+        candidates.sort(
+            key=lambda prior: (
+                chapter_order.get(prior.chapter_id, 0),
+                prior.scene_index,
+            )
+        )
+        return [
+            {
+                "scene_id": prior.scene_id,
+                "chapter_id": prior.chapter_id,
+                "scene_index": prior.scene_index,
+                "synopsis": prior.synopsis[:800],
+                "prose_text": prior.prose_text[:1800],
+                "memory_extraction": model_to_dict(prior.memory_extraction),
+            }
+            for prior in candidates[-limit:]
+        ]
 
     def _run_rule_checks(
         self,
@@ -988,12 +1078,21 @@ class QualityCheckService:
                         ),
                     },
                 ],
+                options={
+                    "temperature": 0.0,
+                    "max_output_tokens": SEMANTIC_QUALITY_MAX_OUTPUT_TOKENS,
+                    "timeout_seconds": SEMANTIC_QUALITY_TIMEOUT_SECONDS,
+                    "max_attempts": SEMANTIC_QUALITY_MAX_ATTEMPTS,
+                },
                 schema_hint={
                     "kind": schema_kind,
                     "target_type": target_type,
                     "target_id": target_id,
                     "context": semantic_context,
                 },
+                agent_role="quality_check",
+                service_name="QualityCheckService",
+                operation_name="semantic_scene_quality_check",
             )
         except (ModelCallError, ModelJsonParseError, StorageError) as exc:
             issue = self._issue(
@@ -1038,14 +1137,31 @@ class QualityCheckService:
         for item in data.get("issues") or []:
             if not isinstance(item, dict):
                 continue
+            category = str(item.get("category") or "semantic_quality")
             severity = str(item.get("severity") or "warning")
             if severity not in {"info", "warning", "blocking", "needs_user_confirmation"}:
                 severity = "warning"
+            category_key = re.sub(r"[^a-z0-9]+", "", category.casefold())
+            message = str(item.get("message") or "Semantic quality issue.")
+            message_key = message.casefold()
+            hard_rule_is_confirmed_conflict = (
+                category_key in SEMANTIC_BLOCKING_CATEGORY_KEYS
+                and any(
+                    marker.casefold() in message_key
+                    for marker in SEMANTIC_HARD_RULE_BLOCKING_MARKERS
+                )
+                and not any(
+                    marker.casefold() in message_key
+                    for marker in SEMANTIC_HARD_RULE_UNCERTAINTY_MARKERS
+                )
+            )
+            if hard_rule_is_confirmed_conflict:
+                severity = "blocking"
             issues.append(
                 self._issue(
-                    category=str(item.get("category") or "semantic_quality"),
+                    category=category,
                     severity=severity,
-                    message=str(item.get("message") or "Semantic quality issue."),
+                    message=message,
                     related_object_type=target_type,
                     related_object_id=target_id,
                     evidence=self._safe_evidence(item.get("evidence") or ""),
@@ -1379,6 +1495,18 @@ class QualityCheckService:
                 }
                 for character in context.get("characters", [])
                 if isinstance(character, dict)
+            ],
+            "recent_confirmed_scenes": [
+                {
+                    "scene_id": prior.get("scene_id"),
+                    "chapter_id": prior.get("chapter_id"),
+                    "scene_index": prior.get("scene_index"),
+                    "synopsis": str(prior.get("synopsis") or "")[:800],
+                    "prose_text": str(prior.get("prose_text") or "")[:1800],
+                    "memory_extraction": prior.get("memory_extraction") or {},
+                }
+                for prior in context.get("recent_confirmed_scenes", [])
+                if isinstance(prior, dict)
             ],
         }
 

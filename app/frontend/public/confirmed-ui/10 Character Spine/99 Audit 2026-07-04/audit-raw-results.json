@@ -1,0 +1,683 @@
+[
+  {
+    "name": "01-entry",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/01 Character Spine Entry/visual-drafts/character-spine-entry-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/01-entry-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 入口 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1548,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [],
+      "unlabeledInteractive": [],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回总览",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "选择等级",
+        "A\nA 级角色\n主线承重、长期变化、核心关系。",
+        "B\nB 级角色\n稳定支线、关键协助、可持续参与。",
+        "C\nC 级角色\n章节功能、局部矛盾、场景推动。",
+        "D\nD 级角色\n短时出现、低记忆预算、即时功能。",
+        "清空构想",
+        "生成角色主轴草案"
+      ]
+    },
+    "clicked": [
+      "返回总览",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "选择等级"
+    ],
+    "afterInteraction": {
+      "toast": "确认后写入角色底座",
+      "activeButtons": [
+        "生成入口"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/01-entry-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1621,
+        "clientHeight": 768,
+        "clipping": [],
+        "textLength": 1042
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/01-entry-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 3271,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 1042
+      }
+    }
+  },
+  {
+    "name": "02-generating",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/02 Generating/visual-drafts/character-spine-generating-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/02-generating-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 生成中 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1412,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [],
+      "unlabeledInteractive": [],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回入口",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "返回修改",
+        "等待草案"
+      ]
+    },
+    "clicked": [
+      "返回入口",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "返回修改"
+    ],
+    "afterInteraction": {
+      "toast": "已保留当前构想，可返回入口调整。",
+      "activeButtons": [
+        "生成草案"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/02-generating-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1443,
+        "clientHeight": 768,
+        "clipping": [],
+        "textLength": 641
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/02-generating-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 3204,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 641
+      }
+    }
+  },
+  {
+    "name": "03-draft-review",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/03 Draft Review/visual-drafts/character-spine-draft-review-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/03-draft-review-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 草案审阅 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1448,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [
+        {
+          "tag": "BUTTON",
+          "text": "与主角\n                        信任 / 隐瞒 / 欠债\n                      \n                ",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "sw": 0,
+          "cw": 0,
+          "sh": 0,
+          "ch": 0,
+          "cls": "relation-card active"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "与港口守卫\n                        疏离 / 旧案 / 监视\n                      \n              ",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "sw": 0,
+          "cw": 0,
+          "sh": 0,
+          "ch": 0,
+          "cls": "relation-card"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "与钟楼\n                        绑定 / 象征 / 禁忌\n                      \n                ",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "sw": 0,
+          "cw": 0,
+          "sh": 0,
+          "ch": 0,
+          "cls": "relation-card"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "提交修订",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "sw": 0,
+          "cw": 0,
+          "sh": 0,
+          "ch": 0,
+          "cls": "primary-button"
+        }
+      ],
+      "unlabeledInteractive": [
+        {
+          "tag": "TEXTAREA",
+          "text": "",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "sw": 0,
+          "cw": 0,
+          "sh": 0,
+          "ch": 0,
+          "cls": ""
+        },
+        {
+          "tag": "TEXTAREA",
+          "text": "",
+          "x": 1048,
+          "y": 1128,
+          "w": 309,
+          "h": 94,
+          "sw": 307,
+          "cw": 307,
+          "sh": 92,
+          "ch": 92,
+          "cls": ""
+        }
+      ],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回生成",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "A 级主轴草案\n确认后进入主角团",
+        "B/C/D 角色草案\n当前查看 B 级",
+        "档案",
+        "关系",
+        "审查",
+        "与主角\n                        信任 / 隐瞒 / 欠债\n                      \n                      强",
+        "与港口守卫\n                        疏离 / 旧案 / 监视\n                      \n                      中",
+        "与钟楼\n                        绑定 / 象征 / 禁忌\n                      \n                      高",
+        "修订草案",
+        "处理缺口",
+        "确认草案",
+        "提交修订",
+        "确认草案"
+      ]
+    },
+    "clicked": [
+      "返回生成",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "A 级主轴草案\n确认后进入主角团"
+    ],
+    "afterInteraction": {
+      "toast": "已切换为 A 级主轴草案确认路径。",
+      "activeButtons": [
+        "审阅确认",
+        "A 级主轴草案\n确认后进入主角团",
+        "档案",
+        "与主角\n                        信任 / 隐瞒 / 欠债\n                      \n                      强"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/03-draft-review-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1475,
+        "clientHeight": 768,
+        "clipping": [],
+        "textLength": 789
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/03-draft-review-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 2821,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 789
+      }
+    }
+  },
+  {
+    "name": "04-conflict",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/04 Relationship Conflict Handling/visual-drafts/character-spine-conflict-handling-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/04-conflict-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 关系与冲突处理 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1424,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [],
+      "unlabeledInteractive": [
+        {
+          "tag": "TEXTAREA",
+          "text": "",
+          "x": 459,
+          "y": 1074,
+          "w": 288,
+          "h": 96,
+          "sw": 286,
+          "cw": 286,
+          "sh": 94,
+          "ch": 94,
+          "cls": ""
+        }
+      ],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回审阅",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "关\n旧债来源未确认\n洛闻与主角之间存在旧债，但旧债来源尚未确定。",
+        "规\n记忆能力缺少代价\n洛闻能保存他人失去的记忆，但草案没有说明能力边界。",
+        "重\n与现有线索角色功能接近\n洛闻的线索提供功能可能与已有见证人角色重叠。",
+        "雨夜旧债\n确认旧债来自雨夜钟楼事故，主角曾救下洛闻。",
+        "共同失误\n旧债来自两人共同造成的失误，双方都不愿说清。",
+        "延后揭示\n先保留旧债存在，来源留到章节中逐步揭示。",
+        "标记已处理",
+        "返回审阅",
+        "回到草案确认"
+      ]
+    },
+    "clicked": [
+      "返回审阅",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "关\n旧债来源未确认\n洛闻与主角之间存在旧债，但旧债来源尚未确定。"
+    ],
+    "afterInteraction": {
+      "toast": "",
+      "activeButtons": [
+        "审阅确认",
+        "关\n旧债来源未确认\n洛闻与主角之间存在旧债，但旧债来源尚未确定。",
+        "雨夜旧债\n确认旧债来自雨夜钟楼事故，主角曾救下洛闻。"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/04-conflict-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1564,
+        "clientHeight": 768,
+        "clipping": [],
+        "textLength": 779
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/04-conflict-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 3229,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 779
+      }
+    }
+  },
+  {
+    "name": "05-missing-info",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/05 Missing Information Handling/visual-drafts/character-spine-missing-info-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/05-missing-info-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 缺失信息处理 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1405,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [],
+      "unlabeledInteractive": [],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回审阅",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "记\n关键记忆边界\n能力触发条件、保存上限和代价仍不明确。\n必填信息\n能力\n代价",
+        "源\n登场前关系来源\n草案提到旧钟楼证人，但缺少两人第一次产生联系的事件。\n建议补充\n关系\n来源",
+        "禁\n行动禁区\n角色在什么情况下不会使用能力仍未说明。\n必填信息\n底线\n约束",
+        "隐\n隐藏目标是否保留\n草案暗示角色另有目的，需要决定现在写明还是保留未知。\n可留白项\n伏笔\n未知",
+        "采用候选",
+        "自由补写",
+        "只作说明",
+        "只能保存自愿交出的记忆\n洛间只能保存他人自愿交出的记忆，每次保存都会失去一段自己的日常记忆。",
+        "只对强烈情绪生效\n洛间只能保存被强烈情绪包裹的记忆，平静记忆会在数日内自然消散。",
+        "保存后需要修复媒介\n洛间必须把记忆缝入钟楼旧物，媒介损坏时记忆会出现错位。",
+        "补齐当前项",
+        "返回审阅",
+        "带回草案确认"
+      ]
+    },
+    "clicked": [
+      "返回审阅",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "记\n关键记忆边界\n能力触发条件、保存上限和代价仍不明确。\n必填信息\n能力\n代价"
+    ],
+    "afterInteraction": {
+      "toast": "已保留当前补充进度，返回草案审阅。",
+      "activeButtons": [
+        "审阅确认",
+        "记\n关键记忆边界\n能力触发条件、保存上限和代价仍不明确。\n必填信息\n能力\n代价",
+        "采用候选",
+        "只能保存自愿交出的记忆\n洛间只能保存他人自愿交出的记忆，每次保存都会失去一段自己的日常记忆。"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/05-missing-info-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1496,
+        "clientHeight": 768,
+        "clipping": [
+          {
+            "text": "例如：洛间只能保存自愿交出的记忆，且每次保存都会失去一段自己的日常记忆。",
+            "sw": 210,
+            "cw": 210,
+            "sh": 134,
+            "ch": 116
+          }
+        ],
+        "textLength": 842
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/05-missing-info-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 4079,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 842
+      }
+    }
+  },
+  {
+    "name": "06-revision",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/06 Character Draft Revision/visual-drafts/character-spine-draft-revision-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/06-revision-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 修订角色草案 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1483,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [],
+      "unlabeledInteractive": [],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回审阅",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "记\n记忆能力边界过宽\n能力解决冲突的范围太大，需要压出限制。\n能力与代价\n能力\n代价",
+        "关\n旧债来源不够清楚\n洛间与主角之间有旧债，但旧债从哪来还不明确。\n关系来源\n关系\n旧债",
+        "禁\n角色底线不够硬\n草案有善意，但还缺少可触发冲突的底线。\n行动底线\n底线\n冲突",
+        "身\n身份与气质偏散\n修复师、证人、守密人三个方向还没有收束。\n身份气质\n身份\n气质",
+        "用\n故事作用不够独立\n角色功能与已有线索角色接近，需要拉开分工。\n故事作用\n功能\n分工",
+        "轻微调整",
+        "局部重写",
+        "重做方向",
+        "增加触发条件\n把能力改为只能保存自愿交出的记忆，强迫取得的记忆会快速失真。",
+        "增加保存上限\n每次只能保存一段短记忆，超过上限会挤掉他自己的日常记忆。",
+        "改成媒介能力\n记忆必须缝入钟楼旧物，媒介损坏时记忆会出现错位。",
+        "保护：角色等级",
+        "保护：核心气质",
+        "保护：已确认关系",
+        "保护：世界事实",
+        "加入修订要求",
+        "返回审阅",
+        "提交修订",
+        "回到页面"
+      ]
+    },
+    "clicked": [
+      "返回审阅",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "记\n记忆能力边界过宽\n能力解决冲突的范围太大，需要压出限制。\n能力与代价\n能力\n代价"
+    ],
+    "afterInteraction": {
+      "toast": "已保留当前修订草稿，返回草案审阅。",
+      "activeButtons": [
+        "审阅确认",
+        "记\n记忆能力边界过宽\n能力解决冲突的范围太大，需要压出限制。\n能力与代价\n能力\n代价",
+        "轻微调整",
+        "增加触发条件\n把能力改为只能保存自愿交出的记忆，强迫取得的记忆会快速失真。",
+        "保护：角色等级",
+        "保护：核心气质",
+        "保护：已确认关系",
+        "保护：世界事实"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/06-revision-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1578,
+        "clientHeight": 768,
+        "clipping": [
+          {
+            "text": "请把洛间的记忆能力修订为有明确触发条件和代价，不要让能力可以解决所有冲突。",
+            "sw": 210,
+            "cw": 210,
+            "sh": 134,
+            "ch": 124
+          }
+        ],
+        "textLength": 1011
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/06-revision-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 4652,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 1011
+      }
+    }
+  },
+  {
+    "name": "07-confirmation",
+    "file": "app/frontend/public/confirmed-ui/10 Character Spine/07 Confirm Character Spine/visual-drafts/character-spine-confirmation-v1.html",
+    "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/07-confirmation-1440x900.png",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "metrics": {
+      "title": "角色主轴 / 确认角色主轴 V1",
+      "h1": "角色主轴",
+      "bodyScrollWidth": 1440,
+      "bodyClientWidth": 1440,
+      "bodyScrollHeight": 1479,
+      "bodyClientHeight": 900,
+      "horizontalOverflow": false,
+      "overflowEls": [],
+      "tinyButtons": [],
+      "unlabeledInteractive": [],
+      "forbiddenTerms": [],
+      "buttonTexts": [
+        "返回审阅",
+        "生成入口",
+        "生成草案",
+        "审阅确认",
+        "角色底座",
+        "档\n洛间的角色底座\n身份、能力、代价与行动底线将成为正式角色事实。\n角色档案\n身份\n能力\n底线",
+        "关\n关系与信任来源\n旧债来源、信任基础和隐瞒风险会写入关系底座。\n关系草稿\n关系\n旧债\n信任",
+        "审\n缺口与修订结果\n缺失信息、冲突处理和修订结果已经整理完成。\n审阅结果\n通过\n补充\n无阻塞",
+        "界\n确认写入范围\n本次只写入角色底座，不生成章节，也不修改世界事实。\n写入边界\n保护\n隔离\n确认",
+        "摘要",
+        "事实",
+        "边界",
+        "档案已审阅\n身份、能力和底线无未处理问题。",
+        "关系已审阅\n关系来源和隐瞒风险已确认。",
+        "写入边界已确认\n只写入角色底座，不生成正文。",
+        "确认写入",
+        "返回审阅",
+        "确认写入",
+        "回到页面"
+      ]
+    },
+    "clicked": [
+      "返回审阅",
+      "生成入口",
+      "生成草案",
+      "审阅确认",
+      "角色底座",
+      "档\n洛间的角色底座\n身份、能力、代价与行动底线将成为正式角色事实。\n角色档案\n身份\n能力\n底线"
+    ],
+    "afterInteraction": {
+      "toast": "返回草案审阅，当前确认状态已保留。",
+      "activeButtons": [
+        "角色底座",
+        "档\n洛间的角色底座\n身份、能力、代价与行动底线将成为正式角色事实。\n角色档案\n身份\n能力\n底线",
+        "摘要"
+      ]
+    },
+    "responsive_1366x768": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/07-confirmation-1366x768.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "scrollHeight": 1574,
+        "clientHeight": 768,
+        "clipping": [
+          {
+            "text": "确认写入当前角色草案；保留已处理的记忆边界、行动底线与关系来源，不生成章节正文。",
+            "sw": 210,
+            "cw": 210,
+            "sh": 134,
+            "ch": 120
+          }
+        ],
+        "textLength": 955
+      }
+    },
+    "responsive_768x1024": {
+      "screenshot": "app/frontend/public/confirmed-ui/10 Character Spine/99 Audit 2026-07-04/07-confirmation-768x1024.png",
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "scrollHeight": 4344,
+        "clientHeight": 1024,
+        "clipping": [],
+        "textLength": 955
+      }
+    }
+  }
+]

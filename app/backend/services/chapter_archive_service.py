@@ -25,6 +25,9 @@ from app.backend.repositories.factory import RepositoryBundle, create_repositori
 from app.backend.services.chapter_framework_builder_service import (
     ChapterFrameworkBuilderService,
 )
+from app.backend.services.active_project_story_data import (
+    current_story_workspace_project_id,
+)
 from app.backend.services.scene_gate_readiness_service import SceneGateReadinessService
 from app.backend.services.scene_progress_service import SceneProgressService
 from app.backend.storage.json_store import JsonStore, StorageError
@@ -440,7 +443,7 @@ class ChapterArchiveService:
 
         return ChapterArchiveRecord(
             archive_id=self._next_archive_id(),
-            project_id=LOCAL_PROJECT_ID,
+            project_id=self._current_project_id(),
             chapter_id=chapter.chapter_id,
             chapter_index=chapter.chapter_index,
             chapter_framework_id=(framework.chapter_framework_id if framework else chapter.chapter_framework_id),
@@ -808,18 +811,35 @@ class ChapterArchiveService:
             return []
         data = self.store.read_list(self.archive_file)
         try:
-            return [
+            archives = [
                 ChapterArchiveRecord(**item)
                 for item in data
                 if isinstance(item, dict)
             ]
         except ValidationError as exc:
             raise StorageError("ChapterArchive JSON schema is invalid.") from exc
+        current_project_id = self._current_project_id()
+        migrated = False
+        if current_project_id != LOCAL_PROJECT_ID:
+            for archive in archives:
+                if archive.project_id in {"", LOCAL_PROJECT_ID}:
+                    archive.project_id = current_project_id
+                    migrated = True
+        if migrated:
+            self._write_archives(archives)
+        return archives
 
     def _write_archives(self, archives: list[ChapterArchiveRecord]) -> None:
         payload = [model_to_dict(archive) for archive in archives]
         self._assert_archive_payload_safe(payload)
         self.store.write(self.archive_file, payload)
+
+    def _current_project_id(self) -> str:
+        return current_story_workspace_project_id(
+            self.store,
+            self.data_dir,
+            fallback=LOCAL_PROJECT_ID,
+        )
 
     def _sync_chapter_metadata_after_archive(self, archive: ChapterArchiveRecord) -> None:
         chapters = self.repositories.chapters.list_all()

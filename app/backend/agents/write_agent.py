@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any
 
 from app.backend.prompts.scene_generation_prompts import (
@@ -16,6 +17,7 @@ WRITE_AGENT_TIMEOUT_SECONDS = 90
 WRITE_AGENT_MAX_ATTEMPTS = 2
 WRITE_CONTEXT_REQUIRED_KEYS = (
     "project_id",
+    "output_language",
     "chapter_id",
     "scene_id",
     "scene_index",
@@ -34,6 +36,8 @@ WRITE_CONTEXT_REQUIRED_KEYS = (
     "authorial_intent",
     "m12_context_pack",
 )
+CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+LATIN_RE = re.compile(r"[A-Za-z]")
 SCENE_WRITING_CONTEXT_KEYS = (
     "project_id",
     "chapter_id",
@@ -72,25 +76,28 @@ class WriteAgent:
             ordered_story_information_package,
         )
         compact_context = self._compact_approved_context(approved_context)
+        output_language = self._normalize_output_language(
+            compact_context.get("output_language"),
+        )
+        prompt = build_write_prompt(
+            ordered_package_json=json.dumps(
+                compact_ordered_package,
+                ensure_ascii=False,
+                indent=2,
+            ),
+            approved_context_json=json.dumps(
+                compact_context,
+                ensure_ascii=False,
+                indent=2,
+            ),
+            output_language=output_language,
+        )
+        messages = [
+            {"role": "system", "content": WRITE_AGENT_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ]
         result = self.model_gateway.generate_json(
-            messages=[
-                {"role": "system", "content": WRITE_AGENT_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": build_write_prompt(
-                        ordered_package_json=json.dumps(
-                            compact_ordered_package,
-                            ensure_ascii=False,
-                            indent=2,
-                        ),
-                        approved_context_json=json.dumps(
-                            compact_context,
-                            ensure_ascii=False,
-                            indent=2,
-                        ),
-                    ),
-                },
-            ],
+            messages=messages,
             schema_hint={
                 "kind": "scene_write",
                 "scene_index": approved_context.get("scene_index"),
@@ -105,7 +112,62 @@ class WriteAgent:
             service_name="WriteAgent",
             operation_name="write_scene",
         )
+        if not self._matches_output_language(result.data, output_language):
+            result = self.model_gateway.generate_json(
+                messages=[
+                    *messages,
+                    {
+                        "role": "user",
+                        "content": (
+                            "Your previous JSON used the wrong story language. "
+                            + (
+                                "Return the same scene as valid JSON, but rewrite both synopsis "
+                                "and prose_text entirely in English."
+                                if output_language == "en"
+                                else "Return the same scene as valid JSON, but rewrite both synopsis "
+                                "and prose_text entirely in Simplified Chinese."
+                            )
+                            + " Do not add or remove story facts."
+                        ),
+                    },
+                ],
+                schema_hint={
+                    "kind": "scene_write",
+                    "operation": "language_retry",
+                    "output_language": output_language,
+                    "scene_index": approved_context.get("scene_index"),
+                },
+                options={
+                    "max_output_tokens": WRITE_AGENT_MAX_OUTPUT_TOKENS,
+                    "timeout_seconds": WRITE_AGENT_TIMEOUT_SECONDS,
+                    "max_attempts": 1,
+                    "temperature": 0.2,
+                },
+                service_name="WriteAgent",
+                operation_name="write_scene_language_retry",
+            )
         return result.data
+
+    def _normalize_output_language(self, value: Any) -> str:
+        language = str(value or "zh").strip().lower()
+        return "en" if language.startswith("en") else "zh"
+
+    def _matches_output_language(
+        self,
+        data: dict[str, Any],
+        output_language: str,
+    ) -> bool:
+        text = " ".join(
+            str(data.get(key) or "")
+            for key in ("synopsis", "prose_text")
+        ).strip()
+        if not text:
+            return False
+        cjk_count = len(CJK_RE.findall(text))
+        latin_count = len(LATIN_RE.findall(text))
+        if output_language == "en":
+            return latin_count >= 40 and latin_count >= cjk_count * 2
+        return cjk_count >= 24 and cjk_count >= latin_count
 
     def _compact_approved_context(self, approved_context: dict[str, Any]) -> dict[str, Any]:
         compact: dict[str, Any] = {}

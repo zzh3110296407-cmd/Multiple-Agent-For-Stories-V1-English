@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>章节收尾与下一章准备</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/scene-writing-background-v1.png")'>
+    <header class="topbar">
+      <div>
+        <p class="crumb">主页 / 工作台 / 场景写作 / 章节收尾</p>
+        <h1>章节收尾与下一章准备</h1>
+      </div>
+      <div class="top-actions">
+        <span class="badge sage">当前章完成</span>
+        <span class="badge warning">叙事债务 3</span>
+        <span class="badge">下一章待准备</span>
+      </div>
+    </header>
+
+    <section class="workspace-grid">
+      <section class="panel tall">
+        <p class="eyebrow">CHAPTER CLOSEOUT</p>
+        <h2>归档当前章节</h2>
+        <div class="stats-grid">
+          <div class="stat"><span>已确认场景</span><strong>4 / 4</strong></div>
+          <div class="stat"><span>连续性</span><strong>通过</strong></div>
+          <div class="stat"><span>开放问题</span><strong>2</strong></div>
+          <div class="stat"><span>归档</span><strong id="archiveState">待预览</strong></div>
+        </div>
+
+        <div class="split" style="margin-top: 16px;">
+          <article class="soft-panel">
+            <h3>归档预览</h3>
+            <div class="scroll-area">
+              <div class="list">
+                <div class="item selected"><strong>安全摘要</strong><p>本章确认港口钟楼存在记忆缺口，但未揭示飞龙传说真相。</p></div>
+                <div class="item"><strong>未解决连续性</strong><p>火漆印章归属仍未确认，转入下一章待处理问题。</p></div>
+                <div class="item"><strong>叙事债务</strong><p>龙影、钟声、禁区地图三项保持开放。</p></div>
+              </div>
+            </div>
+          </article>
+          <article class="soft-panel">
+            <h3>归档确认</h3>
+            <label class="field">
+              <span>确认说明</span>
+              <textarea id="archiveNote" aria-label="章节归档确认说明">我确认当前章节已经完成，可将安全摘要、引用和未解决问题写入章节归档。</textarea>
+            </label>
+            <label class="field" style="margin-top: 10px;">
+              <span><input type="checkbox" id="provisionalAck" style="width:auto; margin-right: 8px;" />我理解临时归档不能替代稳定归档</span>
+            </label>
+            <div class="button-row" style="margin-top: 12px;">
+              <button class="button" id="previewArchive" type="button">预览归档</button>
+              <button class="button primary" id="stableArchive" type="button">稳定归档</button>
+              <button class="button" id="provisionalArchive" type="button">临时归档</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <aside class="panel tall">
+        <p class="eyebrow">NEXT CHAPTER</p>
+        <h2>准备下一章</h2>
+        <div class="timeline">
+          <div class="step current"><span class="step-dot">1</span><div><h4>预览下一章</h4><p class="muted">读取上一章归档摘要和 Framework。</p></div></div>
+          <div class="step"><span class="step-dot">2</span><div><h4>准备上下文</h4><p class="muted">生成下一章章节框架、章节计划草案和记忆包。</p></div></div>
+          <div class="step"><span class="step-dot">3</span><div><h4>确认下一章</h4><p class="muted">确认场景数和初始上下文，不生成正文。</p></div></div>
+        </div>
+        <div class="form-grid" style="margin-top: 16px;">
+          <label class="field"><span>下一章场景数</span><input value="4" aria-label="下一章场景数" /></label>
+          <label class="field"><span>章节目标</span><input value="追查火漆印章来源" aria-label="下一章目标" /></label>
+          <label class="field full"><span>用户意图</span><textarea aria-label="下一章用户意图">下一章让主角进入旧城禁区，但暂时不要揭示龙影真相。</textarea></label>
+        </div>
+        <div class="button-row" style="margin-top: 12px;">
+          <button class="button" id="previewNext" type="button">预览下一章</button>
+          <button class="button primary" id="prepareNext" type="button">准备下一章</button>
+          <button class="button accent" id="confirmNext" type="button">确认下一章</button>
+          <button class="button danger" id="storyComplete" type="button">确认故事草稿完成</button>
+        </div>
+        <p class="muted" id="actionNote" style="margin-top: 14px;">先预览章节归档，再准备下一章。</p>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const note = document.getElementById("actionNote");
+    document.getElementById("previewArchive").addEventListener("click", () => {
+      document.getElementById("archiveState").textContent = "已预览";
+      note.textContent = "将调用 previewChapterArchive，展示安全摘要和未解决问题。";
+    });
+    document.getElementById("stableArchive").addEventListener("click", () => {
+      document.getElementById("archiveState").textContent = "稳定归档";
+      note.textContent = "将调用 archiveChapter({ archiveMode: stable })。";
+    });
+    document.getElementById("provisionalArchive").addEventListener("click", () => {
+      const ok = document.getElementById("provisionalAck").checked;
+      note.textContent = ok ? "将调用 archiveChapter({ archiveMode: provisional })。" : "需要先勾选临时归档确认。";
+    });
+    document.getElementById("previewNext").addEventListener("click", () => note.textContent = "将调用 previewNextChapter。");
+    document.getElementById("prepareNext").addEventListener("click", () => note.textContent = "将调用 prepareNextChapter，只准备下一章上下文。");
+    document.getElementById("confirmNext").addEventListener("click", () => note.textContent = "将调用 confirmNextChapter，进入下一章计划。");
+    document.getElementById("storyComplete").addEventListener("click", () => note.textContent = "将调用 confirmStoryDraftComplete，单独确认故事草稿完成。");
+  </script>
+</body>
+</html>

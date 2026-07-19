@@ -16,6 +16,21 @@ def model_to_dict(model: Any) -> dict[str, Any]:
     return model.dict()
 
 
+class NoRedirectHandler(urllib_request.HTTPRedirectHandler):
+    """Prevent bearer credentials from being forwarded across redirects."""
+
+    def redirect_request(
+        self,
+        req,
+        fp,
+        code,
+        msg,
+        headers,
+        newurl,
+    ):
+        return None
+
+
 class OpenAICompatibleModelAdapter(ModelAdapter):
     def __init__(
         self,
@@ -28,6 +43,7 @@ class OpenAICompatibleModelAdapter(ModelAdapter):
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
         self.max_attempts = max(1, max_attempts)
+        self._opener = urllib_request.build_opener(NoRedirectHandler())
 
     def generate_text(self, request: ModelGatewayRequest) -> str:
         return self._call_chat_completions(request, response_format=None)
@@ -88,7 +104,7 @@ class OpenAICompatibleModelAdapter(ModelAdapter):
         last_error: Exception | None = None
         for attempt in range(1, self.max_attempts + 1):
             try:
-                with urllib_request.urlopen(
+                with self._opener.open(
                     http_request,
                     timeout=self.timeout_seconds,
                 ) as response:

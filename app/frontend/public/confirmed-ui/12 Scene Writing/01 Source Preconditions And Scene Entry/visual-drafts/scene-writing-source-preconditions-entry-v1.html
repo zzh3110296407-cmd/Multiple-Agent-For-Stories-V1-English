@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>场景写作 / 来源前提与场景入口 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(238, 227, 208, 0.68);
+      --ink: #2f312b;
+      --muted: #71685e;
+      --quiet: #9a8f83;
+      --line: rgba(110, 86, 61, 0.19);
+      --line-strong: rgba(110, 86, 61, 0.32);
+      --bronze: #b48a78;
+      --bronze-deep: #8f675b;
+      --sage: #71806f;
+      --sage-deep: #53624f;
+      --blue-gray: #6f8182;
+      --blue-gray-deep: #536869;
+      --gold: #c7a66a;
+      --gold-deep: #9b7d47;
+      --danger: #a66f63;
+      --shadow: 0 26px 72px rgba(74, 53, 32, 0.18);
+      --soft-shadow: 0 14px 34px rgba(74, 53, 32, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.82), rgba(236, 231, 220, 0.56) 44%, rgba(236, 231, 220, 0.22)),
+        url("../../assets/scene-writing-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255, 248, 229, 0.48), transparent 30%),
+        radial-gradient(circle at 77% 25%, rgba(111, 129, 130, 0.14), transparent 32%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.24), rgba(180, 138, 120, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1376px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 210px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .rail-arrow,
+    .scene-card,
+    .source-button,
+    .seg-button {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 12px 28px rgba(74, 53, 32, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .rail-arrow:hover,
+    .scene-card:hover,
+    .source-button:hover,
+    .seg-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 16px 34px rgba(74, 53, 32, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(113, 128, 111, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 468px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(47, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #373832;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.86), rgba(238, 227, 208, 0.7)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 25px 30px 17px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #30332d;
+      font-size: 27px;
+      line-height: 1.16;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+
+    .chapter-chip {
+      flex: 0 0 148px;
+      align-self: start;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.72);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .chapter-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 23px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .chapter-chip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .rail-shell {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) 38px;
+      align-items: stretch;
+      gap: 10px;
+      padding: 18px 30px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.28);
+    }
+
+    .rail-arrow {
+      min-width: 38px;
+      min-height: 94px;
+      color: var(--bronze-deep);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .scene-rail {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-behavior: smooth;
+      padding: 1px 2px 8px;
+      scrollbar-width: thin;
+    }
+
+    .scene-card {
+      min-width: 230px;
+      max-width: 230px;
+      padding: 14px 15px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: none;
+    }
+
+    .scene-card.active {
+      transform: translateY(-1px);
+      border-color: rgba(111, 129, 130, 0.48);
+      background: rgba(239, 244, 242, 0.82);
+      box-shadow: 0 16px 32px rgba(83, 104, 105, 0.14);
+    }
+
+    .scene-card small {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .scene-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #333630;
+      font-size: 15px;
+      line-height: 1.28;
+      font-weight: 900;
+    }
+
+    .scene-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 540;
+    }
+
+    .scene-card .state {
+      width: fit-content;
+      margin-top: 10px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.13);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+    }
+
+    .content-area {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.34fr) minmax(280px, 0.66fr);
+      gap: 22px;
+      padding: 23px 30px 20px;
+      overflow: auto;
+    }
+
+    .section {
+      min-width: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .section-title span {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .brief-text {
+      min-height: 184px;
+      padding: 16px 17px;
+      border: 1px solid rgba(110, 86, 61, 0.24);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.72);
+      color: #464139;
+      font-size: 15px;
+      line-height: 1.78;
+      resize: none;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .brief-text:focus {
+      border-color: rgba(111, 129, 130, 0.5);
+      background: rgba(255, 252, 244, 0.88);
+      box-shadow: 0 0 0 4px rgba(111, 129, 130, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .facts-list,
+    .participant-list,
+    .memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .fact-row,
+    .participant-row,
+    .memory-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 48px;
+      padding: 11px 12px;
+      border: 1px solid rgba(110, 86, 61, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.44);
+    }
+
+    .fact-row b,
+    .participant-row b,
+    .memory-row b {
+      color: #3d3d36;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .fact-row span,
+    .participant-row span,
+    .memory-row span {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.12);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .badge.warning {
+      background: rgba(199, 166, 106, 0.17);
+      color: var(--gold-deep);
+    }
+
+    .badge.danger {
+      background: rgba(166, 111, 99, 0.13);
+      color: var(--danger);
+    }
+
+    .segmented {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+      padding: 7px;
+      border: 1px solid rgba(110, 86, 61, 0.14);
+      border-radius: var(--radius);
+      background: rgba(250, 243, 228, 0.48);
+    }
+
+    .seg-button {
+      flex: 1;
+      min-height: 38px;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .seg-button.active {
+      background: rgba(111, 129, 130, 0.16);
+      color: var(--blue-gray-deep);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 30px 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .soft-button {
+      min-width: 116px;
+    }
+
+    .primary-button {
+      min-width: 158px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(143, 103, 91, 0.24);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(143, 103, 91, 0.3);
+    }
+
+    .primary-button.ready {
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 16px 36px rgba(83, 104, 105, 0.24);
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .ready-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.13);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .source-list {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .source-button {
+      width: 100%;
+      padding: 13px 13px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: none;
+    }
+
+    .source-button.active {
+      border-color: rgba(199, 166, 106, 0.44);
+      background: rgba(255, 249, 235, 0.74);
+      box-shadow: 0 14px 30px rgba(74, 53, 32, 0.1);
+    }
+
+    .source-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c3d36;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .source-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .source-icon.pending {
+      background: rgba(199, 166, 106, 0.18);
+      color: var(--gold-deep);
+    }
+
+    .source-button p {
+      margin: 7px 0 0 32px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.52;
+      font-weight: 520;
+    }
+
+    .detail-panel {
+      padding: 16px;
+      border: 1px solid rgba(111, 129, 130, 0.22);
+      border-radius: var(--radius);
+      background: rgba(239, 244, 242, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .detail-panel strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .detail-panel p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.66;
+      font-weight: 520;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 5;
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(47, 49, 43, 0.84);
+      color: #fffaf2;
+      box-shadow: 0 18px 42px rgba(47, 49, 43, 0.24);
+      font-size: 13px;
+      font-weight: 720;
+      transition: opacity 200ms ease, transform 200ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: min(100% - 36px, 960px);
+        height: auto;
+        min-height: calc(100vh - 48px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .hero,
+      .layout,
+      .content-area {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .summary-strip {
+        max-width: none;
+      }
+
+      .side-panel {
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .rail-shell,
+      .content-area,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chapter-chip {
+        flex-basis: auto;
+      }
+
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .rail-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .rail-arrow {
+        display: none;
+      }
+
+      .button-group,
+      .segmented {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回总览</button>
+      <div class="crumb">主页 / 工作台 / 场景写作 / 来源前提与场景入口</div>
+      <div class="status-pill"><span class="dot"></span>模型已连接</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">场景写作</h1>
+        <p>选择当前章中的目标场景，确认 Framework、章节计划、角色与记忆前提已经可用，然后进入正文生成。</p>
+      </div>
+
+      <div class="summary-strip" aria-label="当前场景摘要">
+        <div class="summary-item">
+          <span>当前章</span>
+          <strong id="summaryChapter">第 1 章</strong>
+        </div>
+        <div class="summary-item">
+          <span>场景位置</span>
+          <strong id="summaryScene">1 / 4</strong>
+        </div>
+        <div class="summary-item">
+          <span>正文状态</span>
+          <strong id="summaryState">未生成</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="场景入口">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">场景入口</p>
+            <h2>选择要写成正文的场景</h2>
+            <p class="hint">场景会按章节计划顺序推进；已提交的场景只保留预览，当前可操作场景会进入生成流程。</p>
+          </div>
+          <div class="chapter-chip">
+            <strong id="sceneNumber">场景 1</strong>
+            <span id="sceneStatus">等待正文</span>
+          </div>
+        </div>
+
+        <div class="rail-shell">
+          <button class="rail-arrow" id="railLeft" type="button" aria-label="向左移动场景轨道">‹</button>
+          <div class="scene-rail" id="sceneRail" aria-label="场景轨道"></div>
+          <button class="rail-arrow" id="railRight" type="button" aria-label="向右移动场景轨道">›</button>
+        </div>
+
+        <div class="content-area">
+          <section class="section">
+            <div class="section-title">
+              <h3 id="briefTitle">钟楼证词的第一处裂缝</h3>
+              <span id="briefMeta">当前可生成</span>
+            </div>
+            <textarea class="brief-text" id="sceneBrief" aria-label="场景简述"></textarea>
+
+            <div class="segmented" aria-label="入口侧重">
+              <button class="seg-button active" type="button">承接线索</button>
+              <button class="seg-button" type="button">角色行动</button>
+              <button class="seg-button" type="button">气氛控制</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <h3>正文前检查</h3>
+              <span id="gateMeta">1 项待确认</span>
+            </div>
+
+            <div class="facts-list" aria-label="关键来源">
+              <div class="fact-row">
+                <b>章节目标</b>
+                <span id="chapterGoal">调查钟楼证词来源</span>
+                <em class="badge">可用</em>
+              </div>
+              <div class="fact-row">
+                <b>场景路线</b>
+                <span id="routePoint">线索进入，冲突轻推</span>
+                <em class="badge">可用</em>
+              </div>
+              <div class="fact-row">
+                <b>连续性</b>
+                <span id="continuityPoint">上一场景无阻塞问题</span>
+                <em class="badge">通过</em>
+              </div>
+            </div>
+
+            <div class="section-title" style="margin-top:18px;">
+              <h3>出场角色</h3>
+              <span id="participantMeta">3 已确认 / 1 候选</span>
+            </div>
+            <div class="participant-list" id="participantList"></div>
+
+            <div class="section-title" style="margin-top:18px;">
+              <h3>记忆引用</h3>
+              <span id="memoryMeta">场景包待写入</span>
+            </div>
+            <div class="memory-list">
+              <div class="memory-row">
+                <b>章节记忆</b>
+                <span>晚宴离席者仍未确认，火漆印章只出现半枚。</span>
+                <em class="badge">读取</em>
+              </div>
+              <div class="memory-row">
+                <b>角色状态</b>
+                <span>主角不信任商会，但还没有公开质疑。</span>
+                <em class="badge">读取</em>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="actionNote">参与者候选确认后，可以进入当前场景正文生成。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button" id="refreshButton">刷新来源</button>
+            <button class="soft-button" type="button" id="participantButton">确认参与者</button>
+            <button class="primary-button" type="button" id="generateButton">生成场景正文</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="来源前提">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">来源前提</p>
+            <h2>来源前提</h2>
+          </div>
+          <span class="ready-pill" id="readyPill">可进入</span>
+        </div>
+
+        <div class="source-list" id="sourceList"></div>
+
+        <div class="detail-panel" id="sourceDetail">
+          <strong>章节计划</strong>
+          <p>当前章已经确认场景数与场景路线，场景写作可以读取每个场景的目标、顺序、转折和承接关系。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">状态已更新</div>
+
+  <script>
+    const scenes = [
+      {
+        index: 1,
+        title: "钟楼证词的第一处裂缝",
+        state: "未生成",
+        brief: "主角在钟楼旧档案室重新核对晚宴后的证词，发现所有记录都跳过了同一个时间点。场景重点是让线索从日常秩序中露出裂缝，同时让队伍成员对是否继续追查产生轻微分歧。",
+        meta: "当前可生成",
+        chapterGoal: "调查钟楼证词来源",
+        routePoint: "线索进入，冲突轻推",
+        continuityPoint: "上一场景无阻塞问题",
+        participants: [
+          ["林砚", "主视角", "已确认"],
+          ["薇拉", "质疑证词", "已确认"],
+          ["巡钟人", "提供档案", "已确认"],
+          ["旧档案管理员", "候选出场", "待确认"],
+        ],
+      },
+      {
+        index: 2,
+        title: "商会账册里的空页",
+        state: "待排队",
+        brief: "队伍转向港口商会，发现账册中存在被替换的空页。场景应承接钟楼证词的疑点，把矛盾从个人证词推进到组织层面的遮掩。",
+        meta: "等待上一场景提交",
+        chapterGoal: "把证词缺口连接到商会",
+        routePoint: "组织压力出现",
+        continuityPoint: "依赖场景 1 结果",
+        participants: [
+          ["林砚", "追问账册", "待场景 1"],
+          ["薇拉", "观察商会反应", "待场景 1"],
+          ["商会书记", "候选出场", "待确认"],
+        ],
+      },
+      {
+        index: 3,
+        title: "旧贵族邀请函",
+        state: "未开放",
+        brief: "主角收到旧贵族宅邸的邀请，但邀请函上使用了与半枚火漆印章相同的纹样。场景需要把调查方向引向旧贵族，并保留晚宴真相尚未揭露的悬念。",
+        meta: "章节路线后段",
+        chapterGoal: "引出旧贵族支线",
+        routePoint: "诱导与试探",
+        continuityPoint: "依赖场景 2 证据",
+        participants: [
+          ["林砚", "判断邀请意图", "待前置"],
+          ["旧贵族使者", "候选出场", "待确认"],
+        ],
+      },
+      {
+        index: 4,
+        title: "潮汐禁区的远光",
+        state: "未开放",
+        brief: "章节末尾不揭露真相，只让主角看到禁区远处的异常光影。场景功能是收束本章调查，并把下一章的问题自然推出来。",
+        meta: "章节结尾",
+        chapterGoal: "制造下一章入口",
+        routePoint: "收束，留下余波",
+        continuityPoint: "依赖整章结果",
+        participants: [
+          ["林砚", "看到异常光影", "待前置"],
+          ["薇拉", "提出反对", "待前置"],
+        ],
+      },
+    ];
+
+    const sources = [
+      {
+        title: "章节计划",
+        state: "已确认",
+        tone: "ready",
+        text: "当前章已经确认场景数与场景路线，场景写作可以读取每个场景的目标、顺序、转折和承接关系。",
+      },
+      {
+        title: "Framework 编排",
+        state: "已确认",
+        tone: "ready",
+        text: "Framework 映射已经锁定当前章的主骨架，场景写作只读取对应章的结构约束，不修改主骨架。",
+      },
+      {
+        title: "故事设定",
+        state: "已确认",
+        tone: "ready",
+        text: "题材、叙事边界、核心冲突和项目初始目标已经进入当前项目，可作为正文生成的上层约束。",
+      },
+      {
+        title: "世界画布",
+        state: "已确认",
+        tone: "ready",
+        text: "世界事实、地理边界、文化规则和特殊规则可以进入场景上下文，用于防止正文偏离事实底座。",
+      },
+      {
+        title: "角色主轴",
+        state: "可用",
+        tone: "ready",
+        text: "A 级角色事实、关系草稿和角色状态可被场景写作读取，出场候选需要在生成前完成确认。",
+      },
+      {
+        title: "参与者候选",
+        state: "待确认",
+        tone: "pending",
+        text: "当前场景存在一个候选出场角色。确认后可以进入正文生成；拒绝后系统需要刷新出场角色包。",
+      },
+      {
+        title: "记忆与连续性",
+        state: "可读取",
+        tone: "ready",
+        text: "章节记忆、上一场景状态、连续性检查和未来记忆写入计划会在生成后进入后续审阅页。",
+      },
+    ];
+
+    const sceneRail = document.getElementById("sceneRail");
+    const sourceList = document.getElementById("sourceList");
+    const sourceDetail = document.getElementById("sourceDetail");
+    const sceneNumber = document.getElementById("sceneNumber");
+    const sceneStatus = document.getElementById("sceneStatus");
+    const briefTitle = document.getElementById("briefTitle");
+    const briefMeta = document.getElementById("briefMeta");
+    const sceneBrief = document.getElementById("sceneBrief");
+    const chapterGoal = document.getElementById("chapterGoal");
+    const routePoint = document.getElementById("routePoint");
+    const continuityPoint = document.getElementById("continuityPoint");
+    const participantList = document.getElementById("participantList");
+    const participantMeta = document.getElementById("participantMeta");
+    const gateMeta = document.getElementById("gateMeta");
+    const summaryScene = document.getElementById("summaryScene");
+    const summaryState = document.getElementById("summaryState");
+    const actionNote = document.getElementById("actionNote");
+    const participantButton = document.getElementById("participantButton");
+    const generateButton = document.getElementById("generateButton");
+    const toast = document.getElementById("toast");
+
+    let selectedScene = 0;
+    let participantsConfirmed = false;
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 1450);
+    }
+
+    function renderSceneRail() {
+      sceneRail.innerHTML = "";
+      scenes.forEach((scene, index) => {
+        const button = document.createElement("button");
+        button.className = `scene-card${index === selectedScene ? " active" : ""}`;
+        button.type = "button";
+        button.innerHTML = `
+          <small>场景 ${scene.index}</small>
+          <strong>${scene.title}</strong>
+          <span>${scene.meta}</span>
+          <em class="state">${scene.state}</em>
+        `;
+        button.addEventListener("click", () => {
+          selectedScene = index;
+          renderSceneRail();
+          renderSceneDetail();
+        });
+        sceneRail.appendChild(button);
+      });
+    }
+
+    function renderParticipants(scene) {
+      participantList.innerHTML = "";
+      const confirmedCount = scene.participants.filter((item) => item[2] === "已确认").length;
+      const pendingCount = scene.participants.length - confirmedCount;
+      participantMeta.textContent = participantsConfirmed || pendingCount === 0
+        ? `${scene.participants.length} 已准备`
+        : `${confirmedCount} 已确认 / ${pendingCount} 候选`;
+      gateMeta.textContent = participantsConfirmed || pendingCount === 0 ? "全部可用" : `${pendingCount} 项待确认`;
+
+      scene.participants.forEach((item) => {
+        const row = document.createElement("div");
+        const status = participantsConfirmed && item[2] === "待确认" ? "已确认" : item[2];
+        const badgeClass = status === "待确认" || status === "待前置" || status === "待场景 1" ? "badge warning" : "badge";
+        row.className = "participant-row";
+        row.innerHTML = `<b>${item[0]}</b><span>${item[1]}</span><em class="${badgeClass}">${status}</em>`;
+        participantList.appendChild(row);
+      });
+    }
+
+    function renderSceneDetail() {
+      const scene = scenes[selectedScene];
+      sceneNumber.textContent = `场景 ${scene.index}`;
+      sceneStatus.textContent = scene.state;
+      briefTitle.textContent = scene.title;
+      briefMeta.textContent = scene.meta;
+      sceneBrief.value = scene.brief;
+      chapterGoal.textContent = scene.chapterGoal;
+      routePoint.textContent = scene.routePoint;
+      continuityPoint.textContent = scene.continuityPoint;
+      summaryScene.textContent = `${scene.index} / ${scenes.length}`;
+      summaryState.textContent = scene.state;
+      renderParticipants(scene);
+
+      const canGenerate = selectedScene === 0 && participantsConfirmed;
+      if (selectedScene === 0 && !participantsConfirmed) {
+        actionNote.textContent = "参与者候选确认后，可以进入当前场景正文生成。";
+        participantButton.disabled = false;
+        participantButton.textContent = "确认参与者";
+        generateButton.classList.remove("ready");
+      } else if (canGenerate) {
+        actionNote.textContent = "当前场景来源已经准备完成，可以进入正文生成。";
+        participantButton.disabled = true;
+        participantButton.textContent = "参与者已确认";
+        generateButton.classList.add("ready");
+      } else {
+        actionNote.textContent = "该场景需要等待前置场景提交后再进入正文生成。";
+        participantButton.disabled = true;
+        participantButton.textContent = "等待前置";
+        generateButton.classList.remove("ready");
+      }
+    }
+
+    function renderSources() {
+      sourceList.innerHTML = "";
+      sources.forEach((source, index) => {
+        const button = document.createElement("button");
+        button.className = `source-button${index === 0 ? " active" : ""}`;
+        button.type = "button";
+        const iconClass = source.tone === "pending" ? "source-icon pending" : "source-icon";
+        const iconText = source.tone === "pending" ? "!" : "✓";
+        button.innerHTML = `
+          <div class="source-top"><span class="${iconClass}">${iconText}</span>${source.title}<span class="badge ${source.tone === "pending" ? "warning" : ""}">${source.state}</span></div>
+          <p>${source.text}</p>
+        `;
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".source-button").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          sourceDetail.querySelector("strong").textContent = source.title;
+          sourceDetail.querySelector("p").textContent = source.text;
+        });
+        sourceList.appendChild(button);
+      });
+    }
+
+    document.querySelectorAll(".seg-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".seg-button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+      });
+    });
+
+    document.getElementById("railLeft").addEventListener("click", () => {
+      sceneRail.scrollBy({ left: -260, behavior: "smooth" });
+    });
+
+    document.getElementById("railRight").addEventListener("click", () => {
+      sceneRail.scrollBy({ left: 260, behavior: "smooth" });
+    });
+
+    sceneRail.addEventListener("wheel", (event) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        event.preventDefault();
+        sceneRail.scrollBy({ left: event.deltaY, behavior: "smooth" });
+      }
+    }, { passive: false });
+
+    document.getElementById("refreshButton").addEventListener("click", () => {
+      showToast("来源状态已刷新");
+      actionNote.textContent = participantsConfirmed
+        ? "当前场景来源已经准备完成，可以进入正文生成。"
+        : "参与者候选仍需确认，确认后可以进入正文生成。";
+    });
+
+    participantButton.addEventListener("click", () => {
+      if (selectedScene !== 0) return;
+      participantsConfirmed = true;
+      const pending = sources.find((source) => source.title === "参与者候选");
+      pending.state = "已确认";
+      pending.tone = "ready";
+      pending.text = "当前场景出场角色已经确认，后续生成会读取正式角色事实和本场景参与者包。";
+      renderSources();
+      renderSceneDetail();
+      showToast("参与者候选已确认");
+    });
+
+    generateButton.addEventListener("click", () => {
+      if (selectedScene !== 0 || !participantsConfirmed) {
+        showToast("当前场景仍有前置条件未完成");
+        return;
+      }
+      generateButton.textContent = "进入生成中";
+      actionNote.textContent = "正在进入正文生成流程。";
+      showToast("已进入场景正文生成");
+      window.setTimeout(() => {
+        generateButton.textContent = "生成场景正文";
+      }, 1300);
+    });
+
+    renderSceneRail();
+    renderSceneDetail();
+    renderSources();
+  </script>
+</body>
+</html>

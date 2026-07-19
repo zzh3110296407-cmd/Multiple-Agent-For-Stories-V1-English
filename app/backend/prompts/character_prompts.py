@@ -32,7 +32,7 @@ Return a JSON object with this shape:
     "profile": {
       "description": "Chinese short profile",
       "identity": "Chinese identity",
-      "story_function": "investigator | witness | challenger | guardian | other",
+      "story_function": "Chinese short phrase describing this character's narrative function in the current story",
       "background_summary": "Chinese background without fixed future spoilers",
       "species_or_group": "",
       "faction_or_origin": "",
@@ -104,7 +104,10 @@ Return a JSON object with this shape:
 }
 
 Generate no more than one character.
-For the first character, relationship_drafts may be empty.
+For the first character, relationship_drafts should normally be empty.
+Only emit a relationship_draft when target_id exactly matches an existing confirmed character id supplied in context.
+Never invent a target character id for a person mentioned by the user but not yet created.
+Preserve such future relationship intent in background_summary, secrets, arc_state, or current knowledge until that character is created.
 For later characters, relationship_drafts should include only necessary relationships between the new character and existing confirmed characters.
 """
 
@@ -160,7 +163,13 @@ def build_revise_prompt(
     return f"""
 Revise the current single-character draft.
 Return the full revised draft JSON object, not a diff.
-Preserve the character identity unless the user explicitly asks for replacement.
+The current character_id, name, tier, role and project_id are locked identity fields.
+Preserve them exactly unless the user explicitly requests a rename or role replacement.
+Never infer a new character name from revision topics, protected facts, abilities, costs,
+locations, objects, or phrases that merely appear in the revision prompt.
+Only return relationship_drafts whose source_id and target_id point to the revised character
+or an existing confirmed character. Keep relationships to not-yet-created people as prose
+intent in profile/background/arc fields instead of inventing target IDs.
 
 Current character draft:
 {current_draft_json}

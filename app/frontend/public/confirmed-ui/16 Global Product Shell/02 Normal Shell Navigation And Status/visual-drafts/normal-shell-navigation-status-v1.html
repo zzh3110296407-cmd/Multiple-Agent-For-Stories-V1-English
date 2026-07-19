@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>全局产品壳层正常态</title>
+  <link rel="stylesheet" href="../../../assets/polished-subflow-v1.css" />
+</head>
+<body>
+  <main class="page-shell" style='--bg-image: url("../../assets/main-page-story-workbench-background-v5.png")'>
+    <section class="rail-shell">
+      <aside class="side-rail" aria-label="产品工作区导航">
+        <p class="eyebrow">MULTIPLE AGENT</p>
+        <h2>工作台</h2>
+        <div class="status-row">
+          <span class="badge sage">后端正常</span>
+          <span class="badge">普通模式</span>
+        </div>
+        <nav class="nav-list" aria-label="工作区">
+          <button class="nav-item" type="button"><span>首页</span><span class="badge sage">可进入</span></button>
+          <button class="nav-item" type="button"><span>项目列表</span><span class="badge sage">可进入</span></button>
+          <button class="nav-item active" type="button"><span>当前项目</span><span class="badge sage">当前</span></button>
+          <button class="nav-item" type="button"><span>Framework 编排</span><span class="badge sage">可进入</span></button>
+          <button class="nav-item" type="button"><span>故事设定</span><span class="badge sage">完成</span></button>
+          <button class="nav-item" type="button"><span>世界画布</span><span class="badge sage">确认</span></button>
+          <button class="nav-item" type="button"><span>角色主轴</span><span class="badge warning">待确认</span></button>
+          <button class="nav-item locked" type="button"><span>章节计划</span><span class="badge">锁定</span></button>
+          <button class="nav-item locked" type="button"><span>场景写作</span><span class="badge">锁定</span></button>
+          <button class="nav-item locked" type="button"><span>最终输出</span><span class="badge">锁定</span></button>
+          <button class="nav-item" type="button"><span>插件输出</span><span class="badge">只读</span></button>
+          <button class="nav-item" type="button"><span>设置</span><span class="badge sage">可进入</span></button>
+        </nav>
+      </aside>
+
+      <section>
+        <header class="topbar">
+          <div>
+            <p class="crumb">主页 / 当前项目</p>
+            <h1>全局产品壳层正常态</h1>
+          </div>
+          <div class="top-actions">
+            <button class="button primary" id="modeButton" type="button">普通模式</button>
+            <span class="badge sage">模型 ready</span>
+            <span class="badge">上次刷新 12:08</span>
+          </div>
+        </header>
+
+        <section class="workspace-grid">
+          <section class="panel tall">
+            <p class="eyebrow">CURRENT WORKSPACE</p>
+            <h2>当前项目总览</h2>
+            <p class="subtitle">壳层负责展示全局导航、项目状态、进度提醒和安全跳转。业务页面只接收当前 workspace 的主体区域。</p>
+            <div class="stats-grid">
+              <div class="stat"><span>项目</span><strong>港口钟楼证词</strong></div>
+              <div class="stat"><span>来源</span><strong>新建项目</strong></div>
+              <div class="stat"><span>当前阶段</span><strong>角色主轴</strong></div>
+              <div class="stat"><span>阻塞</span><strong>1</strong></div>
+            </div>
+
+            <article class="soft-panel" style="margin-top: 16px;">
+              <h3>进度头</h3>
+              <div class="timeline">
+                <div class="step"><span class="step-dot">1</span><div><h4>Framework 编排</h4><p class="muted">已确认章节骨架。</p></div></div>
+                <div class="step"><span class="step-dot">2</span><div><h4>世界画布</h4><p class="muted">世界事实已确认，可供下游读取。</p></div></div>
+                <div class="step current"><span class="step-dot">3</span><div><h4>角色主轴</h4><p class="muted">A-tier 状态变化仍需用户确认。</p></div></div>
+                <div class="step"><span class="step-dot">4</span><div><h4>章节计划</h4><p class="muted">等待角色主轴解除阻塞。</p></div></div>
+              </div>
+            </article>
+
+            <article class="soft-panel" style="margin-top: 16px;">
+              <h3>下一步动作</h3>
+              <div class="button-row">
+                <button class="button primary" type="button">处理角色确认</button>
+                <button class="button" type="button">打开世界画布</button>
+                <button class="button" type="button">刷新导航状态</button>
+              </div>
+            </article>
+          </section>
+
+          <aside class="panel tall">
+            <p class="eyebrow">SHELL CONTRACT</p>
+            <h2>壳层职责</h2>
+            <div class="item selected"><strong>导航状态</strong><p>读取 `navigationState.groups / workspaces / availability.items`，渲染选中、可进入、锁定和隐藏状态。</p></div>
+            <div class="item"><strong>模式切换</strong><p>普通模式隐藏专家入口；专家模式可显示 expert diagnostics，但不作为普通用户主线。</p></div>
+            <div class="item"><strong>进度提醒</strong><p>读取 product progress 的 next actions、decision surfaces 和 blocking issues。</p></div>
+            <div class="item"><strong>安全跳转</strong><p>不可访问时进入 `WorkspaceUnavailablePanel`，遵循 `safe_redirect_workspace_id`。</p></div>
+            <p class="muted" id="modeNote">当前为普通模式，专家诊断入口隐藏。</p>
+          </aside>
+        </section>
+      </section>
+    </section>
+  </main>
+  <script>
+    const button = document.getElementById("modeButton");
+    const note = document.getElementById("modeNote");
+    let expert = false;
+    button.addEventListener("click", () => {
+      expert = !expert;
+      button.textContent = expert ? "专家模式" : "普通模式";
+      note.textContent = expert ? "专家诊断入口可展开，但仍与普通用户主线隔离。" : "当前为普通模式，专家诊断入口隐藏。";
+    });
+  </script>
+</body>
+</html>

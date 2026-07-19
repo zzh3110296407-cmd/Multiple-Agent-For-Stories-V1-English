@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>章节计划 / 章节路线生成入口 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(252, 247, 236, 0.84);
+      --paper-strong: rgba(255, 252, 244, 0.94);
+      --paper-soft: rgba(238, 228, 210, 0.72);
+      --ink: #27312b;
+      --muted: #746a60;
+      --quiet: #9a8c7d;
+      --line: rgba(116, 92, 66, 0.2);
+      --line-strong: rgba(116, 92, 66, 0.32);
+      --gold: #c8a868;
+      --gold-deep: #a8894e;
+      --bronze: #b48a78;
+      --bronze-deep: #8e675b;
+      --blue-gray: #6f7e83;
+      --blue-gray-deep: #53656b;
+      --sage: #6f7b68;
+      --sage-deep: #56624f;
+      --shadow: 0 26px 78px rgba(75, 55, 34, 0.17);
+      --soft-shadow: 0 14px 34px rgba(75, 55, 34, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.91), rgba(236, 231, 220, 0.58) 47%, rgba(236, 231, 220, 0.15)),
+        url("../../assets/chapter-planning-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 13%, rgba(255, 252, 244, 0.72), transparent 35%),
+        radial-gradient(circle at 78% 22%, rgba(200, 168, 104, 0.16), transparent 30%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.34), rgba(176, 138, 107, 0.11));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 192px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .stage-button,
+    .preset-button {
+      min-height: 42px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #403934;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 12px 28px rgba(74, 55, 38, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .stage-button:hover,
+    .preset-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 16px 34px rgba(74, 55, 38, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .model-pill {
+      min-height: 42px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      background: rgba(255, 252, 244, 0.46);
+      color: #5b5149;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(111, 123, 104, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #2e332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(39, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 540;
+    }
+
+    .stage-strip {
+      min-width: 520px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      background: rgba(255, 252, 244, 0.34);
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stage-button {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--quiet);
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
+    .stage-button.active {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 12px 28px rgba(83, 101, 107, 0.22);
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 354px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.84), rgba(236, 226, 207, 0.72)),
+        rgba(252, 247, 236, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .main-panel {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #2f332d;
+      font-size: 26px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+
+    .framework-chip {
+      min-width: 192px;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 123, 104, 0.26);
+      background: rgba(239, 244, 242, 0.7);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .framework-chip span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .framework-chip strong {
+      display: block;
+      margin-top: 8px;
+      color: var(--sage-deep);
+      font-size: 15px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .entry-body {
+      min-height: 0;
+      padding: 22px 28px 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 326px;
+      gap: 22px;
+      overflow: auto;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #50483f;
+      font-size: 13px;
+      font-weight: 860;
+    }
+
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid rgba(116, 92, 66, 0.26);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.74);
+      color: var(--ink);
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
+      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    textarea {
+      min-height: 292px;
+      resize: none;
+      padding: 17px 18px;
+      font-size: 15px;
+      line-height: 1.76;
+    }
+
+    select {
+      height: 46px;
+      padding: 0 13px;
+      font-size: 14px;
+      font-weight: 720;
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(39, 49, 43, 0.56) 50%),
+        linear-gradient(135deg, rgba(39, 49, 43, 0.56) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) 19px,
+        calc(100% - 13px) 19px;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    textarea:focus,
+    select:focus {
+      border-color: rgba(111, 126, 131, 0.55);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: 0 0 0 4px rgba(111, 126, 131, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .goal-card,
+    .control-card,
+    .route-preview {
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.18);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+    }
+
+    .goal-card {
+      min-height: 100%;
+      padding: 18px;
+    }
+
+    .goal-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .meta-pill {
+      padding: 12px 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.14);
+      background: rgba(250, 244, 230, 0.56);
+    }
+
+    .meta-pill span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .meta-pill strong {
+      display: block;
+      margin-top: 6px;
+      color: #3d4039;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .control-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .control-card {
+      padding: 16px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .preset-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .preset-button {
+      width: 100%;
+      min-height: auto;
+      padding: 12px 13px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: none;
+    }
+
+    .preset-button.active {
+      border-color: rgba(200, 168, 104, 0.42);
+      background: rgba(255, 249, 235, 0.76);
+      color: var(--gold-deep);
+    }
+
+    .preset-button strong {
+      display: block;
+      color: inherit;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .preset-button span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+    }
+
+    .route-preview {
+      margin-top: 16px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .route-preview h3,
+    .control-card h3 {
+      margin: 0 0 12px;
+      color: #3d4039;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .rail {
+      position: relative;
+      min-height: 102px;
+      padding: 18px 0 0;
+    }
+
+    .rail-line {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 44px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(166, 133, 82, 0.08), rgba(166, 133, 82, 0.44), rgba(166, 133, 82, 0.08));
+    }
+
+    .nodes {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .node {
+      width: 34px;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    .node b {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--quiet);
+      border: 1px solid rgba(200, 168, 104, 0.42);
+      background: rgba(255, 252, 244, 0.86);
+      font-size: 11px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(75, 55, 34, 0.09);
+    }
+
+    .node.current b {
+      color: #fffaf2;
+      background: linear-gradient(135deg, var(--gold), var(--bronze));
+      box-shadow: 0 0 0 7px rgba(200, 168, 104, 0.12), 0 14px 28px rgba(142, 103, 91, 0.18);
+    }
+
+    .node small {
+      display: block;
+      margin-top: 7px;
+      color: var(--quiet);
+      font-size: 10px;
+      line-height: 1.2;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .node.current small {
+      color: var(--bronze-deep);
+      font-weight: 900;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .soft-button {
+      min-width: 116px;
+      padding: 0 18px;
+    }
+
+    .primary-button {
+      min-width: 156px;
+      padding: 0 22px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--bronze), var(--bronze-deep));
+      box-shadow: 0 16px 36px rgba(142, 103, 91, 0.25);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(142, 103, 91, 0.31);
+    }
+
+    .primary-button.generating {
+      background: linear-gradient(135deg, var(--gold), var(--bronze));
+      pointer-events: none;
+    }
+
+    .side-panel {
+      min-height: 0;
+      padding: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .ready-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(111, 123, 104, 0.13);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .check-item {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(116, 92, 66, 0.16);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .check-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c4038;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .check-item p {
+      margin: 7px 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .mini-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(111, 123, 104, 0.15);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .side-note {
+      margin-top: auto;
+      padding: 17px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(111, 126, 131, 0.22);
+      background: rgba(239, 244, 242, 0.54);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .side-note strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .side-note p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: calc(100vh - 48px);
+        width: min(100% - 36px, 960px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .layout,
+      .entry-body {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        display: block;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .stage-strip {
+        min-width: 0;
+        margin-top: 18px;
+        overflow-x: auto;
+      }
+
+      .stage-button {
+        min-width: 94px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .action-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .panel-head,
+      .entry-body,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .goal-meta,
+      .control-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回审阅</button>
+      <div class="crumb">主页 / 工作台 / 章节计划 / 章节路线生成</div>
+      <div class="model-pill"><span class="status-dot"></span>可生成</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">章节计划</h1>
+        <p>在当前章 Framework 可用后，设定整条章节路线的目标、容量和当前章位置，然后生成章节计划草案。</p>
+      </div>
+
+      <nav class="stage-strip" aria-label="章节计划阶段">
+        <button class="stage-button" type="button">前提</button>
+        <button class="stage-button" type="button">框架</button>
+        <button class="stage-button active" type="button">路线</button>
+        <button class="stage-button" type="button">场景数</button>
+        <button class="stage-button" type="button">确认</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">章节路线生成</p>
+            <h2>定义这条故事路线要完成什么</h2>
+            <p class="hint">这里生成的是章节计划草案，不会直接写场景正文。</p>
+          </div>
+          <div class="framework-chip">
+            <span>当前章 Framework</span>
+            <strong>第 3 章 · 已审阅</strong>
+          </div>
+        </div>
+
+        <div class="entry-body">
+          <section class="goal-card">
+            <label for="story-goal">章节路线目标</label>
+            <textarea id="story-goal">围绕钟楼证词、港口商会和旧贵族之间的隐秘协议，规划一条 12 章路线：前半段让主角团逐步掌握证据，中段让阵营压力迫使团队分裂，后半段让真相与城市规则发生冲突，并在最终章完成选择。</textarea>
+            <div class="goal-meta">
+              <div class="meta-pill"><span>生成范围</span><strong id="meta-range">12 章路线</strong></div>
+              <div class="meta-pill"><span>当前章</span><strong id="meta-current">第 3 章</strong></div>
+              <div class="meta-pill"><span>路线风格</span><strong id="meta-style">悬疑推进</strong></div>
+            </div>
+          </section>
+
+          <aside class="control-stack">
+            <section class="control-card">
+              <h3>生成配置</h3>
+              <div class="control-grid">
+                <div>
+                  <label for="chapter-count">总章节数</label>
+                  <select id="chapter-count"></select>
+                </div>
+                <div>
+                  <label for="current-chapter">当前章</label>
+                  <select id="current-chapter"></select>
+                </div>
+              </div>
+              <div style="margin-top: 14px;">
+                <label for="composition">Framework 组合</label>
+                <select id="composition">
+                  <option>主线悬疑推进 / 已确认</option>
+                  <option>角色成长优先 / 已确认</option>
+                  <option>群像冲突优先 / 已确认</option>
+                </select>
+              </div>
+            </section>
+
+            <section class="control-card">
+              <h3>路线侧重</h3>
+              <div class="preset-list">
+                <button class="preset-button active" type="button" data-style="悬疑推进">
+                  <strong>悬疑推进</strong>
+                  <span>章节围绕证据、误导和反向线索展开。</span>
+                </button>
+                <button class="preset-button" type="button" data-style="角色抉择">
+                  <strong>角色抉择</strong>
+                  <span>章节更强调主角团关系与选择压力。</span>
+                </button>
+                <button class="preset-button" type="button" data-style="阵营博弈">
+                  <strong>阵营博弈</strong>
+                  <span>章节更强调势力对抗和利益交换。</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="route-preview">
+              <h3>路线预览</h3>
+              <div class="rail" aria-label="章节路线容量预览">
+                <div class="rail-line" aria-hidden="true"></div>
+                <div class="nodes" id="nodes"></div>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="action-note">生成后会进入“生成中”页面，完成后再进入章节路线审阅。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button">刷新计划</button>
+            <button class="soft-button" type="button">返回框架</button>
+            <button class="primary-button" type="button" id="generate-button">生成章节路线</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="生成前检查">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">生成前检查</p>
+            <h2>已满足</h2>
+          </div>
+          <span class="ready-pill">可继续</span>
+        </div>
+
+        <div class="check-list">
+          <div class="check-item">
+            <strong><span class="mini-dot">✓</span>当前章 Framework</strong>
+            <p>第 3 章的主骨架、模块、引用和提示已审阅。</p>
+          </div>
+          <div class="check-item">
+            <strong><span class="mini-dot">✓</span>Framework 组合</strong>
+            <p>已选择确认过的章节结构组合。</p>
+          </div>
+          <div class="check-item">
+            <strong><span class="mini-dot">✓</span>世界与角色</strong>
+            <p>世界事实、主角团和关系状态可以作为路线底座。</p>
+          </div>
+          <div class="check-item">
+            <strong><span class="mini-dot">✓</span>容量范围</strong>
+            <p>章节数量支持 1-20，当前页会限制当前章不超过总章节数。</p>
+          </div>
+        </div>
+
+        <div class="side-note">
+          <strong>后续会检查</strong>
+          <p>生成草案后需要继续审阅章节路线、当前章 brief、提示状态和每章 scene count。缺失 scene count 会进入单独修复流程。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const chapterCount = document.getElementById("chapter-count");
+    const currentChapter = document.getElementById("current-chapter");
+    const nodes = document.getElementById("nodes");
+    const metaRange = document.getElementById("meta-range");
+    const metaCurrent = document.getElementById("meta-current");
+    const metaStyle = document.getElementById("meta-style");
+    const generateButton = document.getElementById("generate-button");
+    const actionNote = document.getElementById("action-note");
+
+    for (let i = 1; i <= 20; i += 1) {
+      const option = document.createElement("option");
+      option.value = String(i);
+      option.textContent = `${i} 章`;
+      if (i === 12) option.selected = true;
+      chapterCount.appendChild(option);
+    }
+
+    function renderCurrentChapterOptions() {
+      const total = Number(chapterCount.value);
+      const previous = Number(currentChapter.value) || 3;
+      currentChapter.innerHTML = "";
+      for (let i = 1; i <= total; i += 1) {
+        const option = document.createElement("option");
+        option.value = String(i);
+        option.textContent = `第 ${i} 章`;
+        if (i === Math.min(previous, total)) option.selected = true;
+        currentChapter.appendChild(option);
+      }
+      renderNodes();
+    }
+
+    function renderNodes() {
+      const total = Number(chapterCount.value);
+      const current = Number(currentChapter.value);
+      const visible = total <= 8 ? Array.from({ length: total }, (_, index) => index + 1) : [1, 2, current, total - 1, total];
+      const uniqueVisible = [...new Set(visible)].filter((item) => item >= 1 && item <= total).sort((a, b) => a - b);
+
+      nodes.innerHTML = "";
+      uniqueVisible.forEach((index) => {
+        const node = document.createElement("div");
+        node.className = `node${index === current ? " current" : ""}`;
+        const label = index === current ? "当前" : index === total ? "终章" : "";
+        node.innerHTML = `<b>${index}</b><small>${label}</small>`;
+        nodes.appendChild(node);
+      });
+
+      metaRange.textContent = `${total} 章路线`;
+      metaCurrent.textContent = `第 ${current} 章`;
+    }
+
+    chapterCount.addEventListener("change", renderCurrentChapterOptions);
+    currentChapter.addEventListener("change", renderNodes);
+    renderCurrentChapterOptions();
+
+    document.querySelectorAll(".preset-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".preset-button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        metaStyle.textContent = button.dataset.style;
+      });
+    });
+
+    generateButton.addEventListener("click", () => {
+      generateButton.classList.add("generating");
+      generateButton.textContent = "生成准备中";
+      actionNote.textContent = "正在整理路线目标、章节容量和当前章 Framework。下一步进入生成中状态。";
+      window.setTimeout(() => {
+        generateButton.classList.remove("generating");
+        generateButton.textContent = "生成章节路线";
+        actionNote.textContent = "生成准备完成。正式对接后这里会调用章节路线生成接口。";
+      }, 1300);
+    });
+  </script>
+</body>
+</html>

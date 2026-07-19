@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>插件输出 / 输出问题处理 V1</title>
+  <style>
+    :root {
+      --paper: #ece7dc;
+      --cream: #fffdf6;
+      --vellum: #f4ecde;
+      --ink: #303029;
+      --quiet: rgba(48, 47, 42, 0.5);
+      --line: rgba(105, 82, 58, 0.16);
+      --sage: #76806f;
+      --sage-deep: #55614f;
+      --brass: #b4956f;
+      --rose: #a07266;
+      --red: #8f5f53;
+      --blue: #6f8182;
+      --shadow: 0 24px 60px rgba(70, 52, 31, 0.18);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--paper); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      letter-spacing: 0;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.95) 0%, rgba(236, 231, 220, 0.84) 45%, rgba(236, 231, 220, 0.58) 100%),
+        url("../../assets/plugin-outputs-background-v1.png") center right / cover fixed no-repeat;
+    }
+
+    button,
+    textarea { font: inherit; letter-spacing: 0; }
+    button { border: 0; cursor: pointer; }
+
+    .page {
+      max-width: 1536px;
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 34px 38px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .ghost-button,
+    .status-pill {
+      min-height: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.62);
+      color: rgba(48, 47, 42, 0.8);
+      box-shadow: 0 18px 40px rgba(70, 52, 31, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .ghost-button {
+      min-width: 138px;
+      padding: 0 22px;
+      font-weight: 820;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 26px;
+      font-size: 14px;
+      font-weight: 820;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 5px rgba(143, 95, 83, 0.18);
+    }
+
+    .dot.warn {
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.18);
+    }
+
+    .crumb {
+      flex: 1;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 440px;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 10px;
+      color: #2f312b;
+      font-size: clamp(44px, 5vw, 68px);
+      line-height: 0.98;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 850px;
+      margin-bottom: 0;
+      color: rgba(48, 47, 42, 0.68);
+      font-size: 16px;
+      line-height: 1.75;
+      font-weight: 520;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: var(--radius);
+      background: rgba(115, 95, 71, 0.24);
+      box-shadow: 0 18px 48px rgba(70, 52, 31, 0.16);
+      backdrop-filter: blur(18px);
+    }
+
+    .summary-card,
+    .field,
+    .issue-button,
+    .side-card,
+    .path-card,
+    .issue-section,
+    .note-card {
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .summary-card {
+      min-width: 0;
+      padding: 14px;
+      background: rgba(255, 252, 244, 0.58);
+    }
+
+    .summary-card span,
+    .field span,
+    .eyebrow {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .summary-card strong,
+    .field strong {
+      display: block;
+      margin-top: 5px;
+      color: #2f302b;
+      font-size: 16px;
+      font-weight: 920;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(244, 236, 222, 0.74)),
+        rgba(255, 252, 244, 0.68);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      color: #33332d;
+      font-size: 27px;
+      line-height: 1.2;
+      font-weight: 920;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      color: #33332d;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 920;
+    }
+
+    h4 {
+      margin-bottom: 8px;
+      color: #33332d;
+      font-size: 14px;
+      line-height: 1.36;
+      font-weight: 900;
+    }
+
+    p {
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 13px;
+      line-height: 1.68;
+      font-weight: 520;
+    }
+
+    .mode-badge {
+      flex: 0 0 172px;
+      padding: 10px 12px;
+      border: 1px solid rgba(143, 95, 83, 0.3);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      text-align: center;
+    }
+
+    .mode-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #7b5b51;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 26px 18px;
+    }
+
+    .stage-item {
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.32);
+    }
+
+    .stage-item span,
+    .stage-item strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage-item span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .stage-item strong {
+      margin-top: 5px;
+      color: rgba(57, 56, 50, 0.58);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .stage-item.current {
+      border-color: rgba(143, 95, 83, 0.34);
+      background: rgba(160, 114, 102, 0.14);
+    }
+
+    .stage-item.current strong { color: #6e5047; }
+    .stage-item.done strong { color: rgba(76, 91, 70, 0.92); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(270px, 330px) minmax(0, 1fr) minmax(310px, 380px);
+      gap: 24px;
+      padding: 0 26px 22px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .issue-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .issue-button {
+      width: 100%;
+      padding: 15px 14px;
+      color: var(--ink);
+      text-align: left;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .issue-button:hover,
+    .issue-button.active {
+      transform: translateY(-1px);
+      border-color: rgba(143, 95, 83, 0.38);
+      background: rgba(255, 252, 244, 0.78);
+    }
+
+    .issue-button header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .issue-button strong {
+      display: block;
+      color: #34342e;
+      font-size: 14px;
+      font-weight: 920;
+    }
+
+    .issue-button small {
+      display: block;
+      color: rgba(48, 47, 42, 0.58);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 620;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: #855b51;
+      background: rgba(160, 114, 102, 0.2);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .tag.warn { color: #7a5f3f; background: rgba(180, 149, 111, 0.18); }
+    .tag.safe { color: #53615f; background: rgba(111, 129, 130, 0.16); }
+
+    .issue-card {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      min-height: 650px;
+      overflow: hidden;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+
+    .issue-head {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .issue-head-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .issue-head p { margin-bottom: 0; }
+
+    .tabbar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 14px 22px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .tab-button {
+      min-height: 40px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      color: rgba(48, 47, 42, 0.68);
+      background: rgba(255, 252, 244, 0.42);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .tab-button.active {
+      color: #fffaf0;
+      background: var(--rose);
+      border-color: rgba(143, 95, 83, 0.38);
+    }
+
+    .issue-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 22px 22px;
+    }
+
+    .issue-section {
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.64), rgba(244, 236, 222, 0.5)),
+        rgba(255, 252, 244, 0.5);
+    }
+
+    .issue-blocks {
+      display: grid;
+      gap: 12px;
+    }
+
+    .path-card {
+      padding: 15px;
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .path-card h4 { margin-bottom: 6px; }
+    .path-card p { margin-bottom: 0; }
+
+    .route-line {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 13px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .route-line span {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .route-line strong {
+      color: #33332d;
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 850;
+    }
+
+    .note-card {
+      margin-top: 14px;
+      padding: 16px;
+    }
+
+    .note-card textarea {
+      width: 100%;
+      min-height: 100px;
+      margin-top: 10px;
+      padding: 13px 14px;
+      resize: vertical;
+      border: 1px solid rgba(105, 82, 58, 0.18);
+      border-radius: var(--radius);
+      outline: none;
+      color: var(--ink);
+      background: rgba(255, 252, 244, 0.68);
+      line-height: 1.6;
+    }
+
+    .note-card textarea:focus {
+      border-color: rgba(143, 95, 83, 0.44);
+      box-shadow: 0 0 0 4px rgba(160, 114, 102, 0.12);
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .field {
+      min-width: 0;
+      padding: 13px;
+    }
+
+    .side-card {
+      padding: 18px;
+    }
+
+    .side-card p { margin-bottom: 0; }
+
+    .guard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .guard {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .guard span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .guard strong {
+      display: block;
+      margin-top: 5px;
+      color: #35352f;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 26px 22px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+    }
+
+    .action-note {
+      max-width: 620px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.62);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 560;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .action-button {
+      min-height: 44px;
+      min-width: 112px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 860;
+      transition: transform 160ms ease;
+    }
+
+    .action-button:hover { transform: translateY(-1px); }
+    .action-button.primary {
+      min-width: 152px;
+      color: #fffaf0;
+      background: var(--sage);
+    }
+
+    .action-button.secondary {
+      color: #534d42;
+      background: rgba(255, 252, 244, 0.72);
+      border: 1px solid rgba(105, 82, 58, 0.14);
+    }
+
+    .action-button.danger {
+      color: #fffaf0;
+      background: var(--rose);
+    }
+
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 20;
+      max-width: min(390px, calc(100vw - 40px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      color: #33332d;
+      box-shadow: 0 18px 48px rgba(70, 52, 31, 0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 200ms ease, transform 200ms ease;
+      font-size: 13px;
+      font-weight: 760;
+      line-height: 1.5;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .hero { grid-template-columns: 1fr; }
+      .summary-strip { max-width: 620px; }
+      .workspace { grid-template-columns: 1fr; }
+      .issue-card { min-height: 0; }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        background:
+          linear-gradient(180deg, rgba(236, 231, 220, 0.94), rgba(236, 231, 220, 0.78)),
+          url("../../assets/plugin-outputs-background-v1.png") center top / cover fixed no-repeat;
+      }
+      .page { padding: 10px 7px 18px; }
+      .topbar {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .ghost-button,
+      .status-pill {
+        width: 100%;
+        justify-content: center;
+      }
+      .crumb {
+        order: -1;
+        font-size: 11px;
+      }
+      .hero {
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      h1 { font-size: 37px; }
+      .hero p { font-size: 13px; }
+      .summary-strip {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .panel-head {
+        display: grid;
+        padding: 18px 14px 14px;
+      }
+      .mode-badge {
+        width: 100%;
+        flex-basis: auto;
+      }
+      .stage-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 0 14px 14px;
+      }
+      .workspace {
+        padding: 0 14px 16px;
+        gap: 14px;
+      }
+      .issue-head,
+      .tabbar,
+      .issue-scroll {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .issue-head-row,
+      .field-grid,
+      .guard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .tabbar { grid-template-columns: 1fr; }
+      .route-line {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+      .action-bar {
+        display: grid;
+        padding: 14px;
+      }
+      .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .action-button { width: 100%; }
+      .toast {
+        right: 12px;
+        bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" aria-labelledby="pageTitle">
+    <div class="topbar">
+      <button class="ghost-button" type="button">返回成果审阅</button>
+      <div class="crumb">主页 / 工作台 / 插件输出 / 输出问题处理</div>
+      <div class="status-pill"><span class="dot" id="topDot"></span><span id="topStatus">存在阻塞问题</span></div>
+    </div>
+
+    <section class="hero">
+      <div>
+        <h1 id="pageTitle">输出问题处理</h1>
+        <p>当插件成果缺失、运行失败、检查点未处理或安全报告出现违规时，用户会进入这里。页面负责定位问题和引导回正确节点，不直接改写故事内容。</p>
+      </div>
+      <div class="summary-strip" aria-label="插件输出问题摘要">
+        <div class="summary-card"><span>当前插件</span><strong>剧本锻造</strong></div>
+        <div class="summary-card"><span>运行状态</span><strong id="runStatus">blocked</strong></div>
+        <div class="summary-card"><span>问题数量</span><strong id="issueTotal">4</strong></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="panelTitle">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">PLUGIN OUTPUT ISSUE</div>
+          <h2 id="panelTitle">处理插件输出问题</h2>
+          <p>先确认问题来源，再进入对应处理节点。安全违规优先级最高，不能把受影响成果当作可交付结果使用。</p>
+        </div>
+        <div class="mode-badge">
+          <span>当前问题</span>
+          <strong id="modeBadge">安全违规</strong>
+        </div>
+      </div>
+
+      <div class="stage-strip" aria-label="插件输出流程">
+        <div class="stage-item done"><span>01</span><strong>成果入口</strong></div>
+        <div class="stage-item done"><span>02</span><strong>插件选择</strong></div>
+        <div class="stage-item done"><span>03</span><strong>运行中</strong></div>
+        <div class="stage-item done"><span>04</span><strong>检查点</strong></div>
+        <div class="stage-item done"><span>05</span><strong>成果审阅</strong></div>
+        <div class="stage-item current"><span>06</span><strong>问题处理</strong></div>
+      </div>
+
+      <div class="workspace">
+        <aside class="stack" aria-labelledby="issueListTitle">
+          <div>
+            <div class="eyebrow">ISSUES</div>
+            <h3 id="issueListTitle">问题清单</h3>
+            <p>单击切换问题。每个问题会给出不同的回退节点。</p>
+          </div>
+          <div class="issue-list" id="issueList"></div>
+        </aside>
+
+        <section class="issue-card" aria-labelledby="issueTitle">
+          <div class="issue-head">
+            <div class="issue-head-row">
+              <div>
+                <div class="eyebrow" id="issueType">SAFETY VIOLATION</div>
+                <h3 id="issueTitle">安全报告出现违规</h3>
+                <p id="issueCopy">安全报告显示插件产物存在不可展示内容风险。受影响成果不能作为可交付结果使用。</p>
+              </div>
+              <span class="tag" id="issueSeverity">阻塞</span>
+            </div>
+          </div>
+
+          <div class="tabbar" role="tablist" aria-label="问题处理视图">
+            <button class="tab-button active" type="button" data-tab="summary">问题摘要</button>
+            <button class="tab-button" type="button" data-tab="path">处理路径</button>
+            <button class="tab-button" type="button" data-tab="record">记录信息</button>
+          </div>
+
+          <div class="issue-scroll">
+            <article class="issue-section" id="issuePanel"></article>
+            <div class="note-card">
+              <div class="eyebrow">SAFE USER NOTE</div>
+              <h3>处理备注</h3>
+              <p>这里的备注只作为安全说明或重新运行说明传入，不会写入故事正文。</p>
+              <textarea id="safeNote" placeholder="例如：重新运行时只生成目录索引，不要重新生成正文。"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <aside class="stack" aria-labelledby="impactTitle">
+          <div class="side-card">
+            <div class="eyebrow">IMPACT</div>
+            <h3 id="impactTitle">影响范围</h3>
+            <p id="impactCopy">受影响成果已从可交付结果中隔离。源故事和最终故事包没有被修改。</p>
+            <div class="guard-grid">
+              <div class="guard"><span>源故事写入</span><strong>禁止</strong></div>
+              <div class="guard"><span>最终快照</span><strong>保持只读</strong></div>
+              <div class="guard"><span>成果使用</span><strong id="artifactUse">暂停</strong></div>
+              <div class="guard"><span>下一节点</span><strong id="nextNode">02 插件选择</strong></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <div class="eyebrow">RUN DETAIL</div>
+            <h3>运行详情</h3>
+            <div class="field-grid">
+              <div class="field"><span>plugin_run_id</span><strong>run_0427</strong></div>
+              <div class="field"><span>plugin_id</span><strong>script_forging</strong></div>
+              <div class="field"><span>快照</span><strong>正式成稿快照</strong></div>
+              <div class="field"><span>错误数</span><strong id="errorCount">1</strong></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <div class="eyebrow">NEXT</div>
+            <h3>下一步</h3>
+            <p id="nextCopy">返回插件选择，调整插件或输入边界后重新创建运行。</p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="action-bar">
+        <p class="action-note" id="actionNote">当前问题为阻塞级别。处理前不要使用受影响成果。</p>
+        <div class="action-buttons">
+          <button class="action-button secondary" id="refreshButton" type="button">刷新状态</button>
+          <button class="action-button secondary" id="backButton" type="button">返回成果审阅</button>
+          <button class="action-button primary" id="primaryButton" type="button">返回插件选择</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const issues = [
+      {
+        id: "issue_safety_violation",
+        type: "SAFETY VIOLATION",
+        title: "安全报告出现违规",
+        severity: "阻塞",
+        status: "blocked",
+        short: "不可展示内容风险",
+        copy: "安全报告显示插件产物存在不可展示内容风险。受影响成果不能作为可交付结果使用。",
+        impact: "受影响成果已从可交付结果中隔离。源故事和最终故事包没有被修改。",
+        use: "暂停",
+        next: "02 插件选择",
+        nextCopy: "返回插件选择，调整插件或输入边界后重新创建运行。",
+        action: "返回插件选择",
+        back: "返回成果审阅",
+        errorCount: "1",
+        summary: [
+          ["问题", "安全报告包含违规项，成果不能进入下载或归档。"],
+          ["来源", "PluginRunSafetyReport.violations 非空。"],
+          ["影响", "只影响本次插件派生成果，不影响源故事和最终故事包。"]
+        ],
+        path: [
+          ["停止使用", "暂停打开成果包和下载归档。"],
+          ["回退节点", "返回 02 插件选择，改用更安全的插件或调整输入边界。"],
+          ["重新运行", "使用同一 final_story_package_snapshot_id 创建新的插件运行。"]
+        ],
+        record: [
+          ["violation_code", "RAW_RESPONSE_VISIBLE_RISK"],
+          ["artifact_id", "artifact_safety_report"],
+          ["run_status", "blocked"]
+        ]
+      },
+      {
+        id: "issue_missing_artifact",
+        type: "MISSING ARTIFACT",
+        title: "成果文件缺失",
+        severity: "需修复",
+        status: "completed_with_warnings",
+        short: "目录索引未生成",
+        copy: "插件运行完成但部分成果缺失，当前成果包无法作为完整交付。",
+        impact: "正文和附录可审阅，但缺失目录索引会影响下载和归档体验。",
+        use: "部分可用",
+        next: "03 运行中",
+        nextCopy: "重新创建运行或重新生成缺失成果，完成后回到 05 成果审阅。",
+        action: "重新运行插件",
+        back: "返回成果审阅",
+        errorCount: "0",
+        summary: [
+          ["问题", "artifact_outline_index 缺失或状态不是 confirmed。"],
+          ["来源", "getPluginRunArtifacts 返回的 output_artifact_ids 不完整。"],
+          ["影响", "正文可读，但目录跳转和下载索引不可用。"]
+        ],
+        path: [
+          ["检查成果", "重新拉取 getPluginRunArtifacts 确认是否是刷新延迟。"],
+          ["重新运行", "使用 createPluginRun 重新生成缺失产物。"],
+          ["完成后", "运行完成后回到 05 成果审阅。"]
+        ],
+        record: [
+          ["missing_artifact", "artifact_outline_index"],
+          ["expected_status", "confirmed"],
+          ["observed_status", "missing"]
+        ]
+      },
+      {
+        id: "issue_pending_checkpoint",
+        type: "PENDING CHECKPOINT",
+        title: "检查点未处理",
+        severity: "待确认",
+        status: "waiting_for_checkpoint",
+        short: "归档说明仍待确认",
+        copy: "插件运行仍停在检查点，成果不能直接进入最终审阅。",
+        impact: "成果内容尚未得到用户确认。必须先处理检查点，再继续审阅成果。",
+        use: "等待确认",
+        next: "04 检查点",
+        nextCopy: "返回 04 检查点处理，确认、修订、拒绝或延后该检查点。",
+        action: "返回检查点",
+        back: "返回运行页",
+        errorCount: "0",
+        summary: [
+          ["问题", "PluginCheckpoint.status 仍为 pending。"],
+          ["来源", "getPluginRunCheckpoints 返回待处理检查点。"],
+          ["影响", "对应产物仍处于 checkpoint_pending。"]
+        ],
+        path: [
+          ["进入检查点", "回到 04 检查点处理。"],
+          ["用户决策", "确认后进入 05，修订后回到 03，拒绝后停留问题处理。"],
+          ["状态更新", "重新拉取 getPluginRun 和 getPluginRunArtifacts。"]
+        ],
+        record: [
+          ["checkpoint_id", "cp_0427_archive"],
+          ["checkpoint_status", "pending"],
+          ["artifact_status", "checkpoint_pending"]
+        ]
+      },
+      {
+        id: "issue_format_warning",
+        type: "FORMAT WARNING",
+        title: "导出格式警告",
+        severity: "警告",
+        status: "completed_with_warnings",
+        short: "PDF 目录锚点错位",
+        copy: "成果内容可审阅，但导出格式存在显示问题。用户可以返回审阅或重新生成导出文件。",
+        impact: "故事内容本身不受影响，问题只影响派生文件的阅读和下载体验。",
+        use: "可审阅",
+        next: "05 成果审阅",
+        nextCopy: "返回 05 成果审阅，检查文件信息或重新打开成果包。",
+        action: "返回成果审阅",
+        back: "返回成果审阅",
+        errorCount: "0",
+        summary: [
+          ["问题", "PDF 目录锚点与章节标题位置不一致。"],
+          ["来源", "artifact warnings 包含 FORMAT_ANCHOR_OFFSET。"],
+          ["影响", "不影响正文内容和故事事实。"]
+        ],
+        path: [
+          ["先审阅", "返回 05 检查 Markdown 或文本成果是否正常。"],
+          ["重新导出", "如果后端支持，重新生成导出格式。"],
+          ["保留警告", "若只是轻微格式问题，可保留为导出说明。"]
+        ],
+        record: [
+          ["warning_code", "FORMAT_ANCHOR_OFFSET"],
+          ["artifact_id", "artifact_manuscript_package"],
+          ["severity", "warning"]
+        ]
+      }
+    ];
+
+    const issueList = document.querySelector("#issueList");
+    const issueType = document.querySelector("#issueType");
+    const issueTitle = document.querySelector("#issueTitle");
+    const issueCopy = document.querySelector("#issueCopy");
+    const issueSeverity = document.querySelector("#issueSeverity");
+    const issuePanel = document.querySelector("#issuePanel");
+    const modeBadge = document.querySelector("#modeBadge");
+    const runStatus = document.querySelector("#runStatus");
+    const impactCopy = document.querySelector("#impactCopy");
+    const artifactUse = document.querySelector("#artifactUse");
+    const nextNode = document.querySelector("#nextNode");
+    const nextCopy = document.querySelector("#nextCopy");
+    const actionNote = document.querySelector("#actionNote");
+    const primaryButton = document.querySelector("#primaryButton");
+    const backButton = document.querySelector("#backButton");
+    const topStatus = document.querySelector("#topStatus");
+    const topDot = document.querySelector("#topDot");
+    const errorCount = document.querySelector("#errorCount");
+    const toast = document.querySelector("#toast");
+    const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
+    let selectedIndex = 0;
+    let selectedTab = "summary";
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function tagClass(severity) {
+      if (severity === "警告" || severity === "待确认") return "tag warn";
+      if (severity === "需修复") return "tag warn";
+      return "tag";
+    }
+
+    function renderList() {
+      issueList.innerHTML = issues.map((item, index) => `
+        <button class="issue-button ${index === selectedIndex ? "active" : ""}" type="button" data-index="${index}">
+          <header>
+            <strong>${item.title}</strong>
+            <span class="${tagClass(item.severity)}">${item.severity}</span>
+          </header>
+          <small>${item.short}</small>
+        </button>
+      `).join("");
+      issueList.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedIndex = Number(button.dataset.index);
+          selectedTab = "summary";
+          render();
+          showToast("已切换问题。");
+        });
+      });
+    }
+
+    function renderBlocks(title, rows) {
+      return `
+        <div class="eyebrow">${title}</div>
+        <h3>${issues[selectedIndex].title}</h3>
+        <div class="issue-blocks">
+          ${rows.map(([label, value]) => `
+            <section class="${title === "PROCESS PATH" ? "route-line" : "path-card"}">
+              ${title === "PROCESS PATH"
+                ? `<span>${label}</span><strong>${value}</strong>`
+                : `<h4>${label}</h4><p>${value}</p>`}
+            </section>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function render() {
+      const item = issues[selectedIndex];
+      issueType.textContent = item.type;
+      issueTitle.textContent = item.title;
+      issueCopy.textContent = item.copy;
+      issueSeverity.textContent = item.severity;
+      issueSeverity.className = tagClass(item.severity);
+      modeBadge.textContent = item.severity;
+      runStatus.textContent = item.status;
+      impactCopy.textContent = item.impact;
+      artifactUse.textContent = item.use;
+      nextNode.textContent = item.next;
+      nextCopy.textContent = item.nextCopy;
+      actionNote.textContent = item.severity === "阻塞" ? "当前问题为阻塞级别。处理前不要使用受影响成果。" : `当前问题建议进入：${item.next}。`;
+      primaryButton.textContent = item.action;
+      backButton.textContent = item.back;
+      topStatus.textContent = item.severity === "阻塞" ? "存在阻塞问题" : "存在待处理问题";
+      topDot.className = item.severity === "阻塞" ? "dot" : "dot warn";
+      errorCount.textContent = item.errorCount;
+      tabButtons.forEach((button) => button.classList.toggle("active", button.dataset.tab === selectedTab));
+      issuePanel.innerHTML = selectedTab === "summary"
+        ? renderBlocks("ISSUE SUMMARY", item.summary)
+        : selectedTab === "path"
+          ? renderBlocks("PROCESS PATH", item.path)
+          : renderBlocks("ISSUE RECORD", item.record);
+      renderList();
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedTab = button.dataset.tab;
+        render();
+      });
+    });
+
+    document.querySelector("#refreshButton").addEventListener("click", () => {
+      showToast("问题状态已刷新。");
+      actionNote.textContent = `最近一次刷新：${issues[selectedIndex].title} 仍需处理。`;
+    });
+
+    backButton.addEventListener("click", () => {
+      showToast(`将${backButton.textContent}。`);
+      actionNote.textContent = `下一步：${backButton.textContent}。`;
+    });
+
+    primaryButton.addEventListener("click", () => {
+      showToast(`将${primaryButton.textContent}。`);
+      actionNote.textContent = `下一步：${primaryButton.textContent}。`;
+    });
+    document.querySelector(".topbar .ghost-button").addEventListener("click", () => {
+      showToast("将返回 05 插件成果审阅。");
+      actionNote.textContent = "下一步：返回插件成果审阅。";
+    });
+
+    render();
+  </script>
+</body>
+</html>

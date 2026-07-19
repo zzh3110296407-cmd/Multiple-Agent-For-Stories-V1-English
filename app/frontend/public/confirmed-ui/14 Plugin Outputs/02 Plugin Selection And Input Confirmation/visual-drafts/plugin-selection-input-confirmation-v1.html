@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>插件输出 / 插件选择与输入确认 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 252, 244, 0.88);
+      --paper-soft: rgba(255, 252, 244, 0.5);
+      --ink: #302f2a;
+      --muted: #6f665d;
+      --quiet: #968a7d;
+      --line: rgba(105, 82, 58, 0.16);
+      --line-strong: rgba(105, 82, 58, 0.32);
+      --brass: #b4956f;
+      --clay: #b48a78;
+      --sage: #737d69;
+      --sage-deep: #56614f;
+      --blue: #6f8182;
+      --danger: #98665e;
+      --shadow: 0 26px 72px rgba(71, 52, 31, 0.18);
+      --soft-shadow: 0 14px 34px rgba(71, 52, 31, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      letter-spacing: 0;
+    }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.52), rgba(236, 231, 220, 0.38) 45%, rgba(236, 231, 220, 0.08)),
+        url("../../assets/plugin-outputs-background-v1.png") center / cover no-repeat;
+    }
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(255, 249, 232, 0.44), transparent 32%),
+        radial-gradient(circle at 78% 25%, rgba(180, 149, 111, 0.12), transparent 34%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.18), rgba(121, 94, 65, 0.08));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1380px, calc(100vw - 72px));
+      min-height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 236px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .button,
+    .plugin-card,
+    .snapshot-card,
+    .chip,
+    .tab-button {
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 12px 28px rgba(71, 52, 31, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease;
+    }
+    .button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .button:hover,
+    .plugin-card:hover,
+    .snapshot-card:hover,
+    .chip:hover,
+    .tab-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.78);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 34px rgba(71, 52, 31, 0.12);
+    }
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+    }
+    .primary {
+      min-width: 172px;
+      border-color: rgba(86, 97, 79, 0.48);
+      color: #fffaf0;
+      background: linear-gradient(135deg, var(--sage-deep), #765f48);
+      box-shadow: 0 18px 40px rgba(67, 65, 49, 0.22);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #63705c, #80684e);
+      box-shadow: 0 22px 48px rgba(67, 65, 49, 0.26);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.52);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+      backdrop-filter: blur(10px);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brass);
+      box-shadow: 0 0 0 5px rgba(180, 149, 111, 0.16);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #30322d;
+      font-size: clamp(40px, 4vw, 56px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(48, 47, 42, 0.7);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.58);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+    .summary-item,
+    .mini-stat,
+    .schema-card,
+    .risk-item,
+    .validation-card {
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(105, 82, 58, 0.11);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .summary-item span,
+    .mini-stat span,
+    .schema-card span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .summary-item strong,
+    .mini-stat strong,
+    .schema-card strong {
+      display: block;
+      margin-top: 5px;
+      color: #383730;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 384px;
+      gap: 26px;
+      align-items: stretch;
+    }
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.68);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.9), rgba(238, 227, 208, 0.72));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px 16px;
+      border-bottom: 1px solid rgba(105, 82, 58, 0.12);
+    }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 860;
+      letter-spacing: 0;
+    }
+    h2, h3, h4 {
+      margin: 0;
+      color: #33332d;
+      letter-spacing: 0;
+    }
+    h2 { font-size: 27px; line-height: 1.2; font-weight: 900; }
+    h3 { font-size: 16px; line-height: 1.35; font-weight: 900; }
+    h4 { font-size: 14px; line-height: 1.36; font-weight: 900; }
+    p {
+      color: rgba(48, 47, 42, 0.64);
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 520;
+    }
+    .panel-head p { margin: 8px 0 0; }
+
+    .mode-badge {
+      align-self: start;
+      min-width: 150px;
+      padding: 10px 12px;
+      border: 1px solid rgba(180, 149, 111, 0.28);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.56);
+      text-align: center;
+    }
+    .mode-badge span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+    .mode-badge strong {
+      display: block;
+      margin-top: 5px;
+      color: #665642;
+      font-size: 15px;
+      font-weight: 920;
+    }
+
+    .stage-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 26px 18px;
+    }
+    .stage-item {
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid rgba(105, 82, 58, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.32);
+    }
+    .stage-item span,
+    .stage-item strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-item span {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 820;
+    }
+    .stage-item strong {
+      margin-top: 5px;
+      color: rgba(57, 56, 50, 0.58);
+      font-size: 12px;
+      font-weight: 860;
+    }
+    .stage-item.current {
+      border-color: rgba(86, 97, 79, 0.34);
+      background: rgba(115, 125, 105, 0.14);
+    }
+    .stage-item.current strong { color: #42483d; }
+
+    .content-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 276px minmax(0, 1fr);
+      gap: 18px;
+      padding: 0 26px 20px;
+      overflow: hidden;
+    }
+    .plugin-list,
+    .input-workspace,
+    .snapshot-list,
+    .schema-grid,
+    .risk-list {
+      min-height: 0;
+      display: grid;
+      gap: 10px;
+    }
+    .plugin-list {
+      align-content: start;
+      overflow: auto;
+      padding: 1px 3px 2px 1px;
+    }
+    .plugin-card,
+    .snapshot-card {
+      width: 100%;
+      min-width: 0;
+      padding: 14px;
+      text-align: left;
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .plugin-card.selected,
+    .snapshot-card.selected {
+      border-color: rgba(180, 149, 111, 0.52);
+      background: linear-gradient(135deg, rgba(255, 252, 244, 0.78), rgba(237, 226, 207, 0.6));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 18px 38px rgba(71, 52, 31, 0.13);
+    }
+    .plugin-card.disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+    .tag-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 9px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 23px;
+      max-width: 100%;
+      padding: 0 8px;
+      border-radius: var(--radius);
+      color: #6d5c4c;
+      background: rgba(180, 149, 111, 0.14);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tag.safe { color: #53615f; background: rgba(111, 129, 130, 0.16); }
+    .tag.pending { color: #7b6138; background: rgba(180, 149, 111, 0.18); }
+    .tag.warning { color: #775750; background: rgba(180, 138, 120, 0.18); }
+    .plugin-card p,
+    .snapshot-card p {
+      margin: 8px 0 0;
+      font-size: 12px;
+      line-height: 1.56;
+    }
+    .plugin-meta,
+    .snapshot-meta,
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .input-workspace {
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+    .section-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid rgba(105, 82, 58, 0.14);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .section-head p {
+      margin: 6px 0 0;
+      font-size: 12px;
+    }
+    .snapshot-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .schema-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .schema-card {
+      min-height: 68px;
+      background: rgba(255, 252, 244, 0.52);
+    }
+    .note-field {
+      width: 100%;
+      min-height: 112px;
+      resize: vertical;
+      border: 1px solid rgba(105, 82, 58, 0.2);
+      border-radius: var(--radius);
+      padding: 13px 14px;
+      color: #383730;
+      background: rgba(255, 252, 244, 0.62);
+      outline: none;
+      line-height: 1.62;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+    .note-field:focus {
+      border-color: rgba(86, 97, 79, 0.46);
+      box-shadow: 0 0 0 3px rgba(115, 125, 105, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 26px 24px;
+      border-top: 1px solid rgba(105, 82, 58, 0.12);
+      background: rgba(255, 252, 244, 0.24);
+    }
+    .action-note {
+      margin-right: auto;
+      color: rgba(48, 47, 42, 0.6);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+    .side-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .detail-card,
+    .risk-card,
+    .validation-card {
+      padding: 17px;
+      border: 1px solid rgba(105, 82, 58, 0.15);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+    }
+    .detail-card p,
+    .risk-card p,
+    .validation-card p {
+      margin: 8px 0 0;
+    }
+    .risk-list {
+      margin-top: 14px;
+    }
+    .risk-item {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      background: rgba(255, 252, 244, 0.44);
+    }
+    .mark {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fffaf0;
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1;
+      background: var(--sage);
+    }
+    .mark.pending { background: var(--brass); }
+    .mark.warning { background: var(--clay); }
+    .risk-item strong {
+      display: block;
+      color: #363530;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 880;
+    }
+    .risk-item small {
+      display: block;
+      margin-top: 3px;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.45;
+      font-weight: 660;
+    }
+    .validation-card {
+      min-height: 168px;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(111, 129, 130, 0.15), transparent 34%),
+        rgba(255, 252, 244, 0.48);
+    }
+    .validation-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: var(--radius);
+      color: #7b6138;
+      background: rgba(180, 149, 111, 0.16);
+      font-size: 11px;
+      font-weight: 880;
+    }
+    .validation-status.pass {
+      color: #53615f;
+      background: rgba(111, 129, 130, 0.16);
+    }
+    .validation-status.blocked {
+      color: #775750;
+      background: rgba(180, 138, 120, 0.18);
+    }
+    .validation-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .validation-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 32px;
+      padding: 7px 9px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.46);
+      color: #4a443c;
+      font-size: 12px;
+      font-weight: 760;
+    }
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-row::-webkit-scrollbar { display: none; }
+    .tab-button {
+      min-height: 34px;
+      padding: 0 13px;
+      color: #5c5348;
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+    .tab-button.active {
+      border-color: rgba(86, 97, 79, 0.42);
+      background: rgba(115, 125, 105, 0.16);
+      color: #454b3f;
+    }
+    .schema-preview {
+      min-height: 112px;
+      max-height: 154px;
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid rgba(105, 82, 58, 0.13);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+      overflow: auto;
+      color: rgba(48, 47, 42, 0.66);
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 540;
+    }
+    .toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 5;
+      min-width: 240px;
+      max-width: min(380px, calc(100vw - 56px));
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 252, 244, 0.72);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: var(--shadow);
+      color: #3b3933;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 760;
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(16px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        width: min(100% - 36px, 980px);
+        margin: 22px auto;
+      }
+      .hero,
+      .layout,
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero { padding-left: 0; }
+      .summary-strip { max-width: 540px; }
+      .plugin-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 760px) {
+      .workspace {
+        width: min(100% - 24px, 640px);
+        min-height: auto;
+        margin: 14px auto 22px;
+        gap: 14px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .button,
+      .status-pill,
+      .mode-badge {
+        width: 100%;
+      }
+      .crumb { white-space: normal; }
+      h1 { font-size: 40px; }
+      .summary-strip,
+      .plugin-list,
+      .snapshot-list,
+      .schema-grid,
+      .plugin-meta,
+      .snapshot-meta,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+      .stage-strip {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .stage-strip::-webkit-scrollbar { display: none; }
+      .stage-item { flex: 0 0 142px; }
+      .panel-head,
+      .section-head,
+      .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .panel-head,
+      .stage-strip,
+      .content-grid,
+      .action-bar,
+      .side-panel {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .action-note { margin-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <main class="workspace">
+    <header class="topbar">
+      <button class="button" type="button" aria-label="返回插件成果入口">返回成果</button>
+      <div class="crumb">主页 / 工作台 / 插件输出 / 插件选择与输入确认</div>
+      <div class="status-pill"><span class="dot" aria-hidden="true"></span><span id="topStatus">等待输入校验</span></div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <h1 id="pageTitle">启动插件</h1>
+        <p>在插件运行前确认它读取哪一个受控快照、可以生成哪些派生成果，以及是否满足安全边界。通过输入校验后，才会创建插件运行并进入运行中页面。</p>
+      </div>
+      <div class="summary-strip" aria-label="插件启动摘要">
+        <div class="summary-item"><span>当前插件</span><strong id="summaryPlugin">剧本锻造</strong></div>
+        <div class="summary-item"><span>输入快照</span><strong id="summarySnapshot">正式成稿快照</strong></div>
+        <div class="summary-item"><span>校验状态</span><strong id="summaryValidation">未校验</strong></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <section class="main-panel" aria-labelledby="entryTitle">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">PRE-RUN GATE</p>
+            <h2 id="entryTitle">插件选择 / 输入确认</h2>
+            <p>该页只创建运行前的安全门禁：选择插件、选择快照、填写安全备注、校验输入。它不展示原始 payload，也不生成成果。</p>
+          </div>
+          <div class="mode-badge" aria-live="polite">
+            <span>当前门禁</span>
+            <strong id="gateLabel">待校验</strong>
+          </div>
+        </div>
+
+        <div class="stage-strip" role="list" aria-label="插件输出阶段">
+          <div class="stage-item" role="listitem"><span>01</span><strong>成果入口</strong></div>
+          <div class="stage-item current" role="listitem" aria-current="step"><span>02</span><strong>插件选择</strong></div>
+          <div class="stage-item" role="listitem"><span>03</span><strong>运行中</strong></div>
+          <div class="stage-item" role="listitem"><span>04</span><strong>检查点</strong></div>
+          <div class="stage-item" role="listitem"><span>05</span><strong>成果审阅</strong></div>
+          <div class="stage-item" role="listitem"><span>06</span><strong>问题处理</strong></div>
+        </div>
+
+        <div class="content-grid">
+          <section class="plugin-list" aria-labelledby="pluginTitle">
+            <div>
+              <p class="eyebrow">PLUGIN</p>
+              <h3 id="pluginTitle">选择插件</h3>
+            </div>
+            <button class="plugin-card selected" type="button" data-plugin="script">
+              <span class="tag-row"><span class="tag safe">可运行</span><span class="tag">剧本派生</span></span>
+              <h4>剧本锻造</h4>
+              <p>把最终故事包转化为剧本结构、分镜、镜头清单和制作资产包。</p>
+              <span class="plugin-meta">
+                <span class="mini-stat"><span>输入</span><strong>最终故事包</strong></span>
+                <span class="mini-stat"><span>检查点</span><strong>需要</strong></span>
+              </span>
+            </button>
+            <button class="plugin-card disabled" type="button" data-plugin="visual">
+              <span class="tag-row"><span class="tag pending">预留</span><span class="tag">视觉资产</span></span>
+              <h4>视觉资产整理</h4>
+              <p>后续用于整理角色、地点和道具的制作参考，目前不创建真实运行。</p>
+              <span class="plugin-meta">
+                <span class="mini-stat"><span>输入</span><strong>资产摘要</strong></span>
+                <span class="mini-stat"><span>状态</span><strong>未开放</strong></span>
+              </span>
+            </button>
+            <button class="plugin-card disabled" type="button" data-plugin="audio">
+              <span class="tag-row"><span class="tag pending">预留</span><span class="tag">音频方向</span></span>
+              <h4>声音氛围包</h4>
+              <p>后续用于整理章节情绪、环境声和主题动机，目前不创建真实运行。</p>
+              <span class="plugin-meta">
+                <span class="mini-stat"><span>输入</span><strong>章节摘要</strong></span>
+                <span class="mini-stat"><span>状态</span><strong>未开放</strong></span>
+              </span>
+            </button>
+          </section>
+
+          <section class="input-workspace" aria-labelledby="inputTitle">
+            <div class="section-card">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">SOURCE SNAPSHOT</p>
+                  <h3 id="inputTitle">选择输入快照</h3>
+                  <p>插件只读取已确认快照。未确认草稿、调试证据和原始插件产物不会进入输入。</p>
+                </div>
+                <span class="tag safe" id="snapshotStatus">边界通过</span>
+              </div>
+              <div class="snapshot-list">
+                <button class="snapshot-card selected" type="button" data-snapshot="final">
+                  <span class="tag-row"><span class="tag safe">推荐</span><span class="tag">正式</span></span>
+                  <h4>正式成稿快照</h4>
+                  <p>来自 13 最终输出的真实项目最终故事包，可作为插件输入边界。</p>
+                  <span class="snapshot-meta">
+                    <span class="mini-stat"><span>内容</span><strong>12章 / 60幕</strong></span>
+                    <span class="mini-stat"><span>状态</span><strong>可读取</strong></span>
+                  </span>
+                </button>
+                <button class="snapshot-card" type="button" data-snapshot="archive">
+                  <span class="tag-row"><span class="tag">归档</span><span class="tag">只读</span></span>
+                  <h4>上次归档快照</h4>
+                  <p>用于复现旧版本插件成果，不建议作为新运行的默认输入。</p>
+                  <span class="snapshot-meta">
+                    <span class="mini-stat"><span>内容</span><strong>10章 / 48幕</strong></span>
+                    <span class="mini-stat"><span>状态</span><strong>可读取</strong></span>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">INPUT CONTRACT</p>
+                  <h3>输入边界</h3>
+                  <p>当前后端只接受快照 ID 和安全备注；下列内容来自快照本身，入口页仅确认，不逐项编辑。</p>
+                </div>
+                <span class="tag safe">只读确认</span>
+              </div>
+              <div class="schema-grid">
+                <div class="schema-card"><span>完整正文</span><strong>已包含</strong></div>
+                <div class="schema-card"><span>角色表</span><strong>已包含</strong></div>
+                <div class="schema-card"><span>世界摘要</span><strong>已包含</strong></div>
+                <div class="schema-card"><span>事件线</span><strong>已包含</strong></div>
+                <div class="schema-card"><span>锁定约束</span><strong>已包含</strong></div>
+                <div class="schema-card"><span>原始 payload</span><strong>不暴露</strong></div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">SAFE USER NOTE</p>
+                  <h3>安全备注</h3>
+                  <p>备注会随校验和运行请求提交，用于说明这次插件运行的目的，不作为故事事实。</p>
+                </div>
+                <span class="tag">可编辑</span>
+              </div>
+              <textarea class="note-field" id="safeNote" aria-label="安全备注">为当前正式成稿创建剧本改编所需的结构提示、分镜方向和制作清单；不得改写原故事事实。</textarea>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-bar">
+          <div class="action-note" id="actionNote">先执行输入校验。校验通过后才能创建插件运行。</div>
+          <button class="button" type="button" id="validateButton">校验输入</button>
+          <button class="button primary" type="button" id="startButton" disabled>创建插件运行</button>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="插件风险与校验">
+        <div class="detail-card" aria-live="polite">
+          <p class="eyebrow">SELECTED PLUGIN</p>
+          <span class="tag safe" id="detailState">可创建运行</span>
+          <h3 id="detailTitle">剧本锻造</h3>
+          <p id="detailCopy">读取最终故事包快照，生成剧本结构、改编提示、分镜和制作资产。成果始终是派生输出，不写回源故事。</p>
+          <div class="mini-grid">
+            <div class="mini-stat"><span>真实 ID</span><strong>script_forging</strong></div>
+            <div class="mini-stat"><span>输入模式</span><strong>快照</strong></div>
+            <div class="mini-stat"><span>运行状态</span><strong id="runMode">未创建</strong></div>
+            <div class="mini-stat"><span>检查点</span><strong>必需</strong></div>
+          </div>
+        </div>
+
+        <div class="risk-card">
+          <p class="eyebrow">RISK DECLARATION</p>
+          <h3>风险声明</h3>
+          <div class="risk-list">
+            <div class="risk-item"><span class="mark">A</span><div><strong>不写回正文</strong><small>插件运行不得修改最终故事包或源故事事实。</small></div></div>
+            <div class="risk-item"><span class="mark">B</span><div><strong>只读快照输入</strong><small>插件读取的是确认后的快照，不读取未确认草稿。</small></div></div>
+            <div class="risk-item"><span class="mark pending">C</span><div><strong>检查点确认</strong><small>关键产物必须进入后续检查点处理。</small></div></div>
+            <div class="risk-item"><span class="mark warning">D</span><div><strong>派生内容需复核</strong><small>剧本化表达可能改变呈现方式，需要用户审阅。</small></div></div>
+          </div>
+        </div>
+
+        <div class="validation-card">
+          <p class="eyebrow">VALIDATION</p>
+          <span class="validation-status" id="validationStatus">未校验</span>
+          <h3 style="margin-top: 10px;">输入校验</h3>
+          <p id="validationCopy">校验会确认插件可用、快照可读取、安全备注存在、运行时边界未被破坏。</p>
+          <div class="validation-list" id="validationList">
+            <div class="validation-row"><span>插件清单</span><strong>待校验</strong></div>
+            <div class="validation-row"><span>输入快照</span><strong>待校验</strong></div>
+            <div class="validation-row"><span>安全备注</span><strong>待校验</strong></div>
+          </div>
+          <div class="tab-row" role="group" aria-label="输入说明切换">
+            <button class="tab-button active" type="button" data-tab="summary">摘要</button>
+            <button class="tab-button" type="button" data-tab="schema">契约</button>
+            <button class="tab-button" type="button" data-tab="blocked">阻塞</button>
+          </div>
+          <div class="schema-preview" id="schemaPreview">当前将提交：plugin_id = script_forging，snapshot_id = 正式成稿快照，persist_validation_report = true，safe_user_note = 用户安全备注。</div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const plugins = {
+      script: {
+        title: "剧本锻造",
+        summary: "剧本锻造",
+        copy: "读取最终故事包快照，生成剧本结构、改编提示、分镜和制作资产。成果始终是派生输出，不写回源故事。",
+        id: "script_forging",
+        runnable: true
+      },
+      visual: {
+        title: "视觉资产整理",
+        summary: "视觉整理",
+        copy: "后续用于整理角色、地点和道具的制作参考，目前不创建真实运行。",
+        id: "visual_asset_pack",
+        runnable: false
+      },
+      audio: {
+        title: "声音氛围包",
+        summary: "声音氛围",
+        copy: "后续用于整理章节情绪、环境声和主题动机，目前不创建真实运行。",
+        id: "audio_mood_pack",
+        runnable: false
+      }
+    };
+    const snapshots = {
+      final: { title: "正式成稿快照", status: "边界通过", readable: true, summary: "正式成稿快照" },
+      archive: { title: "上次归档快照", status: "只读归档", readable: true, summary: "归档快照" }
+    };
+    const tabText = {
+      summary: "当前将提交：plugin_id = script_forging，snapshot_id = 正式成稿快照，persist_validation_report = true，safe_user_note = 用户安全备注。",
+      schema: "后端 validatePluginInput 只接收 snapshot_id、persist_validation_report、safe_user_note。createPluginRun 只接收 snapshot_id、safe_user_note。",
+      blocked: "阻塞条件：插件不可运行、快照不存在、快照不是受控输入、备注为空、风险声明未通过。"
+    };
+
+    const toast = document.querySelector("#toast");
+    const topStatus = document.querySelector("#topStatus");
+    const gateLabel = document.querySelector("#gateLabel");
+    const summaryPlugin = document.querySelector("#summaryPlugin");
+    const summarySnapshot = document.querySelector("#summarySnapshot");
+    const summaryValidation = document.querySelector("#summaryValidation");
+    const actionNote = document.querySelector("#actionNote");
+    const validationStatus = document.querySelector("#validationStatus");
+    const validationCopy = document.querySelector("#validationCopy");
+    const validationList = document.querySelector("#validationList");
+    const schemaPreview = document.querySelector("#schemaPreview");
+    const startButton = document.querySelector("#startButton");
+    const validateButton = document.querySelector("#validateButton");
+    const runMode = document.querySelector("#runMode");
+    const detailTitle = document.querySelector("#detailTitle");
+    const detailCopy = document.querySelector("#detailCopy");
+    const detailState = document.querySelector("#detailState");
+    const snapshotStatus = document.querySelector("#snapshotStatus");
+    const safeNote = document.querySelector("#safeNote");
+    let selectedPlugin = "script";
+    let selectedSnapshot = "final";
+    let validationPassed = false;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+    function resetValidation() {
+      validationPassed = false;
+      startButton.disabled = true;
+      topStatus.textContent = "等待输入校验";
+      gateLabel.textContent = "待校验";
+      summaryValidation.textContent = "未校验";
+      validationStatus.textContent = "未校验";
+      validationStatus.className = "validation-status";
+      validationCopy.textContent = "校验会确认插件可用、快照可读取、安全备注存在、运行时边界未被破坏。";
+      validationList.innerHTML = `
+        <div class="validation-row"><span>插件清单</span><strong>待校验</strong></div>
+        <div class="validation-row"><span>输入快照</span><strong>待校验</strong></div>
+        <div class="validation-row"><span>安全备注</span><strong>待校验</strong></div>
+      `;
+      actionNote.textContent = "先执行输入校验。校验通过后才能创建插件运行。";
+    }
+    function syncSelection() {
+      const plugin = plugins[selectedPlugin];
+      const snapshot = snapshots[selectedSnapshot];
+      document.querySelectorAll(".plugin-card").forEach((item) => item.classList.toggle("selected", item.dataset.plugin === selectedPlugin));
+      document.querySelectorAll(".snapshot-card").forEach((item) => item.classList.toggle("selected", item.dataset.snapshot === selectedSnapshot));
+      summaryPlugin.textContent = plugin.summary;
+      summarySnapshot.textContent = snapshot.summary;
+      detailTitle.textContent = plugin.title;
+      detailCopy.textContent = plugin.copy;
+      detailState.textContent = plugin.runnable ? "可创建运行" : "暂未开放";
+      detailState.className = plugin.runnable ? "tag safe" : "tag pending";
+      snapshotStatus.textContent = snapshot.status;
+      resetValidation();
+    }
+    document.querySelectorAll(".plugin-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const plugin = plugins[card.dataset.plugin];
+        if (!plugin.runnable) {
+          showToast(`${plugin.title} 是预留插件，当前不能创建真实运行。`);
+        }
+        selectedPlugin = card.dataset.plugin;
+        syncSelection();
+      });
+    });
+    document.querySelectorAll(".snapshot-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        selectedSnapshot = card.dataset.snapshot;
+        syncSelection();
+      });
+    });
+    safeNote.addEventListener("input", resetValidation);
+
+    validateButton.addEventListener("click", () => {
+      const plugin = plugins[selectedPlugin];
+      if (!plugin.runnable) {
+        validationPassed = false;
+        validationStatus.textContent = "阻塞";
+        validationStatus.className = "validation-status blocked";
+        summaryValidation.textContent = "阻塞";
+        topStatus.textContent = "插件未开放";
+        gateLabel.textContent = "不可启动";
+        validationCopy.textContent = "当前选择的是预留插件，不能创建真实运行。";
+        validationList.innerHTML = `
+          <div class="validation-row"><span>插件清单</span><strong>阻塞</strong></div>
+          <div class="validation-row"><span>输入快照</span><strong>未执行</strong></div>
+          <div class="validation-row"><span>安全备注</span><strong>未执行</strong></div>
+        `;
+        startButton.disabled = true;
+        showToast("校验未通过：该插件暂未开放。");
+        return;
+      }
+      if (!safeNote.value.trim()) {
+        validationPassed = false;
+        validationStatus.textContent = "阻塞";
+        validationStatus.className = "validation-status blocked";
+        summaryValidation.textContent = "备注缺失";
+        validationCopy.textContent = "安全备注为空，不能创建插件运行。";
+        validationList.innerHTML = `
+          <div class="validation-row"><span>插件清单</span><strong>通过</strong></div>
+          <div class="validation-row"><span>输入快照</span><strong>通过</strong></div>
+          <div class="validation-row"><span>安全备注</span><strong>缺失</strong></div>
+        `;
+        startButton.disabled = true;
+        showToast("请填写安全备注。");
+        return;
+      }
+      validationPassed = true;
+      validationStatus.textContent = "通过";
+      validationStatus.className = "validation-status pass";
+      summaryValidation.textContent = "已通过";
+      topStatus.textContent = "可创建运行";
+      gateLabel.textContent = "可启动";
+      validationCopy.textContent = "输入校验通过：插件可用、快照可读取、安全备注存在，运行会进入受控插件流程。";
+      validationList.innerHTML = `
+        <div class="validation-row"><span>插件清单</span><strong>通过</strong></div>
+        <div class="validation-row"><span>输入快照</span><strong>通过</strong></div>
+        <div class="validation-row"><span>安全备注</span><strong>通过</strong></div>
+      `;
+      actionNote.textContent = "校验通过。现在可以创建插件运行并进入 03 运行中。";
+      startButton.disabled = false;
+      showToast("输入校验通过。");
+    });
+    startButton.addEventListener("click", () => {
+      if (!validationPassed) return;
+      runMode.textContent = "创建中";
+      topStatus.textContent = "正在创建运行";
+      actionNote.textContent = "插件运行已创建，下一步进入 03 运行中。";
+      showToast("将进入 03 插件运行中。");
+      window.setTimeout(() => {
+        runMode.textContent = "已创建";
+        topStatus.textContent = "运行已创建";
+      }, 700);
+    });
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab-button").forEach((item) => item.classList.toggle("active", item === button));
+        schemaPreview.textContent = tabText[button.dataset.tab];
+      });
+    });
+    document.querySelector(".topbar .button").addEventListener("click", () => {
+      showToast("将返回 01 插件成果入口。");
+      actionNote.textContent = "下一步：返回插件成果入口。";
+    });
+
+    syncSelection();
+  </script>
+</body>
+</html>

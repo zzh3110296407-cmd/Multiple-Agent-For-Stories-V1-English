@@ -1,0 +1,1449 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Framework 编排 V1</title>
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: #f7f1e6;
+      --paper-deep: #e9ddbf;
+      --paper-soft: #f2ead8;
+      --accent: #b48a78;
+      --accent-deep: #8f675c;
+      --copper: #776456;
+      --ink: #302c28;
+      --muted: #7b7068;
+      --safe: #5d7474;
+      --safe-deep: #4b6263;
+      --line: rgba(120, 95, 80, 0.18);
+      --white: rgba(255, 252, 244, 0.72);
+      --shadow: 0 26px 66px rgba(86, 64, 49, 0.16);
+      --soft-shadow: 0 12px 28px rgba(86, 64, 49, 0.11);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 12%, rgba(255, 250, 239, 0.76), transparent 31%),
+        radial-gradient(circle at 86% 80%, rgba(180, 138, 120, 0.13), transparent 34%),
+        linear-gradient(135deg, #ece7dc 0%, #eee8db 49%, #e7ddca 100%);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      opacity: 0.13;
+      pointer-events: none;
+      background-image:
+        linear-gradient(90deg, rgba(76, 56, 42, 0.045) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(76, 56, 42, 0.035) 1px, transparent 1px);
+      background-size: 38px 38px, 46px 46px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ambient svg {
+      position: absolute;
+      right: 118px;
+      top: 70px;
+      width: 830px;
+      height: 690px;
+      opacity: 0.16;
+      transform: rotate(-4deg);
+    }
+
+    .ambient::after {
+      content: "";
+      position: absolute;
+      left: 150px;
+      top: 168px;
+      width: 560px;
+      height: 560px;
+      opacity: 0.08;
+      border-radius: 50%;
+      border: 1px solid rgba(119, 100, 86, 0.42);
+      box-shadow:
+        inset 0 0 0 38px rgba(119, 100, 86, 0.08),
+        inset 0 0 0 88px rgba(119, 100, 86, 0.05),
+        inset 0 0 0 148px rgba(119, 100, 86, 0.035);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      padding: 36px 74px 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 42px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .back,
+    .theme {
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(247, 241, 230, 0.58);
+      color: #443c37;
+      font-size: 13px;
+      font-weight: 760;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    }
+
+    .back {
+      min-width: 118px;
+    }
+
+    .theme {
+      min-width: 176px;
+      display: grid;
+      place-items: center;
+    }
+
+    .crumb {
+      color: #83776e;
+      font-size: 13px;
+      font-weight: 560;
+    }
+
+    .headline {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      margin-top: 18px;
+      padding-left: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #2f2d29;
+      font-size: 50px;
+      line-height: 1.04;
+      letter-spacing: 0;
+      font-weight: 880;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: #756a62;
+      font-size: 15px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .state-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      color: #5c514a;
+      font-size: 13px;
+      font-weight: 780;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .state-pill span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(180, 138, 120, 0.14);
+    }
+
+    .workspace {
+      margin-top: 18px;
+      height: calc(100vh - 300px);
+      min-height: 600px;
+      display: grid;
+      grid-template-columns: 324px minmax(520px, 1fr) 322px;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .panel {
+      min-width: 0;
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.8), rgba(239, 228, 207, 0.6));
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .left-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      padding: 20px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .panel-title {
+      margin: 0;
+      color: #332f2a;
+      font-size: 23px;
+      line-height: 1.12;
+      font-weight: 860;
+    }
+
+    .panel-note {
+      margin: 9px 0 0;
+      color: #7c7169;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .badge {
+      min-width: 52px;
+      height: 31px;
+      padding: 0 12px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: #fffaf2;
+      background: var(--accent);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .source-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .source-tab {
+      height: 38px;
+      border: 1px solid rgba(130, 104, 86, 0.16);
+      border-radius: 10px;
+      background: rgba(255, 252, 244, 0.48);
+      color: #675c55;
+      font-size: 12px;
+      font-weight: 760;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .source-tab.active {
+      background: #fff9ed;
+      color: #352f2a;
+      box-shadow: 0 10px 20px rgba(86, 64, 49, 0.09);
+      transform: translateY(-1px);
+    }
+
+    .material-list {
+      display: grid;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .material-card {
+      display: grid;
+      grid-template-columns: 50px minmax(0, 1fr);
+      gap: 13px;
+      min-height: 92px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(130, 104, 86, 0.14);
+      background: rgba(255, 252, 244, 0.48);
+      text-align: left;
+      color: inherit;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+    }
+
+    .material-card.active {
+      background: linear-gradient(135deg, rgba(233, 221, 191, 0.66), rgba(255, 252, 244, 0.62));
+      border-color: rgba(180, 138, 120, 0.44);
+      transform: translateY(-1px);
+    }
+
+    .material-icon {
+      width: 46px;
+      height: 52px;
+      align-self: center;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 252, 244, 0.86), rgba(232, 220, 198, 0.6));
+      border: 1px solid rgba(130, 104, 86, 0.16);
+      position: relative;
+      box-shadow: 0 10px 18px rgba(80, 60, 44, 0.08);
+    }
+
+    .material-icon::before,
+    .material-icon::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      height: 1px;
+      background: rgba(128, 102, 84, 0.22);
+    }
+
+    .material-icon::before {
+      top: 20px;
+    }
+
+    .material-icon::after {
+      top: 31px;
+    }
+
+    .material-main strong {
+      display: block;
+      color: #312c28;
+      font-size: 14px;
+      line-height: 1.28;
+      font-weight: 840;
+    }
+
+    .material-main p {
+      display: -webkit-box;
+      margin: 6px 0 8px;
+      color: #776c64;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 520;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .tag {
+      min-height: 22px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(255, 252, 244, 0.72);
+      border: 1px solid rgba(130, 104, 86, 0.12);
+      color: #675b53;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .tag.safe {
+      color: #f8f1e4;
+      background: var(--safe);
+      border-color: transparent;
+    }
+
+    .selected-box {
+      margin-top: 12px;
+      padding: 11px;
+      border-radius: 12px;
+      border: 1px solid rgba(93, 116, 116, 0.18);
+      background: rgba(93, 116, 116, 0.08);
+    }
+
+    .selected-box strong {
+      display: block;
+      color: #3f5758;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    .selected-box p {
+      margin: 0;
+      color: #655b55;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .canvas-panel {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 18px 22px;
+    }
+
+    .canvas-panel::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 16px;
+      pointer-events: none;
+      opacity: 0.28;
+      background:
+        radial-gradient(circle at 50% 49%, transparent 0 76px, rgba(119, 100, 86, 0.12) 77px 78px, transparent 79px 146px, rgba(119, 100, 86, 0.1) 147px 148px, transparent 149px),
+        linear-gradient(90deg, transparent 49.8%, rgba(119, 100, 86, 0.14) 50%, transparent 50.2%),
+        linear-gradient(0deg, transparent 49.8%, rgba(119, 100, 86, 0.12) 50%, transparent 50.2%);
+    }
+
+    .canvas-head {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(120, 95, 80, 0.12);
+    }
+
+    .composition-title {
+      margin: 0;
+      color: #2f2b27;
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 870;
+    }
+
+    .composition-copy {
+      margin: 9px 0 0;
+      color: #776c64;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+      max-width: 540px;
+    }
+
+    .mode-switch {
+      display: grid;
+      grid-template-columns: repeat(3, 72px);
+      gap: 7px;
+      padding: 6px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.46);
+      border: 1px solid rgba(130, 104, 86, 0.12);
+      flex: none;
+    }
+
+    .mode-button {
+      height: 32px;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: #766b63;
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .mode-button.active {
+      background: var(--safe-deep);
+      color: #fff8ea;
+      box-shadow: 0 8px 16px rgba(75, 98, 99, 0.18);
+    }
+
+    .blueprint {
+      position: relative;
+      z-index: 2;
+      min-height: 0;
+      padding: 14px 0 12px;
+      overflow: hidden;
+    }
+
+    .blueprint-view {
+      position: absolute;
+      inset: 14px 0 12px;
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      transition: opacity 300ms ease, transform 360ms cubic-bezier(.2, .86, .26, 1);
+      pointer-events: auto;
+    }
+
+    .blueprint-view.hidden {
+      opacity: 0;
+      transform: translateX(-34px) scale(0.985);
+      pointer-events: none;
+    }
+
+    .blueprint-view.detail-view {
+      transform: translateX(34px) scale(0.985);
+    }
+
+    .blueprint-view.detail-view:not(.hidden) {
+      transform: translateX(0) scale(1);
+    }
+
+    .blueprint-section {
+      position: relative;
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 13px;
+      min-height: 100%;
+      height: 100%;
+      border-radius: 15px;
+      background: rgba(255, 252, 244, 0.46);
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      padding: 13px;
+      overflow: hidden;
+    }
+
+    .section-label {
+      display: grid;
+      align-content: center;
+      gap: 8px;
+      border-right: 1px solid rgba(120, 95, 80, 0.12);
+      padding-right: 14px;
+    }
+
+    .section-label span {
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .section-label strong {
+      color: #312c28;
+      font-size: 21px;
+      line-height: 1.1;
+      font-weight: 860;
+    }
+
+    .section-label p {
+      margin: 0;
+      color: #82766d;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 520;
+    }
+
+    .slot-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-content: center;
+    }
+
+    .slot-row::before {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 50%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(119, 100, 86, 0.24), transparent);
+    }
+
+    .skeleton-track {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      overflow-x: auto;
+      padding: 6px 4px 8px;
+      scroll-snap-type: x mandatory;
+    }
+
+    .skeleton-track::before {
+      left: 18px;
+      right: 18px;
+    }
+
+    .skeleton-track::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .skeleton-track::-webkit-scrollbar-track {
+      background: rgba(255, 252, 244, 0.42);
+      border-radius: 999px;
+    }
+
+    .skeleton-track::-webkit-scrollbar-thumb {
+      background: rgba(119, 100, 86, 0.32);
+      border-radius: 999px;
+    }
+
+    .slot-card {
+      position: relative;
+      z-index: 1;
+      min-height: 94px;
+      padding: 11px;
+      border-radius: 13px;
+      background:
+        linear-gradient(180deg, rgba(255, 252, 244, 0.84), rgba(238, 227, 204, 0.78));
+      border: 1px solid rgba(130, 104, 86, 0.14);
+      box-shadow: 0 12px 24px rgba(80, 60, 44, 0.08);
+    }
+
+    .skeleton-card {
+      flex: 0 0 168px;
+      min-height: 190px;
+      text-align: left;
+      color: inherit;
+      scroll-snap-align: center;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .skeleton-card:hover,
+    .skeleton-card.active {
+      transform: translateY(-3px);
+      border-color: rgba(93, 116, 116, 0.38);
+      background:
+        linear-gradient(180deg, rgba(255, 252, 244, 0.92), rgba(233, 221, 191, 0.76));
+    }
+
+    .skeleton-card small {
+      display: block;
+      margin-top: 8px;
+      color: var(--accent-deep);
+      font-size: 11px;
+      font-weight: 820;
+    }
+
+    .back-to-skeleton {
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(130, 104, 86, 0.16);
+      border-radius: 10px;
+      background: rgba(255, 252, 244, 0.64);
+      color: #675c55;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .detail-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .slot-pin {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff8ea;
+      background: var(--copper);
+      font-size: 12px;
+      font-weight: 850;
+      margin-bottom: 7px;
+    }
+
+    .slot-card strong {
+      display: block;
+      color: #312c28;
+      font-size: 14px;
+      line-height: 1.26;
+      font-weight: 850;
+    }
+
+    .slot-card p {
+      display: -webkit-box;
+      margin: 7px 0 0;
+      color: #776c64;
+      font-size: 12px;
+      line-height: 1.42;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .canvas-foot {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(120, 95, 80, 0.12);
+    }
+
+    .status-tile {
+      min-height: 58px;
+      border-radius: 13px;
+      border: 1px solid rgba(130, 104, 86, 0.12);
+      background: rgba(255, 252, 244, 0.5);
+      padding: 10px;
+    }
+
+    .status-tile span {
+      color: #8c7f75;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .status-tile strong {
+      display: block;
+      margin-top: 8px;
+      color: #302c28;
+      font-size: 14px;
+      line-height: 1.3;
+      font-weight: 850;
+    }
+
+    .right-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      padding: 20px;
+    }
+
+    .chapter-count {
+      position: relative;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .count-button {
+      width: 100%;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(130, 104, 86, 0.14);
+      background: rgba(255, 252, 244, 0.5);
+      color: #665b54;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .count-button.active {
+      background: var(--safe-deep);
+      color: #fff8ea;
+      border-color: transparent;
+    }
+
+    .chapter-menu {
+      position: absolute;
+      z-index: 5;
+      top: 43px;
+      left: 0;
+      right: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      max-height: 176px;
+      overflow: auto;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.66);
+      background: rgba(255, 252, 244, 0.9);
+      box-shadow: 0 18px 34px rgba(70, 52, 39, 0.16);
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .chapter-count.open .chapter-menu {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .chapter-option {
+      height: 28px;
+      border: 1px solid rgba(130, 104, 86, 0.14);
+      border-radius: 8px;
+      background: rgba(247, 241, 230, 0.76);
+      color: #675c55;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .chapter-option.active {
+      background: var(--safe-deep);
+      color: #fff8ea;
+      border-color: transparent;
+    }
+
+    .route-list {
+      position: relative;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 2px 4px 2px 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(119, 100, 86, 0.28) rgba(255, 252, 244, 0.32);
+    }
+
+    .route-list::before {
+      content: none;
+    }
+
+    .route-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .route-list::-webkit-scrollbar-track {
+      background: rgba(255, 252, 244, 0.32);
+      border-radius: 999px;
+    }
+
+    .route-list::-webkit-scrollbar-thumb {
+      background: rgba(119, 100, 86, 0.28);
+      border-radius: 999px;
+    }
+
+    .chapter-node {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 8px;
+      min-height: 60px;
+      padding: 8px;
+      border-radius: 13px;
+      border: 1px solid rgba(130, 104, 86, 0.12);
+      background: rgba(255, 252, 244, 0.42);
+      text-align: left;
+      color: inherit;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .chapter-node.active {
+      background: rgba(233, 221, 191, 0.66);
+      transform: translateX(-2px);
+      box-shadow: 0 12px 20px rgba(80, 60, 44, 0.08);
+    }
+
+    .chapter-no {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff8ea;
+      background: var(--safe-deep);
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .chapter-main strong {
+      display: block;
+      color: #312c28;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 850;
+    }
+
+    .chapter-main p {
+      margin: 6px 0 0;
+      color: #7b7068;
+      font-size: 12px;
+      line-height: 1.42;
+      font-weight: 520;
+    }
+
+    .route-summary {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .route-metric {
+      min-height: 50px;
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.5);
+      border: 1px solid rgba(130, 104, 86, 0.12);
+      padding: 10px;
+    }
+
+    .route-metric span {
+      color: #877b72;
+      font-size: 11px;
+      font-weight: 740;
+    }
+
+    .route-metric strong {
+      display: block;
+      margin-top: 7px;
+      color: #302c28;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .action-dock {
+      position: absolute;
+      z-index: 4;
+      right: 74px;
+      bottom: 28px;
+      display: grid;
+      grid-template-columns: 148px 108px 142px;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 16px;
+      background: rgba(255, 252, 244, 0.64);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: 0 18px 44px rgba(70, 52, 39, 0.16);
+      backdrop-filter: blur(10px);
+    }
+
+    .dock-button {
+      height: 46px;
+      border: 1px solid rgba(130, 104, 86, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 252, 244, 0.7);
+      color: #6a5f57;
+      font-size: 13px;
+      font-weight: 840;
+    }
+
+    .dock-button.primary {
+      background: var(--safe-deep);
+      color: #fff8ea;
+      border-color: transparent;
+    }
+
+    .dock-button.disabled {
+      color: rgba(106, 95, 87, 0.42);
+      background: rgba(235, 226, 208, 0.42);
+      cursor: default;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 6;
+      left: 50%;
+      bottom: 34px;
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: rgba(48, 44, 40, 0.88);
+      color: #fff8ea;
+      font-size: 13px;
+      font-weight: 760;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100vh;
+        padding: 28px;
+      }
+
+      .headline,
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+        height: auto;
+      }
+
+      .workspace {
+        height: auto;
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+
+      .action-dock {
+        position: static;
+        margin-top: 18px;
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <svg viewBox="0 0 800 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="400" cy="320" r="268" stroke="rgba(119,100,86,0.52)" stroke-width="2"/>
+      <circle cx="400" cy="320" r="202" stroke="rgba(119,100,86,0.38)" stroke-width="1.6"/>
+      <circle cx="400" cy="320" r="132" stroke="rgba(119,100,86,0.32)" stroke-width="1.4"/>
+      <path d="M138 300C244 214 328 182 432 200C536 218 612 280 672 404" stroke="rgba(119,100,86,0.45)" stroke-width="2"/>
+      <path d="M184 458C292 392 370 376 482 404C560 424 618 464 676 526" stroke="rgba(119,100,86,0.34)" stroke-width="1.6"/>
+      <path d="M240 152L562 510M636 190L194 430M404 50V592M90 320H714" stroke="rgba(119,100,86,0.24)" stroke-width="1.2"/>
+      <g fill="rgba(119,100,86,0.7)">
+        <circle cx="138" cy="300" r="5"/>
+        <circle cx="260" cy="218" r="4"/>
+        <circle cx="432" cy="200" r="5"/>
+        <circle cx="568" cy="262" r="4"/>
+        <circle cx="672" cy="404" r="5"/>
+        <circle cx="184" cy="458" r="4"/>
+        <circle cx="482" cy="404" r="5"/>
+        <circle cx="676" cy="526" r="4"/>
+      </g>
+      <g stroke="rgba(119,100,86,0.34)" stroke-width="1">
+        <path d="M400 52L414 85L400 118L386 85Z"/>
+        <path d="M400 522L414 555L400 588L386 555Z"/>
+        <path d="M132 320L165 306L198 320L165 334Z"/>
+        <path d="M602 320L635 306L668 320L635 334Z"/>
+      </g>
+    </svg>
+  </div>
+
+  <main class="page">
+    <nav class="topbar" aria-label="Framework 编排导航">
+      <div class="top-left">
+        <button class="back" type="button">返回当前项目</button>
+        <div class="crumb">主页 / 当前项目 / Framework 编排</div>
+      </div>
+    </nav>
+
+    <header class="headline">
+      <div>
+        <h1>Framework 编排</h1>
+        <div class="subtitle">把模板、分析器或资料库中的结构素材，编排为可验证、可确认的故事骨架。</div>
+      </div>
+      <div class="state-pill"><span></span> 当前状态：等待生成</div>
+    </header>
+
+    <section class="workspace" aria-label="Framework 初始编排工作区">
+      <aside class="panel left-panel" aria-label="结构素材">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">结构素材</p>
+            <h2 class="panel-title">素材来源</h2>
+            <p class="panel-note">选择一个起点，系统会把它转为可审阅的编排草案。</p>
+          </div>
+          <div class="badge">4</div>
+        </div>
+
+        <div class="source-tabs" aria-label="素材来源标签">
+          <button class="source-tab active" data-source="模板起始材料" type="button">模板起始材料</button>
+          <button class="source-tab" data-source="分析器候选" type="button">分析器候选</button>
+          <button class="source-tab" data-source="资料库" type="button">资料库</button>
+          <button class="source-tab" data-source="私有结构" type="button">私有结构</button>
+        </div>
+
+        <div class="material-list">
+          <button class="material-card active" data-title="基础叙事骨架" data-copy="围绕开端、触发事件、发展升级、危机选择和结尾余波搭建全书骨架。" type="button">
+            <span class="material-icon"></span>
+            <span class="material-main">
+              <strong>基础叙事骨架</strong>
+              <p>来自模板起始材料，适合多数题材的全局剧情推进。</p>
+              <span class="tag-row">
+                <span class="tag safe">可用</span>
+                <span class="tag">起始材料</span>
+              </span>
+            </span>
+          </button>
+
+          <button class="material-card" data-title="远行任务结构" data-copy="围绕阶段目标、同行分歧、地点推进和回收节点搭建章节路线。" type="button">
+            <span class="material-icon"></span>
+            <span class="material-main">
+              <strong>远行任务结构</strong>
+              <p>适合旅途、追寻、护送和逐步解锁区域的长篇故事。</p>
+              <span class="tag-row">
+                <span class="tag safe">可用</span>
+                <span class="tag">章节路线</span>
+              </span>
+            </span>
+          </button>
+
+          <button class="material-card" data-title="群像交叉结构" data-copy="围绕多视角交替、关系压力和共同事件节点搭建全书结构。" type="button">
+            <span class="material-icon"></span>
+            <span class="material-main">
+              <strong>群像交叉结构</strong>
+              <p>适合多个主角、平行视角和关系网逐步显影的故事。</p>
+              <span class="tag-row">
+                <span class="tag safe">可用</span>
+                <span class="tag">全书结构</span>
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <div class="selected-box">
+          <strong id="sourceLabel">当前来源：模板起始材料</strong>
+          <p>分析器和资料库会作为分支进入，本页首屏只显示可安全编排的摘要。</p>
+        </div>
+      </aside>
+
+      <section class="panel canvas-panel" aria-label="编排画布">
+        <div class="canvas-head">
+          <div>
+            <p class="eyebrow">编排画布</p>
+            <h2 class="composition-title" id="compositionTitle">基础叙事骨架</h2>
+            <p class="composition-copy" id="compositionCopy">围绕开端、触发事件、发展升级、危机选择和结尾余波搭建全书骨架。</p>
+          </div>
+          <div class="mode-switch" aria-label="用户模式">
+            <button class="mode-button active" type="button">原创</button>
+            <button class="mode-button" type="button">续写</button>
+            <button class="mode-button" type="button">混合</button>
+          </div>
+        </div>
+
+        <div class="blueprint">
+          <section class="blueprint-view skeleton-view" id="skeletonView" aria-label="全书主骨架">
+            <div class="blueprint-section">
+              <div class="section-label">
+                <span>全书结构</span>
+                <strong>主骨架</strong>
+                <p>左右滑动查看篇章；点击某一章进入对应章节结构。</p>
+              </div>
+              <div class="slot-row skeleton-track" id="skeletonTrack">
+                <button class="slot-card skeleton-card active" data-chapter="1" data-title="开端" data-focus="世界与主角建立" type="button">
+                  <div class="slot-pin">1</div>
+                  <strong>开端</strong>
+                  <p>建立世界、主角、基调和初始缺口。</p>
+                  <small>开端压力</small>
+                </button>
+                <button class="slot-card skeleton-card" data-chapter="2" data-title="触发事件" data-focus="主线启动" type="button">
+                  <div class="slot-pin">2</div>
+                  <strong>触发事件</strong>
+                  <p>地点线索与人物动机开始错位。</p>
+                  <small>误导递进</small>
+                </button>
+                <button class="slot-card skeleton-card" data-chapter="3" data-title="发展/升级" data-focus="冲突扩张" type="button">
+                  <div class="slot-pin">3</div>
+                  <strong>发展/升级</strong>
+                  <p>信任、隐瞒和利益冲突推动调查方向。</p>
+                  <small>关系施压</small>
+                </button>
+                <button class="slot-card skeleton-card" data-chapter="4" data-title="危机/局部高潮" data-focus="关键选择" type="button">
+                  <div class="slot-pin">4</div>
+                  <strong>危机/局部高潮</strong>
+                  <p>旧规则暴露，前文线索出现第一次回收。</p>
+                  <small>阶段回收</small>
+                </button>
+                <button class="slot-card skeleton-card" data-chapter="5" data-title="结尾/余波" data-focus="后果落点" type="button">
+                  <div class="slot-pin">5</div>
+                  <strong>结尾/余波</strong>
+                  <p>呈现选择后果，形成阶段性落点和新状态。</p>
+                  <small>最终核验</small>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="blueprint-view detail-view hidden" id="detailView" aria-label="章节结构">
+            <div class="blueprint-section">
+              <div class="section-label">
+                <span id="detailKicker">第 1 章</span>
+                <strong id="detailTitle">开端</strong>
+                <p id="detailCopy">本章结构从主骨架中拆出，确认后会映射到章节计划。</p>
+                <button class="back-to-skeleton" id="backToSkeleton" type="button">返回主骨架</button>
+              </div>
+              <div class="slot-row">
+                <article class="slot-card">
+                  <div class="slot-pin">A</div>
+                  <strong id="detailStepOne">线索投放</strong>
+                  <p>控制本章读者能看见的信息，不提前暴露答案。</p>
+                </article>
+                <article class="slot-card">
+                  <div class="slot-pin">B</div>
+                  <strong id="detailStepTwo">关系施压</strong>
+                  <p>让角色之间的信任与隐瞒推动选择。</p>
+                </article>
+                <article class="slot-card">
+                  <div class="slot-pin">C</div>
+                  <strong id="detailStepThree">阶段回收</strong>
+                  <p>留下本章可验证的回收点。</p>
+                </article>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="canvas-foot">
+          <div class="status-tile">
+            <span>草案状态</span>
+            <strong>尚未生成</strong>
+          </div>
+          <div class="status-tile">
+            <span>验证状态</span>
+            <strong>等待编排后验证</strong>
+          </div>
+          <div class="status-tile">
+            <span>后续交接</span>
+            <strong>确认后进入世界画布</strong>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel right-panel" aria-label="章节路线">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">章节路线</p>
+            <h2 class="panel-title">映射预览</h2>
+            <p class="panel-note">先以 5 章构成初始路线，后续可扩展到 20 章。</p>
+          </div>
+          <div class="badge">1-20</div>
+        </div>
+
+        <div class="chapter-count" id="chapterCountPicker" aria-label="章节数量">
+          <button class="count-button active" id="chapterCountButton" type="button" aria-expanded="false">章节数：5 章</button>
+          <div class="chapter-menu" id="chapterMenu" aria-label="选择章节数量"></div>
+        </div>
+
+        <div class="route-list" id="routeList">
+          <button class="chapter-node active" data-chapter="1" type="button">
+            <span class="chapter-no">1</span>
+            <span class="chapter-main">
+              <strong>开端</strong>
+              <p>世界与主角建立 / 初始缺口。</p>
+            </span>
+          </button>
+          <button class="chapter-node" data-chapter="2" type="button">
+            <span class="chapter-no">2</span>
+            <span class="chapter-main">
+              <strong>触发事件</strong>
+              <p>地点线索 / 误导递进。</p>
+            </span>
+          </button>
+          <button class="chapter-node" data-chapter="3" type="button">
+            <span class="chapter-no">3</span>
+            <span class="chapter-main">
+              <strong>发展/升级</strong>
+              <p>关系施压 / 信息遮蔽。</p>
+            </span>
+          </button>
+          <button class="chapter-node" data-chapter="4" type="button">
+            <span class="chapter-no">4</span>
+            <span class="chapter-main">
+              <strong>危机/局部高潮</strong>
+              <p>阶段回收 / 规则暴露。</p>
+            </span>
+          </button>
+          <button class="chapter-node" data-chapter="5" type="button">
+            <span class="chapter-no">5</span>
+            <span class="chapter-main">
+              <strong>结尾/余波</strong>
+              <p>最终核验 / 进入世界画布确认。</p>
+            </span>
+          </button>
+        </div>
+
+        <div class="route-summary">
+          <div class="route-metric">
+            <span>映射状态</span>
+            <strong>待生成</strong>
+          </div>
+          <div class="route-metric">
+            <span>警告</span>
+            <strong>0</strong>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <div class="action-dock" aria-label="Framework 动作">
+      <button class="dock-button primary" id="generateButton" type="button">生成编排</button>
+      <button class="dock-button disabled" type="button">验证</button>
+      <button class="dock-button disabled" type="button">确认 Framework</button>
+    </div>
+  </main>
+
+  <div class="toast" id="toast">开始生成 Framework 编排草案</div>
+
+  <script>
+    const chapterData = Array.from({ length: 20 }, (_, index) => {
+      const presets = [
+        ["开端", "世界与主角建立", "建立世界、主角、基调和初始缺口。"],
+        ["触发事件", "主线启动", "让故事真正进入运动，并迫使角色回应核心问题。"],
+        ["发展/升级", "冲突扩张", "推进目标、扩大冲突，引入更复杂的压力。"],
+        ["危机/局部高潮", "关键选择", "让角色面对关键选择，并形成局部强度峰值。"],
+        ["结尾/余波", "后果落点", "呈现选择后果，形成阶段性落点和新状态。"],
+      ];
+      const fallback = [`第 ${index + 1} 章`, "待编排", "生成编排后会写入该章的结构方向。"];
+      const [title, focus, summary] = presets[index] || fallback;
+      return { index: index + 1, title, focus, summary };
+    });
+
+    const sourceLabel = document.getElementById("sourceLabel");
+    const compositionTitle = document.getElementById("compositionTitle");
+    const compositionCopy = document.getElementById("compositionCopy");
+    const skeletonView = document.getElementById("skeletonView");
+    const detailView = document.getElementById("detailView");
+    const skeletonTrack = document.getElementById("skeletonTrack");
+    const routeList = document.getElementById("routeList");
+    const chapterCountPicker = document.getElementById("chapterCountPicker");
+    const chapterCountButton = document.getElementById("chapterCountButton");
+    const chapterMenu = document.getElementById("chapterMenu");
+    const detailKicker = document.getElementById("detailKicker");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailCopy = document.getElementById("detailCopy");
+    const detailStepOne = document.getElementById("detailStepOne");
+    const detailStepTwo = document.getElementById("detailStepTwo");
+    const detailStepThree = document.getElementById("detailStepThree");
+    const toast = document.getElementById("toast");
+    let activeChapterCount = 5;
+    let activeChapter = 1;
+
+    document.querySelectorAll(".source-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".source-tab").forEach((item) => item.classList.remove("active"));
+        tab.classList.add("active");
+        sourceLabel.textContent = `当前来源：${tab.dataset.source}`;
+      });
+    });
+
+    document.querySelectorAll(".material-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".material-card").forEach((item) => item.classList.remove("active"));
+        card.classList.add("active");
+        compositionTitle.textContent = card.dataset.title;
+        compositionCopy.textContent = card.dataset.copy;
+      });
+    });
+
+    document.querySelectorAll(".mode-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".mode-button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+      });
+    });
+
+    function chapterDetailSteps(chapter) {
+      if (chapter.index === 1) return ["世界建立", "主角目标", "初始缺口"];
+      if (chapter.index === 2) return ["地点复查", "误导建立", "路线分叉"];
+      if (chapter.index === 3) return ["冲突扩张", "压力升级", "目标受阻"];
+      if (chapter.index === 4) return ["规则暴露", "时间校准", "阶段回收"];
+      if (chapter.index === 5) return ["最终核验", "真相回扣", "世界确认"];
+      return ["结构定位", "冲突推进", "阶段回收"];
+    }
+
+    function setActiveChapter(chapterIndex, showDetail = false) {
+      activeChapter = chapterIndex;
+      document.querySelectorAll("[data-chapter]").forEach((item) => {
+        item.classList.toggle("active", Number(item.dataset.chapter) === chapterIndex);
+      });
+      const chapter = chapterData[chapterIndex - 1];
+      const steps = chapterDetailSteps(chapter);
+      detailKicker.textContent = `第 ${chapter.index} 章`;
+      detailTitle.textContent = chapter.title;
+      detailCopy.textContent = `${chapter.focus}：${chapter.summary}`;
+      detailStepOne.textContent = steps[0];
+      detailStepTwo.textContent = steps[1];
+      detailStepThree.textContent = steps[2];
+      if (showDetail) {
+        skeletonView.classList.add("hidden");
+        detailView.classList.remove("hidden");
+      }
+    }
+
+    function renderSkeleton() {
+      skeletonTrack.innerHTML = chapterData.slice(0, activeChapterCount).map((chapter) => `
+        <button class="slot-card skeleton-card${chapter.index === activeChapter ? " active" : ""}" data-chapter="${chapter.index}" data-title="${chapter.title}" type="button">
+          <div class="slot-pin">${chapter.index}</div>
+          <strong>${chapter.title}</strong>
+          <p>${chapter.summary}</p>
+          <small>${chapter.focus}</small>
+        </button>
+      `).join("");
+      skeletonTrack.querySelectorAll(".skeleton-card").forEach((card) => {
+        card.addEventListener("click", () => setActiveChapter(Number(card.dataset.chapter), true));
+      });
+    }
+
+    function renderRoutes() {
+      routeList.innerHTML = chapterData.slice(0, activeChapterCount).map((chapter) => `
+        <button class="chapter-node${chapter.index === activeChapter ? " active" : ""}" data-chapter="${chapter.index}" type="button">
+          <span class="chapter-no">${chapter.index}</span>
+          <span class="chapter-main">
+            <strong>${chapter.title}</strong>
+            <p>${chapter.focus} / ${chapter.summary}</p>
+          </span>
+        </button>
+      `).join("");
+      routeList.querySelectorAll(".chapter-node").forEach((node) => {
+        node.addEventListener("click", () => setActiveChapter(Number(node.dataset.chapter), false));
+      });
+    }
+
+    function renderChapterMenu() {
+      chapterMenu.innerHTML = chapterData.map((chapter) => `
+        <button class="chapter-option${chapter.index === activeChapterCount ? " active" : ""}" data-count="${chapter.index}" type="button">${chapter.index}</button>
+      `).join("");
+      chapterMenu.querySelectorAll(".chapter-option").forEach((option) => {
+        option.addEventListener("click", (event) => {
+          event.stopPropagation();
+          activeChapterCount = Number(option.dataset.count);
+          if (activeChapter > activeChapterCount) activeChapter = activeChapterCount;
+          chapterCountButton.textContent = `章节数：${activeChapterCount} 章`;
+          chapterCountPicker.classList.remove("open");
+          chapterCountButton.setAttribute("aria-expanded", "false");
+          renderChapterMenu();
+          renderSkeleton();
+          renderRoutes();
+          setActiveChapter(activeChapter, false);
+        });
+      });
+    }
+
+    chapterCountButton.addEventListener("click", () => {
+      const isOpen = chapterCountPicker.classList.toggle("open");
+      chapterCountButton.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!chapterCountPicker.contains(event.target)) {
+        chapterCountPicker.classList.remove("open");
+        chapterCountButton.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.getElementById("backToSkeleton").addEventListener("click", () => {
+      detailView.classList.add("hidden");
+      skeletonView.classList.remove("hidden");
+    });
+
+    document.getElementById("generateButton").addEventListener("click", () => {
+      toast.classList.add("show");
+      clearTimeout(window.__frameworkToastTimer);
+      window.__frameworkToastTimer = setTimeout(() => toast.classList.remove("show"), 1500);
+    });
+
+    renderChapterMenu();
+    renderSkeleton();
+    renderRoutes();
+    setActiveChapter(1, false);
+  </script>
+</body>
+</html>

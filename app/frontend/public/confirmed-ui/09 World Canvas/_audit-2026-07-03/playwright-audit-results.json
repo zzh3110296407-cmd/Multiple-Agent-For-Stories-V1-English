@@ -1,0 +1,298 @@
+[
+  {
+    "id": "01",
+    "name": "?????????",
+    "file": "app/frontend/public/confirmed-ui/09 World Canvas/01 Source Premise And Generation Entry/visual-drafts/world-canvas-source-premise-entry-v1.html",
+    "errors": [],
+    "audits": [
+      {
+        "label": "01-default",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "来源前提",
+        "buttonCount": 10,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "01-submitted",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "来源前提",
+        "buttonCount": 10,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "01-responsive",
+        "viewport": "1366x768",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "来源前提",
+        "buttonCount": 10,
+        "disabledButtons": [],
+        "clippedControls": []
+      }
+    ]
+  },
+  {
+    "id": "02",
+    "name": "???",
+    "file": "app/frontend/public/confirmed-ui/09 World Canvas/02 Generating/visual-drafts/world-canvas-generating-v1.html",
+    "errors": [],
+    "audits": [
+      {
+        "label": "02-default",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "生成草案",
+        "buttonCount": 7,
+        "disabledButtons": [
+          "查看草案"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "02-complete",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "生成草案",
+        "buttonCount": 7,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "02-responsive",
+        "viewport": "1366x768",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "生成草案",
+        "buttonCount": 7,
+        "disabledButtons": [],
+        "clippedControls": []
+      }
+    ]
+  },
+  {
+    "id": "03",
+    "name": "????",
+    "file": "app/frontend/public/confirmed-ui/09 World Canvas/03 Draft Review/visual-drafts/world-canvas-draft-review-v1.html",
+    "errors": [],
+    "audits": [
+      {
+        "label": "03-default",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 23,
+        "disabledButtons": [
+          "确认草案"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "03-rules-conflict",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 19,
+        "disabledButtons": [
+          "确认草案"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "03-responsive",
+        "viewport": "1366x768",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 19,
+        "disabledButtons": [
+          "确认草案"
+        ],
+        "clippedControls": []
+      }
+    ]
+  },
+  {
+    "id": "04",
+    "name": "???????",
+    "file": "app/frontend/public/confirmed-ui/09 World Canvas/04 Gap And Conflict Handling/visual-drafts/world-canvas-gap-conflict-handling-v1.html",
+    "errors": [],
+    "audits": [
+      {
+        "label": "04-default",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [
+          "继续确认"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "04-logic-detail",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [
+          "继续确认"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "04-resolved",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "04-responsive",
+        "viewport": "1366x768",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [],
+        "clippedControls": []
+      }
+    ]
+  },
+  {
+    "id": "05",
+    "name": "????",
+    "file": "app/frontend/public/confirmed-ui/09 World Canvas/05 Draft Revision/visual-drafts/world-canvas-draft-revision-v1.html",
+    "errors": [],
+    "audits": [
+      {
+        "label": "05-default",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "05-configured",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "05-complete",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "05-responsive",
+        "viewport": "1366x768",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 20,
+        "disabledButtons": [],
+        "clippedControls": []
+      }
+    ]
+  },
+  {
+    "id": "06",
+    "name": "??????",
+    "file": "app/frontend/public/confirmed-ui/09 World Canvas/06 Confirm World Facts/visual-drafts/world-canvas-confirm-world-facts-v1.html",
+    "errors": [],
+    "audits": [
+      {
+        "label": "06-default",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 11,
+        "disabledButtons": [
+          "确认世界事实"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "06-rules",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 11,
+        "disabledButtons": [
+          "确认世界事实"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "06-downstream",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 11,
+        "disabledButtons": [
+          "确认世界事实"
+        ],
+        "clippedControls": []
+      },
+      {
+        "label": "06-ready",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "审阅确认",
+        "buttonCount": 11,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "06-complete",
+        "viewport": "1440x1100",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "事实底座",
+        "buttonCount": 11,
+        "disabledButtons": [],
+        "clippedControls": []
+      },
+      {
+        "label": "06-responsive",
+        "viewport": "1366x768",
+        "leaks": [],
+        "horizontalOverflow": 0,
+        "activeStage": "事实底座",
+        "buttonCount": 11,
+        "disabledButtons": [],
+        "clippedControls": []
+      }
+    ]
+  }
+]

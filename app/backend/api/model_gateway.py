@@ -40,14 +40,10 @@ def configure_deepseek_model_gateway() -> ModelGatewaySeedResponse:
 @router.post("/configure-qwen", response_model=ModelGatewaySeedResponse)
 def configure_qwen_model_gateway(
     model_name: Optional[str] = Query(default=None),
-    base_url: Optional[str] = Query(default=None),
-    api_key_env: Optional[str] = Query(default=None),
 ) -> ModelGatewaySeedResponse:
     try:
         return model_gateway_service.configure_qwen_active_model(
             model_name=model_name,
-            base_url=base_url,
-            api_key_env=api_key_env,
         )
     except ModelConfigurationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

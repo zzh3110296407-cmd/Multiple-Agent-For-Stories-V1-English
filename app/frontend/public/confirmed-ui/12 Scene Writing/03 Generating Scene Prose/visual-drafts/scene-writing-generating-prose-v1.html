@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>场景写作 / 正文生成中 V1</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --bg: #ece7dc;
+      --paper: rgba(255, 251, 242, 0.86);
+      --paper-strong: rgba(255, 252, 244, 0.95);
+      --paper-soft: rgba(238, 227, 208, 0.68);
+      --ink: #2f312b;
+      --muted: #71685e;
+      --quiet: #9a8f83;
+      --line: rgba(110, 86, 61, 0.19);
+      --line-strong: rgba(110, 86, 61, 0.32);
+      --bronze: #b48a78;
+      --bronze-deep: #8f675b;
+      --sage: #71806f;
+      --sage-deep: #53624f;
+      --blue-gray: #6f8182;
+      --blue-gray-deep: #536869;
+      --gold: #c7a66a;
+      --gold-deep: #9b7d47;
+      --shadow: 0 26px 72px rgba(74, 53, 32, 0.18);
+      --soft-shadow: 0 14px 34px rgba(74, 53, 32, 0.1);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(236, 231, 220, 0.84), rgba(236, 231, 220, 0.58) 44%, rgba(236, 231, 220, 0.24)),
+        url("../../assets/scene-writing-background-v1.png") center / cover no-repeat;
+    }
+
+    .backdrop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255, 248, 229, 0.48), transparent 30%),
+        radial-gradient(circle at 78% 24%, rgba(111, 129, 130, 0.14), transparent 32%),
+        linear-gradient(135deg, rgba(236, 231, 220, 0.24), rgba(180, 138, 120, 0.12));
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1376px, calc(100vw - 72px));
+      height: calc(100vh - 64px);
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 210px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button,
+    .brief-button,
+    .source-card {
+      border: 1px solid rgba(255, 252, 244, 0.64);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      color: #403934;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 12px 28px rgba(74, 53, 32, 0.08);
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+
+    .back-button,
+    .soft-button,
+    .primary-button {
+      min-height: 42px;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .back-button:hover,
+    .soft-button:hover,
+    .brief-button:hover,
+    .source-card:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 252, 244, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 16px 34px rgba(74, 53, 32, 0.12);
+    }
+
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 252, 244, 0.62);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.48);
+      box-shadow: var(--soft-shadow);
+      color: #574f47;
+      font-size: 13px;
+      font-weight: 780;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 5px rgba(113, 128, 111, 0.14);
+      flex: 0 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 468px;
+      align-items: end;
+      gap: 28px;
+      padding-left: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: #30332d;
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 780px;
+      margin: 0;
+      color: rgba(47, 49, 43, 0.68);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 540;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid rgba(255, 252, 244, 0.56);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.34);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .summary-item {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.42);
+    }
+
+    .summary-item span {
+      display: block;
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .summary-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #373832;
+      font-size: 14px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .main-panel,
+    .side-panel {
+      min-height: 0;
+      border: 1px solid rgba(255, 252, 244, 0.66);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 252, 244, 0.87), rgba(238, 227, 208, 0.7)),
+        rgba(255, 251, 242, 0.76);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 22px 30px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--bronze-deep);
+      font-size: 12px;
+      font-weight: 880;
+    }
+
+    h2 {
+      margin: 0;
+      color: #30332d;
+      font-size: 27px;
+      line-height: 1.16;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+      font-weight: 520;
+    }
+
+    .chapter-chip {
+      flex: 0 0 152px;
+      align-self: start;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      background: rgba(255, 249, 235, 0.72);
+      text-align: center;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .chapter-chip strong {
+      display: block;
+      color: var(--gold-deep);
+      font-size: 23px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .chapter-chip span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .generation-area {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.14fr) minmax(300px, 0.86fr);
+      gap: 22px;
+      padding: 20px 30px 14px;
+      overflow: auto;
+    }
+
+    .manuscript-stage {
+      min-height: 410px;
+      position: relative;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 18px;
+      padding: 22px;
+      border: 1px solid rgba(110, 86, 61, 0.18);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255, 248, 229, 0.55), transparent 28%),
+        linear-gradient(135deg, rgba(255, 252, 244, 0.72), rgba(245, 236, 220, 0.62));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+      overflow: hidden;
+    }
+
+    .manuscript-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent, rgba(255, 252, 244, 0.52), transparent);
+      transform: translateX(-100%);
+      animation: paperSweep 4.2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes paperSweep {
+      0% { transform: translateX(-100%); opacity: 0; }
+      20% { opacity: 0.75; }
+      55% { transform: translateX(80%); opacity: 0.22; }
+      100% { transform: translateX(130%); opacity: 0; }
+    }
+
+    .stage-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .stage-head h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .stage-head span {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .paper-sheet {
+      position: relative;
+      z-index: 1;
+      min-height: 0;
+      padding: 22px 24px;
+      border: 1px solid rgba(110, 86, 61, 0.17);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(255, 253, 246, 0.92), rgba(250, 243, 230, 0.84));
+      box-shadow: 0 18px 38px rgba(74, 53, 32, 0.11);
+      overflow: hidden;
+    }
+
+    .draft-title {
+      width: 58%;
+      height: 22px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(83, 104, 105, 0.2), rgba(143, 103, 91, 0.18), rgba(83, 104, 105, 0.2));
+      background-size: 220% 100%;
+      animation: inkMove 2.2s ease-in-out infinite;
+    }
+
+    .line-stack {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .ink-line {
+      height: 11px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(47, 49, 43, 0.16), rgba(143, 103, 91, 0.2), rgba(47, 49, 43, 0.12));
+      background-size: 220% 100%;
+      opacity: 0.82;
+      animation: inkMove 2.6s ease-in-out infinite;
+    }
+
+    .ink-line:nth-child(2n) { width: 82%; animation-delay: -0.4s; }
+    .ink-line:nth-child(3n) { width: 92%; animation-delay: -0.8s; }
+    .ink-line:nth-child(4n) { width: 68%; animation-delay: -1.2s; }
+    .ink-line:nth-child(5n) { width: 76%; animation-delay: -1.6s; }
+
+    @keyframes inkMove {
+      0% { background-position: 0% 50%; opacity: 0.56; }
+      50% { background-position: 100% 50%; opacity: 0.95; }
+      100% { background-position: 0% 50%; opacity: 0.56; }
+    }
+
+    .paper-footer {
+      position: absolute;
+      right: 22px;
+      bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .writing-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 7px rgba(180, 138, 120, 0.12);
+      animation: beat 840ms ease-in-out infinite alternate;
+    }
+
+    @keyframes beat {
+      from { transform: scale(0.88); }
+      to { transform: scale(1.16); }
+    }
+
+    .progress-shell {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .progress-track {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(110, 86, 61, 0.12);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue-gray), var(--bronze));
+      transition: width 500ms ease;
+    }
+
+    .progress-number {
+      min-width: 44px;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 16px;
+      min-height: 410px;
+    }
+
+    .current-card,
+    .brief-card {
+      padding: 14px 16px;
+      border: 1px solid rgba(110, 86, 61, 0.16);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .current-card h3,
+    .brief-card h3 {
+      margin: 0;
+      color: #3b3c35;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .current-card p,
+    .brief-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.54;
+      font-weight: 520;
+    }
+
+    .step-list {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .pipeline .step-list {
+      gap: 8px;
+      overflow: visible;
+    }
+
+    .pipeline .source-card {
+      padding: 8px 10px;
+    }
+
+    .pipeline .source-top {
+      font-size: 12px;
+    }
+
+    .pipeline .source-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 11px;
+    }
+
+    .pipeline .badge {
+      padding: 4px 7px;
+      font-size: 10px;
+    }
+
+    .pipeline .source-card p {
+      display: none;
+    }
+
+    .source-card {
+      width: 100%;
+      padding: 13px;
+      text-align: left;
+      box-shadow: none;
+      background: rgba(255, 252, 244, 0.48);
+    }
+
+    .source-card.done {
+      border-color: rgba(113, 128, 111, 0.28);
+      background: rgba(239, 244, 242, 0.68);
+    }
+
+    .source-card.active {
+      border-color: rgba(199, 166, 106, 0.44);
+      background: rgba(255, 249, 235, 0.78);
+      box-shadow: 0 14px 30px rgba(74, 53, 32, 0.1);
+    }
+
+    .source-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #3c3d36;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .source-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(113, 128, 111, 0.14);
+      color: var(--sage-deep);
+      font-size: 12px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .source-card.active .source-icon {
+      background: rgba(199, 166, 106, 0.2);
+      color: var(--gold-deep);
+      animation: beat 840ms ease-in-out infinite alternate;
+    }
+
+    .source-card p {
+      margin: 7px 0 0 32px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.52;
+      font-weight: 520;
+    }
+
+    .badge {
+      margin-left: auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(113, 128, 111, 0.12);
+      color: var(--sage-deep);
+      font-size: 11px;
+      font-weight: 860;
+      white-space: nowrap;
+    }
+
+    .badge.active {
+      background: rgba(199, 166, 106, 0.17);
+      color: var(--gold-deep);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 30px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 230, 211, 0.38);
+    }
+
+    .action-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .button-group {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .soft-button {
+      min-width: 116px;
+    }
+
+    .primary-button {
+      min-width: 158px;
+      color: #fffaf2;
+      border-color: rgba(255, 252, 244, 0.56);
+      background: linear-gradient(135deg, var(--blue-gray), var(--blue-gray-deep));
+      box-shadow: 0 16px 36px rgba(83, 104, 105, 0.24);
+      opacity: 0.56;
+      cursor: default;
+    }
+
+    .primary-button.ready {
+      opacity: 1;
+      cursor: pointer;
+    }
+
+    .primary-button.ready:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(83, 104, 105, 0.3);
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .side-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .side-head h2 {
+      font-size: 22px;
+    }
+
+    .ready-pill {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(199, 166, 106, 0.17);
+      color: var(--gold-deep);
+      font-size: 12px;
+      font-weight: 860;
+    }
+
+    .ready-pill.done {
+      background: rgba(113, 128, 111, 0.13);
+      color: var(--sage-deep);
+    }
+
+    .detail-panel {
+      padding: 16px;
+      border: 1px solid rgba(111, 129, 130, 0.22);
+      border-radius: var(--radius);
+      background: rgba(239, 244, 242, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .detail-panel strong {
+      display: block;
+      color: var(--blue-gray-deep);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .detail-panel p {
+      margin: 9px 0 0;
+      color: #5f5b52;
+      font-size: 13px;
+      line-height: 1.66;
+      font-weight: 520;
+    }
+
+    .brief-drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(47, 49, 43, 0.34);
+      backdrop-filter: blur(12px);
+    }
+
+    .brief-drawer.open {
+      display: flex;
+    }
+
+    .brief-modal {
+      width: min(620px, 100%);
+      border: 1px solid rgba(255, 252, 244, 0.7);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 244, 0.92);
+      box-shadow: 0 28px 72px rgba(47, 49, 43, 0.24);
+      padding: 24px;
+    }
+
+    .brief-modal h3 {
+      margin: 0;
+      color: #30332d;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .brief-modal p {
+      margin: 13px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .workspace {
+        width: min(100% - 36px, 960px);
+        height: auto;
+        min-height: calc(100vh - 48px);
+        margin: 24px auto;
+      }
+
+      .topbar,
+      .hero,
+      .layout,
+      .generation-area {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .summary-strip {
+        max-width: none;
+      }
+
+      .side-panel {
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .workspace {
+        width: min(100% - 24px, 560px);
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .panel-head,
+      .generation-area,
+      .action-row {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .panel-head,
+      .action-row,
+      .stage-head,
+      .progress-shell {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .chapter-chip {
+        flex-basis: auto;
+      }
+
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .manuscript-stage {
+        min-height: 390px;
+      }
+
+      .paper-sheet {
+        min-height: 260px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .soft-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <main class="workspace">
+    <header class="topbar" aria-label="页面导航">
+      <button class="back-button" type="button">返回场景简述</button>
+      <div class="crumb">主页 / 工作台 / 场景写作 / 正文生成中</div>
+      <div class="status-pill"><span class="dot"></span>模型已连接</div>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">正文生成中</h1>
+        <p>系统正在把场景简述、角色行动、世界事实和记忆锚点合成为当前场景正文草案。</p>
+      </div>
+
+      <div class="summary-strip" aria-label="生成摘要">
+        <div class="summary-item">
+          <span>当前场景</span>
+          <strong>场景 1 / 4</strong>
+        </div>
+        <div class="summary-item">
+          <span>当前阶段</span>
+          <strong id="summaryStage">读取场景简述</strong>
+        </div>
+        <div class="summary-item">
+          <span>草案状态</span>
+          <strong id="summaryState">生成中</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <article class="main-panel" aria-label="正文生成状态">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">正文生成</p>
+            <h2>钟楼证词的第一处裂缝</h2>
+            <p class="hint">正文草案生成完成后，会进入草案审阅页；正式记忆写入会在后续确认流程中处理。</p>
+          </div>
+          <div class="chapter-chip">
+            <strong id="stagePercent">0%</strong>
+            <span id="chipState">正在生成</span>
+          </div>
+        </div>
+
+        <div class="generation-area">
+          <section class="manuscript-stage" aria-label="手稿生成动画">
+            <div class="stage-head">
+              <h3 id="activeStageTitle">读取场景简述</h3>
+              <span id="activeStageMeta">场景目标与边界</span>
+            </div>
+
+            <div class="paper-sheet">
+              <div class="draft-title"></div>
+              <div class="line-stack" aria-hidden="true">
+                <span class="ink-line" style="width: 94%;"></span>
+                <span class="ink-line" style="width: 88%;"></span>
+                <span class="ink-line" style="width: 79%;"></span>
+                <span class="ink-line" style="width: 96%;"></span>
+                <span class="ink-line" style="width: 72%;"></span>
+                <span class="ink-line" style="width: 90%;"></span>
+                <span class="ink-line" style="width: 84%;"></span>
+                <span class="ink-line" style="width: 68%;"></span>
+                <span class="ink-line" style="width: 92%;"></span>
+                <span class="ink-line" style="width: 75%;"></span>
+              </div>
+              <div class="paper-footer"><span class="writing-dot"></span><span id="paperStatus">段落正在成形</span></div>
+            </div>
+
+            <div class="progress-shell">
+              <div class="progress-track" aria-label="生成进度">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <div class="progress-number" id="progressNumber">0%</div>
+            </div>
+          </section>
+
+          <section class="pipeline" aria-label="生成管线">
+            <article class="current-card">
+              <h3 id="currentStage">读取场景简述</h3>
+              <p id="currentText">正在整理场景目标、必须发生项、不能发生项和用户补充。</p>
+            </article>
+
+            <article class="brief-card">
+              <h3>生成依据</h3>
+              <p>场景目标：在钟楼旧档案室发现证词时间缺口；角色行动：林砚核对档案，薇拉提出质疑；边界：不揭露幕后身份。</p>
+            </article>
+
+            <div class="step-list" id="stepList"></div>
+          </section>
+        </div>
+
+        <footer class="action-row">
+          <p class="action-note" id="actionNote">正文草案正在生成。完成后可以进入草案审阅。</p>
+          <div class="button-group">
+            <button class="soft-button" type="button" id="briefButton">查看场景简述</button>
+            <button class="soft-button" type="button" id="speedButton">加快演示</button>
+            <button class="primary-button" type="button" id="reviewButton">进入草案审阅</button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="side-panel" aria-label="来源合流">
+        <div class="side-head">
+          <div>
+            <p class="eyebrow">来源流</p>
+            <h2>来源合流</h2>
+          </div>
+          <span class="ready-pill" id="flowPill">生成中</span>
+        </div>
+
+        <div class="step-list" id="sourceList"></div>
+
+        <div class="detail-panel">
+          <strong id="detailTitle">不会自动确认</strong>
+          <p id="detailText">生成完成后只进入正文草案审阅。是否确认正文、写入记忆、推进下一场景，会在后续页面中由用户决定。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="brief-drawer" id="briefDrawer" aria-hidden="true">
+    <div class="brief-modal" role="dialog" aria-modal="true" aria-labelledby="briefModalTitle">
+      <h3 id="briefModalTitle">场景简述</h3>
+      <p>主角在钟楼旧档案室重新核对晚宴后的证词，发现所有记录都跳过了同一个时间点。场景应让线索从日常秩序里露出裂缝，同时让队伍内部对是否继续追查产生轻微分歧。</p>
+      <p>必须带入：半枚火漆印章、晚宴离席者、钟楼第十三声、旧档案管理员的含糊态度。不要在本场景直接揭露龙影传说真相。</p>
+      <div class="modal-actions">
+        <button class="soft-button" type="button" id="closeBrief">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const stages = [
+      {
+        title: "读取场景简述",
+        meta: "场景目标与边界",
+        text: "正在整理场景目标、必须发生项、不能发生项和用户补充。",
+        percent: 16,
+      },
+      {
+        title: "组装角色",
+        meta: "参与者与行动",
+        text: "正在带入林砚、薇拉、巡钟人和旧档案管理员的行动边界。",
+        percent: 34,
+      },
+      {
+        title: "读取记忆",
+        meta: "章节记忆与角色状态",
+        text: "正在读取晚宴缺口、半枚火漆印章和主角当前的克制状态。",
+        percent: 52,
+      },
+      {
+        title: "连续性预检",
+        meta: "事实边界",
+        text: "正在确认本场景不会提前揭露幕后身份或补全火漆印章。",
+        percent: 68,
+      },
+      {
+        title: "正文成形",
+        meta: "段落生成",
+        text: "正在把线索、动作和氛围组织为当前场景正文草案。",
+        percent: 86,
+      },
+      {
+        title: "等待审阅",
+        meta: "草案已生成",
+        text: "正文草案已经准备好，可以进入草案审阅。",
+        percent: 100,
+      },
+    ];
+
+    const sources = [
+      ["场景简述", "场景目标、必须带入和避免项。"],
+      ["角色", "出场角色与行动边界。"],
+      ["世界事实", "钟楼记录、晚宴缺口、龙影传闻。"],
+      ["记忆", "章节记忆与角色状态。"],
+      ["连续性", "阻塞问题与事实边界预检。"],
+      ["质量面", "生成后进入草案审阅。"],
+    ];
+
+    const progressFill = document.getElementById("progressFill");
+    const progressNumber = document.getElementById("progressNumber");
+    const stagePercent = document.getElementById("stagePercent");
+    const activeStageTitle = document.getElementById("activeStageTitle");
+    const activeStageMeta = document.getElementById("activeStageMeta");
+    const currentStage = document.getElementById("currentStage");
+    const currentText = document.getElementById("currentText");
+    const summaryStage = document.getElementById("summaryStage");
+    const summaryState = document.getElementById("summaryState");
+    const chipState = document.getElementById("chipState");
+    const flowPill = document.getElementById("flowPill");
+    const actionNote = document.getElementById("actionNote");
+    const paperStatus = document.getElementById("paperStatus");
+    const reviewButton = document.getElementById("reviewButton");
+    const stepList = document.getElementById("stepList");
+    const sourceList = document.getElementById("sourceList");
+    const briefDrawer = document.getElementById("briefDrawer");
+
+    let stageIndex = 0;
+    let timerMs = 2100;
+    let intervalId = null;
+
+    function renderSteps() {
+      stepList.innerHTML = "";
+      stages.forEach((stage, index) => {
+        const card = document.createElement("article");
+        card.className = `source-card${index < stageIndex ? " done" : ""}${index === stageIndex ? " active" : ""}`;
+        const badgeClass = index === stageIndex ? "badge active" : "badge";
+        const badge = index < stageIndex ? "完成" : index === stageIndex ? "进行中" : "等待";
+        card.innerHTML = `
+          <div class="source-top"><span class="source-icon">${index < stageIndex ? "✓" : index + 1}</span>${stage.title}<span class="${badgeClass}">${badge}</span></div>
+          <p>${stage.text}</p>
+        `;
+        stepList.appendChild(card);
+      });
+
+      sourceList.innerHTML = "";
+      sources.forEach((source, index) => {
+        const card = document.createElement("article");
+        card.className = `source-card${index < Math.min(stageIndex + 1, sources.length) ? " done" : ""}${index === stageIndex ? " active" : ""}`;
+        const badgeClass = index === stageIndex ? "badge active" : "badge";
+        const badge = index < stageIndex ? "已读取" : index === stageIndex ? "读取中" : "等待";
+        card.innerHTML = `
+          <div class="source-top"><span class="source-icon">${index < stageIndex ? "✓" : index + 1}</span>${source[0]}<span class="${badgeClass}">${badge}</span></div>
+          <p>${source[1]}</p>
+        `;
+        sourceList.appendChild(card);
+      });
+    }
+
+    function setStage(index) {
+      stageIndex = Math.min(index, stages.length - 1);
+      const stage = stages[stageIndex];
+      progressFill.style.width = `${stage.percent}%`;
+      progressNumber.textContent = `${stage.percent}%`;
+      stagePercent.textContent = `${stage.percent}%`;
+      activeStageTitle.textContent = stage.title;
+      activeStageMeta.textContent = stage.meta;
+      currentStage.textContent = stage.title;
+      currentText.textContent = stage.text;
+      summaryStage.textContent = stage.title;
+      paperStatus.textContent = stageIndex >= stages.length - 2 ? "草案正在收束" : "段落正在成形";
+      renderSteps();
+
+      if (stage.percent >= 100) {
+        summaryState.textContent = "待审阅";
+        chipState.textContent = "已生成";
+        flowPill.textContent = "已完成";
+        flowPill.classList.add("done");
+        actionNote.textContent = "正文草案已经生成，可以进入草案审阅。";
+        reviewButton.classList.add("ready");
+        window.clearInterval(intervalId);
+      }
+    }
+
+    function startTimer() {
+      window.clearInterval(intervalId);
+      intervalId = window.setInterval(() => {
+        setStage(stageIndex + 1);
+      }, timerMs);
+    }
+
+    document.getElementById("speedButton").addEventListener("click", () => {
+      timerMs = 650;
+      startTimer();
+    });
+
+    document.getElementById("briefButton").addEventListener("click", () => {
+      briefDrawer.classList.add("open");
+      briefDrawer.setAttribute("aria-hidden", "false");
+    });
+
+    document.getElementById("closeBrief").addEventListener("click", () => {
+      briefDrawer.classList.remove("open");
+      briefDrawer.setAttribute("aria-hidden", "true");
+    });
+
+    briefDrawer.addEventListener("click", (event) => {
+      if (event.target === briefDrawer) {
+        briefDrawer.classList.remove("open");
+        briefDrawer.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    reviewButton.addEventListener("click", () => {
+      if (!reviewButton.classList.contains("ready")) {
+        actionNote.textContent = "正文还在生成，请等待草案完成。";
+        return;
+      }
+      actionNote.textContent = "正在进入草案审阅。";
+    });
+
+    setStage(0);
+    startTimer();
+  </script>
+</body>
+</html>

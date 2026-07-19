@@ -26,11 +26,12 @@ services:
     environment:
       MULTIPLE_AGENT_STORIES_DATA_DIR: /workspace/app/data/local_project
       MULTIPLE_AGENT_STORIES_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+      MULTIPLE_AGENT_STORIES_ANALYZER_OUTPUT_ROOTS: "/workspace/app/data/analyzer_outputs;/workspace/app/Story Analyzer/data/handoff_exports"
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${MAS_BACKEND_PORT:-8000}:8000"
     volumes:
       - app_data:/workspace/app/data
 
@@ -44,7 +45,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:80"
+      - "127.0.0.1:${MAS_FRONTEND_PORT:-3000}:80"
 
 volumes:
   app_data:

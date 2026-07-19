@@ -6,6 +6,8 @@ from app.backend.models.modification_impact import (
     ModificationImpactPreviewRequest,
     ModificationImpactPreviewResponse,
 )
+from app.backend.api.story_workspace_scope import scoped_story_service
+from app.backend.services.active_project_boundary_service import ActiveProjectStoryDataBlocked
 from app.backend.services.modification_impact_service import ModificationImpactService
 from app.backend.storage.json_store import StorageError
 
@@ -14,7 +16,22 @@ router = APIRouter()
 modification_impact_service = ModificationImpactService()
 
 
+def active_modification_impact_service() -> ModificationImpactService:
+    return scoped_story_service(
+        modification_impact_service,
+        ModificationImpactService,
+    )
+
+
 def modification_impact_error_response(exc: Exception) -> HTTPException:
+    if isinstance(exc, ActiveProjectStoryDataBlocked):
+        return HTTPException(
+            status_code=404,
+            detail={
+                "error_code": "STORY_DATA_SETUP_REQUIRED_FOR_ACTIVE_PROJECT",
+                "message": "Story workspace data is not available for the active project.",
+            },
+        )
     message = str(exc)
     if message.startswith("MODIFICATION_IMPACT_SOURCE_MISSING") or message.startswith(
         "MODIFICATION_IMPACT_PREVIEW_MISSING"
@@ -36,8 +53,11 @@ def modification_impact_error_response(exc: Exception) -> HTTPException:
                 "message": message.split(":", 1)[-1].strip(),
             },
         )
-    if message.startswith("MODIFICATION_IMPACT_OPTION_DISABLED") or message.startswith(
-        "M6_"
+    if (
+        message.startswith("MODIFICATION_IMPACT_OPTION_DISABLED")
+        or message.startswith("M6_")
+        or message.startswith("HARD_RULE_CONFLICT")
+        or message.startswith("SCENE_REVISION_UNSAFE_OUTPUT")
     ):
         return HTTPException(
             status_code=409,
@@ -65,7 +85,7 @@ def create_modification_impact_preview(
 ) -> ModificationImpactPreviewResponse:
     try:
         return ModificationImpactPreviewResponse(
-            preview=modification_impact_service.create_preview(request)
+            preview=active_modification_impact_service().create_preview(request)
         )
     except StorageError as exc:
         raise modification_impact_error_response(exc) from exc
@@ -78,7 +98,7 @@ def list_modification_impact_previews(
     status: str | None = None,
 ) -> ModificationImpactPreviewListResponse:
     try:
-        previews = modification_impact_service.list_previews(
+        previews = active_modification_impact_service().list_previews(
             source_object_type=source_object_type,
             source_object_id=source_object_id,
             status=status,
@@ -95,7 +115,7 @@ def list_modification_impact_previews(
 def get_modification_impact_preview(preview_id: str) -> ModificationImpactPreviewResponse:
     try:
         return ModificationImpactPreviewResponse(
-            preview=modification_impact_service.get_preview(preview_id)
+            preview=active_modification_impact_service().get_preview(preview_id)
         )
     except StorageError as exc:
         raise modification_impact_error_response(exc) from exc
@@ -107,7 +127,7 @@ def choose_modification_impact_preview(
     request: ModificationImpactChooseRequest,
 ) -> ModificationImpactPreviewResponse:
     try:
-        preview, decision, candidate, memory_plan = modification_impact_service.choose_preview(
+        preview, decision, candidate, memory_plan = active_modification_impact_service().choose_preview(
             preview_id,
             request,
         )

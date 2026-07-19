@@ -45,6 +45,7 @@ class OrderedStoryInformationPackage(BaseModel):
 class SceneWritingContext(BaseModel):
     project_id: str = ""
     chapter_id: str = ""
+    chapter_index: int = 0
     scene_id: str = ""
     scene_index: int = 1
     scene_count: int = 0
@@ -179,6 +180,9 @@ class SceneGenerateFirstRequest(BaseModel):
 
 class SceneRegenerateFirstRequest(BaseModel):
     regeneration_hint: str = ""
+    scene_id: Optional[str] = None
+    chapter_id: Optional[str] = None
+    scene_index: Optional[int] = None
 
 
 class SceneConfirmDraftRequest(BaseModel):

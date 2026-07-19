@@ -1,0 +1,1170 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 8.5 UI 流程连接检查器</title>
+  <style>
+    :root {
+      --ink: #302d29;
+      --muted: #756a61;
+      --soft: #9a8f82;
+      --paper: #f2eadc;
+      --paper-strong: #fffaf0;
+      --wash: #e5d7be;
+      --line: rgba(94, 76, 60, 0.18);
+      --line-strong: rgba(94, 76, 60, 0.3);
+      --accent: #ad7c6a;
+      --accent-dark: #7a5b50;
+      --sage: #5c6d62;
+      --sage-dark: #40544a;
+      --shadow: 0 18px 52px rgba(57, 45, 35, 0.14);
+      font-family: "Inter", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 10%, rgba(255, 250, 240, 0.9), transparent 30%),
+        radial-gradient(circle at 86% 4%, rgba(173, 124, 106, 0.13), transparent 30%),
+        linear-gradient(120deg, #e8dfcf, #d8c8ad);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .sidebar,
+    .viewer-shell {
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      background: rgba(246, 240, 229, 0.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px);
+    }
+
+    .sidebar {
+      min-height: calc(100vh - 36px);
+      border-radius: 22px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .sidebar-head {
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 30px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .summary {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .toolbar {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      gap: 10px;
+    }
+
+    .search {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      background: rgba(255, 250, 240, 0.72);
+      color: var(--ink);
+      padding: 0 14px;
+      outline: none;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip,
+    .nav-button,
+    .control-button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 250, 240, 0.72);
+      color: var(--muted);
+      min-height: 34px;
+      padding: 8px 12px;
+      font-weight: 800;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease, border-color 180ms ease;
+    }
+
+    .chip.active,
+    .control-button.primary,
+    .nav-button.active {
+      border-color: rgba(92, 109, 98, 0.28);
+      background: var(--sage);
+      color: #fffaf0;
+      box-shadow: 0 10px 24px rgba(64, 84, 74, 0.18);
+    }
+
+    .chip:hover,
+    .nav-button:hover,
+    .control-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .flow-list {
+      overflow: auto;
+      padding: 12px;
+    }
+
+    .flow-group {
+      margin-bottom: 12px;
+    }
+
+    .group-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 8px 6px;
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .group-count {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .nav-button {
+      width: 100%;
+      border-radius: 16px;
+      padding: 12px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      background: rgba(255, 250, 240, 0.56);
+    }
+
+    .nav-button + .nav-button {
+      margin-top: 7px;
+    }
+
+    .step-number {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(92, 109, 98, 0.14);
+      color: var(--sage-dark);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .nav-button.active .step-number {
+      background: rgba(255, 250, 240, 0.24);
+      color: #fffaf0;
+    }
+
+    .step-title {
+      display: block;
+      overflow: hidden;
+      color: inherit;
+      font-size: 14px;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .step-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .tag {
+      border-radius: 999px;
+      border: 1px solid rgba(94, 76, 60, 0.16);
+      background: rgba(255, 250, 240, 0.48);
+      padding: 3px 7px;
+    }
+
+    .sidebar-foot {
+      padding: 12px 20px 18px;
+      border-top: 1px solid var(--line);
+      color: var(--soft);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .viewer-shell {
+      min-width: 0;
+      min-height: calc(100vh - 36px);
+      border-radius: 26px;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .viewer-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .viewer-title {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .viewer-note {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .head-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .flow-status {
+      padding: 12px 22px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      background: rgba(255, 250, 240, 0.36);
+    }
+
+    .connection {
+      display: flex;
+      min-width: 0;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .connection strong {
+      color: var(--ink);
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(94, 76, 60, 0.12);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--accent));
+      transition: width 220ms ease;
+    }
+
+    .action-panel {
+      padding: 12px 22px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 250, 240, 0.28);
+      display: grid;
+      gap: 10px;
+    }
+
+    .action-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .action-panel-title {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .action-card {
+      min-height: 42px;
+      max-width: 320px;
+      border: 1px solid rgba(94, 76, 60, 0.16);
+      border-radius: 14px;
+      background: rgba(255, 250, 240, 0.68);
+      color: var(--ink);
+      padding: 9px 12px;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+      box-shadow: 0 10px 24px rgba(57, 45, 35, 0.07);
+    }
+
+    .action-card:hover {
+      border-color: rgba(92, 109, 98, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .action-card:disabled {
+      cursor: default;
+      opacity: 0.58;
+      transform: none;
+    }
+
+    .action-label {
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .action-meta {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .frame-wrap {
+      position: relative;
+      min-height: 0;
+      height: calc(100vh - 306px);
+      min-height: 620px;
+      background:
+        linear-gradient(120deg, rgba(48, 45, 41, 0.06), transparent),
+        rgba(236, 228, 213, 0.58);
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #efe7dc;
+      opacity: 1;
+      transition: opacity 180ms ease;
+    }
+
+    iframe.loading {
+      opacity: 0.28;
+    }
+
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state.visible {
+      display: grid;
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        min-height: auto;
+        max-height: 56vh;
+      }
+
+      .viewer-shell {
+        min-height: 82vh;
+      }
+
+      .frame-wrap {
+        height: 72vh;
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .app {
+        padding: 10px;
+      }
+
+      .sidebar,
+      .viewer-shell {
+        border-radius: 18px;
+      }
+
+      .viewer-head,
+      .flow-status {
+        grid-template-columns: 1fr;
+      }
+
+      .head-actions {
+        justify-content: stretch;
+      }
+
+      .control-button {
+        flex: 1 1 100%;
+      }
+
+      .action-panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .action-card {
+        max-width: none;
+        flex: 1 1 100%;
+      }
+
+      .frame-wrap {
+        height: 78vh;
+        min-height: 560px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar" aria-label="UI 流程目录">
+      <header class="sidebar-head">
+        <p class="eyebrow">Phase 8.5 UI Flow</p>
+        <h1>流程连接检查器</h1>
+        <p class="summary">用于检查所有最终 UI 原型的顺序、分支连接和页面跳转是否通顺。默认从主页开始，开场动画保留为第 1 步。</p>
+      </header>
+
+      <section class="toolbar">
+        <input id="searchInput" class="search" type="search" placeholder="搜索页面、模块或连接说明" aria-label="搜索 UI 页面">
+        <div class="filter-row" aria-label="筛选流程类型">
+          <button class="chip active" type="button" data-filter="全部">全部</button>
+          <button class="chip" type="button" data-filter="主线">主线</button>
+          <button class="chip" type="button" data-filter="分支">分支</button>
+          <button class="chip" type="button" data-filter="子流程">子流程</button>
+          <button class="chip" type="button" data-filter="静态稿">静态稿</button>
+          <button class="chip" type="button" data-filter="壳层">壳层</button>
+          <button class="chip" type="button" data-filter="设置">设置</button>
+        </div>
+      </section>
+
+      <nav id="flowList" class="flow-list" aria-label="全部 UI 页面顺序"></nav>
+
+      <footer class="sidebar-foot">
+        键盘可用：左/右方向键切换上一页/下一页。哈希地址会记录当前步骤，刷新后仍停留在同一页。
+      </footer>
+    </aside>
+
+    <section class="viewer-shell" aria-label="UI 页面预览">
+      <header class="viewer-head">
+        <div>
+          <p class="eyebrow" id="currentGroup">加载中</p>
+          <h2 class="viewer-title" id="currentTitle">正在准备流程</h2>
+          <p class="viewer-note" id="currentNote">读取最终稿连接清单。</p>
+        </div>
+        <div class="head-actions">
+          <button id="prevButton" class="control-button" type="button">上一页</button>
+          <button id="nextButton" class="control-button primary" type="button">下一页</button>
+          <button id="openButton" class="control-button" type="button">打开当前页</button>
+        </div>
+      </header>
+
+      <section class="flow-status">
+        <div>
+          <div class="connection" id="connectionText"></div>
+          <div class="progress-track" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+        </div>
+        <div class="step-meta" id="currentTags"></div>
+      </section>
+
+      <section class="action-panel" aria-label="本页交互跳转">
+        <div class="action-panel-head">
+          <span class="action-panel-title">本页交互</span>
+          <span id="actionSummary">根据 Phase 8.5 前端 action / API 映射跳转。</span>
+        </div>
+        <div class="action-buttons" id="actionButtons"></div>
+      </section>
+
+      <div class="frame-wrap">
+        <iframe id="previewFrame" title="当前 UI 页面预览"></iframe>
+        <div id="emptyState" class="empty-state">没有匹配的页面。</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const FLOW = [
+      { group: "00 开场动画", title: "开场动画", kind: "主线", path: "../00 Opening Animation/opening-animation-live-final-v1.html", note: "用户进入产品后的第一段氛围动画；结束后进入主页。" },
+      { group: "00 开场动画", title: "开场动画分镜静态稿", kind: "静态稿", path: "../00 Opening Animation/opening-animation-final-v1-storyboard.svg", note: "开场动画的分镜/静态参考稿，用于检查动画节奏与场景连接。" },
+      { group: "01 主页", title: "主页静态稿", kind: "静态稿", path: "../01 Main Page/main-page-home-final-v1.svg", note: "主页最终静态视觉参考。" },
+      { group: "01 主页", title: "主页 / 开始创作弹出层", kind: "主线", path: "../01 Main Page/01 Start Creation Popout/start-creation-popout-animation-final-v1.html", note: "主页入口，开始创作按钮弹出新创作、继续创作、历史创作。" },
+      { group: "01 主页", title: "开始创作弹出层静态稿", kind: "静态稿", path: "../01 Main Page/01 Start Creation Popout/start-creation-popout-final-v1.svg", note: "开始创作弹出层的静态视觉参考。" },
+      { group: "02 项目创建", title: "新创作后的项目创建", kind: "主线", path: "../02 Project Creation/visual-drafts/project-creation-final-v1.html", note: "从主页的新创作进入，创建项目后进入当前项目总览。" },
+      { group: "03 项目列表", title: "继续 / 历史 / 项目列表", kind: "分支", path: "../03 Projects And Works/visual-drafts/projects-and-works-final-v1.html", note: "从主页继续创作、历史创作或作品集进入；选中项目后回到当前项目总览。" },
+      { group: "04 当前项目", title: "当前项目总览", kind: "主线", path: "../04 Current Project/visual-drafts/current-project-overview-final-v1.html", note: "当前项目的总览入口，按 Phase 8.5 顺序进入模板、Framework 和后续工作区。" },
+      { group: "05 模板与演示", title: "模板与演示", kind: "主线", path: "../05 Template Demo/visual-drafts/template-demo-final-v1.html", note: "选择模板或演示种子后进入 Framework 编排。" },
+      { group: "06 Framework 编排", title: "Framework 编排", kind: "主线", path: "../06 Framework Composition/visual-drafts/framework-composition-final-v1.html", note: "主骨架与章节结构编排；可进入模板库、导入编辑会话或分析器分支。" },
+      { group: "06 Framework 编排", title: "Framework Library", kind: "分支", path: "../06 Framework Composition/02 Framework Library/visual-drafts/framework-library-final-v1.html", note: "Framework 模板库分支，选择后回到 Framework 编排。" },
+      { group: "06 Framework 编排", title: "导入编辑会话", kind: "分支", path: "../06 Framework Composition/03 Imported Edit Session/visual-drafts/imported-edit-session-final-v1.html", note: "承接已导入或已分析内容的编辑会话，完成后回到 Framework 编排。" },
+      { group: "07 导入故事 / 故事分析器", title: "Analyze Stories 总览", kind: "分支", path: "../07 Import Story Analyzer/00 Legacy Analyze Stories Overview/visual-drafts/analyze-stories-final-v1.html", note: "Framework 内部分析器分支的总览参考，不作为独立主线页。" },
+      { group: "07 导入故事 / 故事分析器", title: "导入源", kind: "分支", path: "../07 Import Story Analyzer/01 Import Source/visual-drafts/import-source-v1.html", note: "选择文本、文件或粘贴内容作为分析源。" },
+      { group: "07 导入故事 / 故事分析器", title: "分析中", kind: "分支", path: "../07 Import Story Analyzer/02 Analyzing/visual-drafts/analyzing-v1.html", note: "分析导入故事，抽取 Framework、世界、角色和续写风险。" },
+      { group: "07 导入故事 / 故事分析器", title: "分析结果总览", kind: "分支", path: "../07 Import Story Analyzer/03 Analysis Result Overview/visual-drafts/analysis-result-overview-v1.html", note: "展示分析结果与可进入的后续整理路径。" },
+      { group: "07 导入故事 / 故事分析器", title: "Framework 候选选择", kind: "分支", path: "../07 Import Story Analyzer/04 Framework Candidate Selection/visual-drafts/framework-candidate-selection-v1.html", note: "选择或合并分析出的 Framework 候选后回到 Framework 编排。" },
+      { group: "08 故事设定", title: "设定入口", kind: "主线", path: "../08 Story Setup/01 Setup Entry/visual-drafts/story-setup-entry-v1.html", note: "用户自由描述故事设定，生成前不强制限制创作。" },
+      { group: "08 故事设定", title: "故事设定生成中", kind: "主线", path: "../08 Story Setup/02 Generating/visual-drafts/story-setup-generating-v1.html", note: "设定草案生成状态。" },
+      { group: "08 故事设定", title: "故事设定草案审阅", kind: "主线", path: "../08 Story Setup/03 Draft Review/visual-drafts/story-setup-draft-review-v1.html", note: "审阅设定草案、保存补充或进入决策。" },
+      { group: "08 故事设定", title: "缺失信息处理", kind: "子流程", path: "../08 Story Setup/04 Missing Information Handling/visual-drafts/story-setup-missing-info-v1.html", note: "集中回答设定草案中识别出的缺口。" },
+      { group: "08 故事设定", title: "审查与决策", kind: "主线", path: "../08 Story Setup/05 Review And Decision/visual-drafts/story-setup-review-decision-v1.html", note: "对设定草案做确认、修订或继续处理。" },
+      { group: "08 故事设定", title: "交接与初始化", kind: "主线", path: "../08 Story Setup/06 Handoff Initialization/visual-drafts/story-setup-handoff-initialization-v1.html", note: "将故事设定交接给世界画布、角色和后续工作区。" },
+      { group: "09 世界画布", title: "来源前提与生成入口", kind: "主线", path: "../09 World Canvas/01 Source Premise And Generation Entry/visual-drafts/world-canvas-source-premise-entry-v1.html", note: "用户描述想要的世界，生成世界事实草案。" },
+      { group: "09 世界画布", title: "世界画布生成中", kind: "主线", path: "../09 World Canvas/02 Generating/visual-drafts/world-canvas-generating-v1.html", note: "世界画布草案生成状态。" },
+      { group: "09 世界画布", title: "世界画布草案审阅", kind: "主线", path: "../09 World Canvas/03 Draft Review/visual-drafts/world-canvas-draft-review-v1.html", note: "审阅世界结构、规则、未知项和冲突提示。" },
+      { group: "09 世界画布", title: "缺口与冲突处理", kind: "子流程", path: "../09 World Canvas/04 Gap And Conflict Handling/visual-drafts/world-canvas-gap-conflict-handling-v1.html", note: "处理世界事实缺口、逻辑冲突和确认问题。" },
+      { group: "09 世界画布", title: "修订世界草案", kind: "子流程", path: "../09 World Canvas/05 Draft Revision/visual-drafts/world-canvas-draft-revision-v1.html", note: "输入修订方向后回到生成/审阅。" },
+      { group: "09 世界画布", title: "确认世界事实", kind: "主线", path: "../09 World Canvas/06 Confirm World Facts/visual-drafts/world-canvas-confirm-world-facts-v1.html", note: "确认世界事实底座，交接给角色主轴。" },
+      { group: "10 角色主轴", title: "角色主轴入口", kind: "主线", path: "../10 Character Spine/01 Character Spine Entry/visual-drafts/character-spine-entry-v1.html", note: "自由描述角色方向，选择角色等级并生成角色草案。" },
+      { group: "10 角色主轴", title: "角色生成中", kind: "主线", path: "../10 Character Spine/02 Generating/visual-drafts/character-spine-generating-v1.html", note: "角色草案生成状态。" },
+      { group: "10 角色主轴", title: "角色草案审阅", kind: "主线", path: "../10 Character Spine/03 Draft Review/visual-drafts/character-spine-draft-review-v1.html", note: "审阅角色草案、关系边界和可确认内容。" },
+      { group: "10 角色主轴", title: "关系与冲突处理", kind: "子流程", path: "../10 Character Spine/04 Relationship Conflict Handling/visual-drafts/character-spine-conflict-handling-v1.html", note: "处理角色关系冲突、阻塞和确认项。" },
+      { group: "10 角色主轴", title: "缺失信息处理", kind: "子流程", path: "../10 Character Spine/05 Missing Information Handling/visual-drafts/character-spine-missing-info-v1.html", note: "补齐角色关键记忆、动机、关系缺口等信息。" },
+      { group: "10 角色主轴", title: "修订角色草案", kind: "子流程", path: "../10 Character Spine/06 Character Draft Revision/visual-drafts/character-spine-draft-revision-v1.html", note: "提交修订后回到生成/审阅。" },
+      { group: "10 角色主轴", title: "确认角色主轴", kind: "主线", path: "../10 Character Spine/07 Confirm Character Spine/visual-drafts/character-spine-confirmation-v1.html", note: "确认角色底座，继续进入章节计划。" },
+      { group: "10 角色管理", title: "角色档案库与分级管理", kind: "子流程", path: "../10 Character Spine/08 Role Library And Tier Management/visual-drafts/role-library-tier-management-v1.html", note: "角色列表、A/B/C/D 筛选、手动创建、编辑、分级、归档。" },
+      { group: "10 角色管理", title: "角色上下文预览", kind: "子流程", path: "../10 Character Spine/09 Role Context Preview/visual-drafts/role-context-preview-v1.html", note: "只读构建下游可读取的角色上下文包。" },
+      { group: "10 角色管理", title: "A-tier 状态变更审阅", kind: "子流程", path: "../10 Character Spine/10 A-tier State Change Review/visual-drafts/a-tier-state-change-review-v1.html", note: "审阅并确认或拒绝 A 级角色重大状态变化。" },
+      { group: "11 章节计划", title: "来源前提与当前章 Framework 入口", kind: "主线", path: "../11 Chapter Planning/01 Source Preconditions And Current Framework Entry/visual-drafts/chapter-planning-source-preconditions-entry-v1.html", note: "读取前置内容，进入当前章 Framework 构建。" },
+      { group: "11 章节计划", title: "当前章 Framework 构建中", kind: "主线", path: "../11 Chapter Planning/02 Building Current Chapter Framework/visual-drafts/chapter-planning-building-current-framework-v1.html", note: "当前章框架构建状态。" },
+      { group: "11 章节计划", title: "当前章 Framework 审阅", kind: "主线", path: "../11 Chapter Planning/03 Current Chapter Framework Review/visual-drafts/chapter-planning-current-framework-review-v1.html", note: "审阅当前章 Framework，再进入章节路线。" },
+      { group: "11 章节计划", title: "章节路线生成入口", kind: "主线", path: "../11 Chapter Planning/04 Chapter Route Generation Entry/visual-drafts/chapter-planning-route-generation-entry-v1.html", note: "设置章节路线生成前提。" },
+      { group: "11 章节计划", title: "章节路线生成中", kind: "主线", path: "../11 Chapter Planning/05 Generating Chapter Route/visual-drafts/chapter-planning-generating-route-v1.html", note: "章节路线生成状态。" },
+      { group: "11 章节计划", title: "章节路线审阅", kind: "主线", path: "../11 Chapter Planning/06 Chapter Route Review/visual-drafts/chapter-planning-route-review-v1.html", note: "滑动审阅章节轨道和章节结构。" },
+      { group: "11 章节计划", title: "场景数设置 / 修复", kind: "子流程", path: "../11 Chapter Planning/07 Scene Count Setting And Repair/visual-drafts/chapter-planning-scene-count-repair-v1.html", note: "修复章节场景数和路线不完整项。" },
+      { group: "11 章节计划", title: "问题处理", kind: "子流程", path: "../11 Chapter Planning/08 Issue Handling/visual-drafts/chapter-planning-issue-handling-v1.html", note: "处理章节计划生成后的阻塞、警告与确认问题。" },
+      { group: "11 章节计划", title: "修订章节计划", kind: "子流程", path: "../11 Chapter Planning/09 Revise Chapter Plan/visual-drafts/chapter-planning-revision-v1.html", note: "提交修订方向后回到生成/审阅。" },
+      { group: "11 章节计划", title: "确认章节计划", kind: "主线", path: "../11 Chapter Planning/10 Confirm Chapter Plan/visual-drafts/chapter-planning-confirm-v1.html", note: "确认章节计划后进入场景写作。" },
+      { group: "12 场景写作", title: "来源前提与场景入口", kind: "主线", path: "../12 Scene Writing/01 Source Preconditions And Scene Entry/visual-drafts/scene-writing-source-preconditions-entry-v1.html", note: "选择当前章/场景，检查前置条件。" },
+      { group: "12 场景写作", title: "场景简述审阅", kind: "主线", path: "../12 Scene Writing/02 Scene Brief Review/visual-drafts/scene-writing-brief-review-v1.html", note: "审阅场景简述并解除生成门控。" },
+      { group: "12 场景写作", title: "正文生成中", kind: "主线", path: "../12 Scene Writing/03 Generating Scene Prose/visual-drafts/scene-writing-generating-prose-v1.html", note: "场景正文生成状态。" },
+      { group: "12 场景写作", title: "场景正文草案审阅", kind: "主线", path: "../12 Scene Writing/04 Scene Prose Draft Review/visual-drafts/scene-writing-prose-draft-review-v1.html", note: "审阅正文、目录、角色表、世界摘要、事件线和锁定约束。" },
+      { group: "12 场景写作", title: "修订场景正文", kind: "子流程", path: "../12 Scene Writing/05 Revising Scene Prose/visual-drafts/scene-writing-revising-prose-v1.html", note: "修订场景正文并预览影响。" },
+      { group: "12 场景写作", title: "连续性与记忆写入", kind: "主线", path: "../12 Scene Writing/06 Continuity And Memory Write/visual-drafts/scene-writing-continuity-memory-write-v1.html", note: "确认连续性和记忆写入。" },
+      { group: "12 场景写作", title: "确认场景 / 进入下一场景", kind: "主线", path: "../12 Scene Writing/07 Confirm Scene And Enter Next Scene/visual-drafts/scene-writing-confirm-enter-next-v1.html", note: "正式确认当前场景并进入下一场景。" },
+      { group: "12 场景高级子流", title: "后台检查修复与参与角色候选", kind: "子流程", path: "../12 Scene Writing/08 Scene Gate Repair And Participant Candidates/visual-drafts/scene-gate-repair-participant-candidates-v1.html", note: "处理后台检查修复与参与角色候选确认。" },
+      { group: "12 场景高级子流", title: "修改影响与未来问题", kind: "子流程", path: "../12 Scene Writing/09 Modification Impact And Future Issues/visual-drafts/modification-impact-future-issues-v1.html", note: "预览修改影响、候选缓存、未来问题和延迟问题。" },
+      { group: "12 场景高级子流", title: "章节收尾与下一章准备", kind: "主线", path: "../12 Scene Writing/10 Chapter Closeout And Next Chapter Prep/visual-drafts/chapter-closeout-next-chapter-prep-v1.html", note: "章节归档、故事草稿完成或准备下一章。" },
+      { group: "13 最终输出", title: "输出入口 / 完成度检查", kind: "主线", path: "../13 Final Output/01 Output Entry And Completion Check/visual-drafts/final-output-entry-completion-check-v1.html", note: "检查成稿输出前的完成度。" },
+      { group: "13 最终输出", title: "成稿组装中", kind: "主线", path: "../13 Final Output/02 Manuscript Assembly In Progress/visual-drafts/final-output-manuscript-assembly-v1.html", note: "组装完整成稿。" },
+      { group: "13 最终输出", title: "成稿审阅", kind: "主线", path: "../13 Final Output/03 Manuscript Review/visual-drafts/final-output-manuscript-review-v1.html", note: "审阅正文、目录、角色表、世界摘要、事件线和锁定约束。" },
+      { group: "13 最终输出", title: "输出设置", kind: "主线", path: "../13 Final Output/04 Output Settings/visual-drafts/final-output-output-settings-v1.html", note: "设置导出格式、范围和归档策略。" },
+      { group: "13 最终输出", title: "导出生成中", kind: "主线", path: "../13 Final Output/05 Export Generation In Progress/visual-drafts/final-output-export-generation-v1.html", note: "导出文件生成状态。" },
+      { group: "13 最终输出", title: "导出结果 / 下载与归档", kind: "主线", path: "../13 Final Output/06 Export Result Download And Archive/visual-drafts/final-output-export-result-v1.html", note: "下载导出结果并归档项目成果。" },
+      { group: "13 最终输出", title: "输出问题处理", kind: "子流程", path: "../13 Final Output/07 Output Issue Handling/visual-drafts/final-output-issue-handling-v1.html", note: "处理输出缺口、导出失败或质量问题。" },
+      { group: "14 插件输出", title: "插件成果入口", kind: "分支", path: "../14 Plugin Outputs/01 Plugin Outputs Entry/visual-drafts/plugin-outputs-entry-v1.html", note: "从最终输出或当前项目进入插件成果。" },
+      { group: "14 插件输出", title: "插件选择 / 输入确认", kind: "分支", path: "../14 Plugin Outputs/02 Plugin Selection And Input Confirmation/visual-drafts/plugin-selection-input-confirmation-v1.html", note: "选择插件并确认输入来源。" },
+      { group: "14 插件输出", title: "插件运行中", kind: "分支", path: "../14 Plugin Outputs/03 Plugin Run In Progress/visual-drafts/plugin-run-in-progress-v1.html", note: "插件运行状态。" },
+      { group: "14 插件输出", title: "检查点处理", kind: "子流程", path: "../14 Plugin Outputs/04 Checkpoint Handling/visual-drafts/plugin-checkpoint-handling-v1.html", note: "处理插件运行中的检查点和用户确认。" },
+      { group: "14 插件输出", title: "插件成果审阅", kind: "分支", path: "../14 Plugin Outputs/05 Plugin Artifact Review/visual-drafts/plugin-artifact-review-v1.html", note: "审阅插件产物并决定下载、归档或返工。" },
+      { group: "14 插件输出", title: "插件输出问题处理", kind: "子流程", path: "../14 Plugin Outputs/06 Plugin Output Issue Handling/visual-drafts/plugin-output-issue-handling-v1.html", note: "处理插件成果缺口、失败或不一致。" },
+      { group: "15 设置", title: "设置总览", kind: "设置", path: "../15 Settings/01 Settings Overview/visual-drafts/settings-overview-v1.html", note: "全局设置入口。" },
+      { group: "15 设置", title: "外观与主题", kind: "设置", path: "../15 Settings/02 Appearance And Theme/visual-drafts/settings-appearance-theme-v1.html", note: "管理莫兰迪主题、用户自定义色彩和未来 AI 氛围主题入口。" },
+      { group: "15 设置", title: "模型配置", kind: "设置", path: "../15 Settings/03 Model Configuration/visual-drafts/settings-model-configuration-v1.html", note: "配置模型、供应商和默认策略。" },
+      { group: "15 设置", title: "当前模型与健康检查", kind: "设置", path: "../15 Settings/04 Current Model And Health Check/visual-drafts/settings-current-model-health-v1.html", note: "检查当前模型状态和连通性。" },
+      { group: "15 设置", title: "密钥与安全", kind: "设置", path: "../15 Settings/05 Secrets And Security/visual-drafts/settings-secrets-security-v1.html", note: "管理密钥、安全边界和本地隐私提醒。" },
+      { group: "15 设置", title: "创作偏好", kind: "设置", path: "../15 Settings/06 Creative Preferences/visual-drafts/settings-creative-preferences-v1.html", note: "配置默认创作偏好。" },
+      { group: "16 全局产品壳层", title: "工作区不可用状态", kind: "壳层", path: "../16 Global Product Shell/01 Workspace Unavailable State/visual-drafts/global-shell-workspace-unavailable-v1.html", note: "工作区锁定、不可用或等待安全跳转时的共享状态。" },
+      { group: "16 全局产品壳层", title: "全局产品壳层正常态", kind: "壳层", path: "../16 Global Product Shell/02 Normal Shell Navigation And Status/visual-drafts/normal-shell-navigation-status-v1.html", note: "全局导航、状态栏、模式切换、锁定/选中/隐藏状态的正常壳层参考。" }
+    ];
+
+    const ACTIONS_BY_TITLE = {
+      "开场动画": [
+        { label: "动画结束进入主页", target: "主页 / 开始创作弹出层", action: "route:home", api: "workspace_id=home" }
+      ],
+      "主页静态稿": [
+        { label: "打开开始创作弹出层", target: "主页 / 开始创作弹出层", action: "local:start-popout", api: "no backend write" }
+      ],
+      "主页 / 开始创作弹出层": [
+        { label: "新创作", target: "新创作后的项目创建", action: "navigate:create_project", api: "GET /api/product-navigation/state?workspace_id=create_project" },
+        { label: "继续创作", target: "继续 / 历史 / 项目列表", action: "navigate:projects", api: "GET /api/projects" },
+        { label: "历史创作", target: "继续 / 历史 / 项目列表", action: "navigate:projects", api: "GET /api/projects" },
+        { label: "设置", target: "设置总览", action: "navigate:settings", api: "workspace_id=settings" }
+      ],
+      "新创作后的项目创建": [
+        { label: "创建请求", target: "新创作后的项目创建", action: "create-request", api: "POST /api/project-creation/requests" },
+        { label: "验证并生成草稿", target: "新创作后的项目创建", action: "validate-request + create-draft", api: "POST /api/project-creation/requests/{id}/validate -> /draft" },
+        { label: "确认项目 Shell", target: "当前项目总览", action: "confirm-draft", api: "POST /api/project-creation/drafts/{id}/confirm" },
+        { label: "打开已有项目", target: "继续 / 历史 / 项目列表", action: "open-project", api: "POST /api/projects/{id}/open" }
+      ],
+      "继续 / 历史 / 项目列表": [
+        { label: "单击选中项目", target: "继续 / 历史 / 项目列表", action: "local:select-project", api: "GET /api/projects" },
+        { label: "双击进入项目", target: "当前项目总览", action: "open-project", api: "POST /api/projects/{id}/open" },
+        { label: "新建项目", target: "新创作后的项目创建", action: "navigate:create_project", api: "workspace_id=create_project" }
+      ],
+      "当前项目总览": [
+        { label: "模板与演示", target: "模板与演示", action: "navigate:template_demo", api: "workspace_id=template_demo" },
+        { label: "Framework 编排", target: "Framework 编排", action: "navigate:framework", api: "workspace_id=framework" },
+        { label: "故事设定", target: "设定入口", action: "navigate:story_setup", api: "workspace_id=story_setup" },
+        { label: "世界画布", target: "来源前提与生成入口", action: "navigate:world_canvas", api: "workspace_id=world_canvas" },
+        { label: "角色主轴", target: "角色主轴入口", action: "navigate:characters", api: "workspace_id=characters" },
+        { label: "章节计划", target: "来源前提与当前章 Framework 入口", action: "navigate:chapter_plan", api: "workspace_id=chapter_plan" },
+        { label: "场景写作", target: "来源前提与场景入口", action: "navigate:chapter_scene", api: "workspace_id=chapter_scene" },
+        { label: "最终输出", target: "输出入口 / 完成度检查", action: "navigate:final_outputs", api: "workspace_id=final_outputs" },
+        { label: "插件输出", target: "插件成果入口", action: "navigate:plugin_outputs", api: "workspace_id=plugin_outputs" }
+      ],
+      "模板与演示": [
+        { label: "创建模板实例请求", target: "模板与演示", action: "template-request", api: "POST /api/project-templates/{id}/instantiation-requests" },
+        { label: "验证并实例化", target: "Framework 编排", action: "template-validate + template-instantiate", api: "POST /api/template-instantiation/requests/{id}/validate -> /instantiate" },
+        { label: "运行演示种子", target: "当前项目总览", action: "demo-run", api: "POST /api/demo-seeds/{id}/run" }
+      ],
+      "Framework 编排": [
+        { label: "选择章节数量", target: "Framework 编排", action: "workbench-chapter-count", api: "POST /api/framework-package/workbench/chapter-count" },
+        { label: "推荐主骨架", target: "Framework 编排", action: "workbench-recommend", api: "POST /api/framework-package/workbench/recommend" },
+        { label: "保存 Framework 草稿", target: "Framework 编排", action: "composition-save", api: "POST /api/framework-compositions/drafts" },
+        { label: "验证并确认", target: "设定入口", action: "composition-validate + composition-confirm", api: "POST /api/framework-compositions/drafts/{id}/validate -> /confirm" },
+        { label: "打开模板库", target: "Framework Library", action: "library-refresh", api: "GET /api/framework-library/items" },
+        { label: "进入导入故事分析器", target: "导入源", action: "navigate:analyze_stories", api: "workspace_id=analyze_stories" },
+        { label: "打开导入编辑会话", target: "导入编辑会话", action: "imported-session-detail", api: "GET /api/analyze-stories/imported-framework-edit-sessions/{id}" }
+      ],
+      "Framework Library": [
+        { label: "刷新库", target: "Framework Library", action: "library-refresh", api: "GET /api/framework-library/items" },
+        { label: "从候选加入库", target: "Framework 编排", action: "library-from-selected-candidates", api: "POST /api/framework-library/items/from-selected-candidates" },
+        { label: "创建私有 Framework", target: "Framework 编排", action: "library-private-create", api: "POST /api/framework-library/private-frameworks" }
+      ],
+      "导入编辑会话": [
+        { label: "验证会话", target: "导入编辑会话", action: "imported-session-validate", api: "POST /api/analyze-stories/imported-framework-edit-sessions/{id}/validate" },
+        { label: "构建激活计划", target: "导入编辑会话", action: "imported-plan-build", api: "POST /api/analyze-stories/imported-framework-edit-sessions/{id}/activation-plan" },
+        { label: "确认并回到编排", target: "Framework 编排", action: "imported-plan-confirm", api: "POST /api/analyze-stories/imported-framework-activation-plans/{id}/confirm" }
+      ],
+      "Analyze Stories 总览": [
+        { label: "导入故事来源", target: "导入源", action: "import", api: "POST /api/analyze-stories/imports" },
+        { label: "查看候选", target: "Framework 候选选择", action: "candidate-refresh", api: "GET /api/analyze-stories/framework-candidates" }
+      ],
+      "导入源": [
+        { label: "提交导入", target: "分析中", action: "import", api: "POST /api/analyze-stories/imports" }
+      ],
+      "分析中": [
+        { label: "分析完成", target: "分析结果总览", action: "refresh", api: "GET /api/analyze-stories/imports + bundles + candidates" }
+      ],
+      "分析结果总览": [
+        { label: "生成 Framework 候选", target: "Framework 候选选择", action: "candidate-create", api: "POST /api/analyze-stories/imports/{id}/framework-candidates" },
+        { label: "验证 Bundle", target: "分析结果总览", action: "bundle-validate", api: "POST /api/analyze-stories/imports/{id}/bundle-validation" },
+        { label: "打开报告 Viewer", target: "Analyze Stories 总览", action: "report-viewer-create", api: "POST /api/analyze-stories/report-viewers" }
+      ],
+      "Framework 候选选择": [
+        { label: "打开导入编辑会话", target: "导入编辑会话", action: "imported-session-start", api: "POST /api/analyze-stories/framework-candidates/{id}/edit-sessions" },
+        { label: "确认候选并回到 Framework", target: "Framework 编排", action: "candidate-reviewed", api: "POST /api/analyze-stories/adapter-candidates/{id}/mark-reviewed" }
+      ],
+      "设定入口": [
+        { label: "创建设定提示", target: "故事设定生成中", action: "create-prompt", api: "POST /api/story-setup/prompts/from-project" }
+      ],
+      "故事设定生成中": [
+        { label: "创建 Intake 与草案", target: "故事设定草案审阅", action: "create-intake + create-draft-bundle", api: "POST /api/story-setup/intakes -> /draft-bundles" }
+      ],
+      "故事设定草案审阅": [
+        { label: "补充缺失信息", target: "缺失信息处理", action: "answer-question", api: "POST /api/story-setup/questions/{id}/answer" },
+        { label: "进入审查决策", target: "审查与决策", action: "create-decision", api: "POST /api/story-setup/draft-bundles/{id}/decisions" }
+      ],
+      "缺失信息处理": [
+        { label: "提交回答", target: "故事设定草案审阅", action: "answer-question", api: "POST /api/story-setup/questions/{id}/answer" }
+      ],
+      "审查与决策": [
+        { label: "确认设定", target: "交接与初始化", action: "create-decision:confirm", api: "POST /api/story-setup/draft-bundles/{id}/decisions" },
+        { label: "要求修订", target: "故事设定生成中", action: "create-decision:revise", api: "POST /api/story-setup/draft-bundles/{id}/decisions" }
+      ],
+      "交接与初始化": [
+        { label: "初始化到世界画布", target: "来源前提与生成入口", action: "bootstrap-handoff", api: "POST /api/story-setup/handoffs/{id}/bootstrap-active-project" }
+      ],
+      "来源前提与生成入口": [
+        { label: "生成世界画布", target: "世界画布生成中", action: "generate", api: "POST /api/world-canvas/generate" }
+      ],
+      "世界画布生成中": [
+        { label: "生成完成", target: "世界画布草案审阅", action: "current", api: "GET /api/world-canvas/current" }
+      ],
+      "世界画布草案审阅": [
+        { label: "处理缺口冲突", target: "缺口与冲突处理", action: "current", api: "GET /api/world-canvas/current" },
+        { label: "修订草案", target: "修订世界草案", action: "revise", api: "POST /api/world-canvas/revise" },
+        { label: "确认世界事实", target: "确认世界事实", action: "confirm", api: "POST /api/world-canvas/confirm" }
+      ],
+      "缺口与冲突处理": [
+        { label: "补充后回审阅", target: "世界画布草案审阅", action: "local:resolve-world-questions", api: "POST /api/world-canvas/revise 或 confirm" }
+      ],
+      "修订世界草案": [
+        { label: "提交修订", target: "世界画布生成中", action: "revise", api: "POST /api/world-canvas/revise" }
+      ],
+      "确认世界事实": [
+        { label: "进入角色主轴", target: "角色主轴入口", action: "navigate:characters", api: "workspace_id=characters" }
+      ],
+      "角色主轴入口": [
+        { label: "生成角色草案", target: "角色生成中", action: "generate", api: "POST /api/characters/generate" },
+        { label: "打开角色档案库", target: "角色档案库与分级管理", action: "refresh", api: "GET /api/roles" }
+      ],
+      "角色生成中": [
+        { label: "生成完成", target: "角色草案审阅", action: "current", api: "GET /api/characters/current" }
+      ],
+      "角色草案审阅": [
+        { label: "处理关系冲突", target: "关系与冲突处理", action: "current", api: "GET /api/characters/current" },
+        { label: "补充缺失信息", target: "缺失信息处理", targetGroup: "10 角色主轴", action: "revise", api: "POST /api/characters/revise" },
+        { label: "修订角色草案", target: "修订角色草案", action: "revise", api: "POST /api/characters/revise" },
+        { label: "确认角色主轴", target: "确认角色主轴", action: "confirm", api: "POST /api/characters/confirm" }
+      ],
+      "关系与冲突处理": [
+        { label: "确认状态变更", target: "A-tier 状态变更审阅", action: "propose-state-change", api: "POST /api/roles/state-changes/propose" },
+        { label: "回到草案审阅", target: "角色草案审阅", action: "refresh", api: "GET /api/roles/state-changes/pending" }
+      ],
+      "修订角色草案": [
+        { label: "提交修订", target: "角色生成中", action: "revise", api: "POST /api/characters/revise" }
+      ],
+      "确认角色主轴": [
+        { label: "完成主角团", target: "来源前提与当前章 Framework 入口", action: "finish", api: "POST /api/characters/finish-main-cast" }
+      ],
+      "角色档案库与分级管理": [
+        { label: "手动创建角色", target: "角色档案库与分级管理", action: "create", api: "POST /api/roles" },
+        { label: "编辑角色", target: "角色档案库与分级管理", action: "patch", api: "PATCH /api/roles/{id}" },
+        { label: "查看上下文", target: "角色上下文预览", action: "context-preview", api: "POST /api/roles/context-preview" }
+      ],
+      "角色上下文预览": [
+        { label: "返回角色档案库", target: "角色档案库与分级管理", action: "refresh", api: "GET /api/roles" }
+      ],
+      "A-tier 状态变更审阅": [
+        { label: "确认变更", target: "角色档案库与分级管理", action: "confirm-state-change", api: "POST /api/roles/state-changes/{id}/confirm" },
+        { label: "拒绝变更", target: "角色档案库与分级管理", action: "reject-state-change", api: "POST /api/roles/state-changes/{id}/reject" }
+      ],
+      "来源前提与当前章 Framework 入口": [
+        { label: "构建当前章 Framework", target: "当前章 Framework 构建中", action: "build-current", api: "POST /api/framework-package/chapter-framework/build-current" }
+      ],
+      "当前章 Framework 构建中": [
+        { label: "构建完成", target: "当前章 Framework 审阅", action: "current", api: "GET /api/framework-package/chapter-framework/current" }
+      ],
+      "当前章 Framework 审阅": [
+        { label: "进入章节路线", target: "章节路线生成入口", action: "current", api: "GET /api/chapter-plan/current" }
+      ],
+      "章节路线生成入口": [
+        { label: "生成章节路线", target: "章节路线生成中", action: "generate", api: "POST /api/chapter-plan/generate" }
+      ],
+      "章节路线生成中": [
+        { label: "生成完成", target: "章节路线审阅", action: "current", api: "GET /api/chapter-plan/current" }
+      ],
+      "章节路线审阅": [
+        { label: "设置场景数", target: "场景数设置 / 修复", action: "scene-count", api: "POST /api/chapter-plan/set-scene-count" },
+        { label: "处理问题", target: "问题处理", action: "repair-supporting-roles", api: "POST /api/chapter-plan/repair-supporting-role-references" },
+        { label: "修订章节计划", target: "修订章节计划", action: "revise", api: "POST /api/chapter-plan/revise" },
+        { label: "确认章节计划", target: "确认章节计划", action: "confirm", api: "POST /api/chapter-plan/confirm" }
+      ],
+      "场景数设置 / 修复": [
+        { label: "应用场景数", target: "章节路线审阅", action: "scene-count", api: "POST /api/chapter-plan/set-scene-count" }
+      ],
+      "问题处理": [
+        { label: "修复后回审阅", target: "章节路线审阅", action: "repair-supporting-roles", api: "POST /api/chapter-plan/repair-supporting-role-references" }
+      ],
+      "修订章节计划": [
+        { label: "提交修订", target: "章节路线生成中", action: "revise", api: "POST /api/chapter-plan/revise" }
+      ],
+      "确认章节计划": [
+        { label: "进入场景写作", target: "来源前提与场景入口", action: "navigate:chapter_scene", api: "workspace_id=chapter_scene" }
+      ],
+      "来源前提与场景入口": [
+        { label: "生成首场景", target: "正文生成中", action: "generate", api: "POST /api/scenes/generate-first" },
+        { label: "刷新参与角色", target: "后台检查修复与参与角色候选", action: "scene-participant-selection-refresh", api: "POST /api/scene-participants/selections/{id}/refresh" }
+      ],
+      "场景简述审阅": [
+        { label: "生成正文", target: "正文生成中", action: "generate-next", api: "POST /api/scenes/generate-next" }
+      ],
+      "正文生成中": [
+        { label: "生成完成", target: "场景正文草案审阅", action: "current", api: "GET /api/scenes/current" }
+      ],
+      "场景正文草案审阅": [
+        { label: "修订正文", target: "修订场景正文", action: "modification-preview", api: "POST /api/modification-impact/previews" },
+        { label: "检查连续性", target: "连续性与记忆写入", action: "continuity-scene", api: "POST /api/continuity/check/scene/{id}" },
+        { label: "确认场景", target: "确认场景 / 进入下一场景", action: "commit-scene", api: "POST /api/scenes/{id}/commit" }
+      ],
+      "修订场景正文": [
+        { label: "选择修改方案", target: "场景正文草案审阅", action: "modification-choice", api: "POST /api/modification-impact/previews/{id}/choice" },
+        { label: "未来问题", target: "修改影响与未来问题", action: "future-question-answer", api: "POST /api/future-questions/{id}/answer" }
+      ],
+      "连续性与记忆写入": [
+        { label: "接受连续性问题", target: "确认场景 / 进入下一场景", action: "continuity-accept", api: "POST /api/continuity/issues/{id}/accept" },
+        { label: "解决连续性问题", target: "确认场景 / 进入下一场景", action: "continuity-resolve", api: "POST /api/continuity/issues/{id}/resolve" }
+      ],
+      "确认场景 / 进入下一场景": [
+        { label: "进入下一场景", target: "来源前提与场景入口", action: "generate-next", api: "POST /api/scenes/generate-next" },
+        { label: "章节收尾", target: "章节收尾与下一章准备", action: "archive-preview", api: "GET /api/chapter-archive/preview" }
+      ],
+      "后台检查修复与参与角色候选": [
+        { label: "运行修复", target: "场景正文草案审阅", action: "scene-gate-repair-run", api: "POST /api/scene-gate-repair/scenes/{id}/runs" },
+        { label: "确认角色候选", target: "场景正文草案审阅", action: "scene-participant-candidate-confirm", api: "POST /api/scene-participants/creation-candidates/{id}/confirm" }
+      ],
+      "修改影响与未来问题": [
+        { label: "接受候选", target: "场景正文草案审阅", action: "pre-modify-accept", api: "POST /api/pre-modify/candidates/{id}/accept" },
+        { label: "回到正文审阅", target: "场景正文草案审阅", action: "current", api: "GET /api/scenes/current" }
+      ],
+      "章节收尾与下一章准备": [
+        { label: "确认下一章", target: "来源前提与当前章 Framework 入口", action: "confirm-next", api: "POST /api/story-progress/confirm-next-chapter" },
+        { label: "故事草稿完成", target: "输出入口 / 完成度检查", action: "story-complete", api: "POST /api/story-progress/confirm-story-draft-complete" }
+      ],
+      "输出入口 / 完成度检查": [
+        { label: "评估完成度", target: "成稿组装中", action: "evaluate", api: "POST /api/final-story-package/readiness/evaluate" }
+      ],
+      "成稿组装中": [
+        { label: "组装完成", target: "成稿审阅", action: "export", api: "POST /api/final-story-package/export" }
+      ],
+      "成稿审阅": [
+        { label: "打开输出设置", target: "输出设置", action: "viewer-state", api: "POST /api/final-story-package/viewer-states" },
+        { label: "发现问题", target: "输出问题处理", action: "refresh", api: "GET /api/final-story-package/readiness" }
+      ],
+      "输出设置": [
+        { label: "生成导出", target: "导出生成中", action: "export", api: "POST /api/final-story-package/export" }
+      ],
+      "导出生成中": [
+        { label: "导出完成", target: "导出结果 / 下载与归档", action: "refresh-export", api: "GET /api/final-story-package/exports" }
+      ],
+      "导出结果 / 下载与归档": [
+        { label: "下载 TXT/JSON", target: "导出结果 / 下载与归档", action: "download", api: "GET /api/final-story-package/snapshots/{id}/download" },
+        { label: "进入插件输出", target: "插件成果入口", action: "navigate:plugin_outputs", api: "workspace_id=plugin_outputs" }
+      ],
+      "输出问题处理": [
+        { label: "回到完成度检查", target: "输出入口 / 完成度检查", action: "evaluate", api: "POST /api/final-story-package/readiness/evaluate" }
+      ],
+      "插件成果入口": [
+        { label: "选择插件", target: "插件选择 / 输入确认", action: "detail", api: "GET /api/plugins/{id} + manifest/schema/risk" }
+      ],
+      "插件选择 / 输入确认": [
+        { label: "验证输入", target: "插件选择 / 输入确认", action: "validate", api: "POST /api/plugins/{id}/validate-input" },
+        { label: "创建运行", target: "插件运行中", action: "create-run", api: "POST /api/plugins/{id}/runs" }
+      ],
+      "插件运行中": [
+        { label: "刷新运行", target: "插件运行中", action: "refresh", api: "GET /api/plugin-runs/{id}" },
+        { label: "需要检查点", target: "检查点处理", action: "get-checkpoints", api: "GET /api/plugin-runs/{id}/checkpoints" },
+        { label: "运行完成", target: "插件成果审阅", action: "artifact", api: "GET /api/plugin-artifacts/{id}" }
+      ],
+      "检查点处理": [
+        { label: "确认检查点", target: "插件运行中", action: "confirm", api: "POST /api/plugin-runs/{run}/checkpoints/{checkpoint}/confirm" },
+        { label: "要求修订", target: "插件运行中", action: "revise", api: "POST /api/plugin-runs/{run}/checkpoints/{checkpoint}/revise" },
+        { label: "拒绝检查点", target: "插件输出问题处理", action: "reject", api: "POST /api/plugin-runs/{run}/checkpoints/{checkpoint}/reject" }
+      ],
+      "插件成果审阅": [
+        { label: "下载或归档", target: "插件成果审阅", action: "artifact", api: "GET /api/plugin-artifacts/{id}" },
+        { label: "发现问题", target: "插件输出问题处理", action: "refresh", api: "GET /api/plugin-runs/{id}/safety-report" }
+      ],
+      "插件输出问题处理": [
+        { label: "回到插件选择", target: "插件选择 / 输入确认", action: "revise", api: "POST /api/plugin-runs/{run}/checkpoints/{checkpoint}/revise" }
+      ],
+      "设置总览": [
+        { label: "外观与主题", target: "外观与主题", action: "local:settings-tab", api: "future theme preferences" },
+        { label: "模型配置", target: "模型配置", action: "create-profile", api: "POST /api/settings/model/profiles" },
+        { label: "创作偏好", target: "创作偏好", action: "local:creative-preferences", api: "future preferences API" }
+      ],
+      "外观与主题": [
+        { label: "保存主题偏好", target: "设置总览", action: "patch-navigation-preferences", api: "PATCH /api/product-navigation/preferences" }
+      ],
+      "模型配置": [
+        { label: "创建模型配置", target: "当前模型与健康检查", action: "create-profile", api: "POST /api/settings/model/profiles" }
+      ],
+      "当前模型与健康检查": [
+        { label: "设为当前模型", target: "设置总览", action: "set-active", api: "POST /api/settings/model/active-selection" },
+        { label: "运行健康检查", target: "当前模型与健康检查", action: "health-check", api: "POST /api/settings/model/profiles/{id}/health-check" }
+      ],
+      "密钥与安全": [
+        { label: "返回模型配置", target: "模型配置", action: "local:open-model-config", api: "GET /api/settings/model/secret-policy" }
+      ],
+      "创作偏好": [
+        { label: "保存偏好", target: "设置总览", action: "local:save-creative-preferences", api: "future preferences API" }
+      ],
+      "工作区不可用状态": [
+        { label: "跳转到安全工作区", target: "当前项目总览", action: "safe_redirect_workspace_id", api: "GET /api/product-navigation/workspaces/{id}/access" },
+        { label: "创建项目", target: "新创作后的项目创建", action: "safe_redirect:create_project", api: "workspace_id=create_project" }
+      ],
+      "全局产品壳层正常态": [
+        { label: "切换工作区", target: "当前项目总览", action: "onWorkspaceChange", api: "GET /api/product-navigation/state?workspace_id={id}" },
+        { label: "切换模式", target: "全局产品壳层正常态", action: "patchProductModeProfile", api: "PATCH /api/product-mode/profile" }
+      ]
+    };
+
+    const flowList = document.getElementById("flowList");
+    const frame = document.getElementById("previewFrame");
+    const emptyState = document.getElementById("emptyState");
+    const searchInput = document.getElementById("searchInput");
+    const filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
+    const currentGroup = document.getElementById("currentGroup");
+    const currentTitle = document.getElementById("currentTitle");
+    const currentNote = document.getElementById("currentNote");
+    const currentTags = document.getElementById("currentTags");
+    const connectionText = document.getElementById("connectionText");
+    const progressFill = document.getElementById("progressFill");
+    const prevButton = document.getElementById("prevButton");
+    const nextButton = document.getElementById("nextButton");
+    const openButton = document.getElementById("openButton");
+    const actionButtons = document.getElementById("actionButtons");
+    const actionSummary = document.getElementById("actionSummary");
+
+    let activeIndex = 0;
+    let activeFilter = "全部";
+    let visibleIndexes = FLOW.map((_, index) => index);
+
+    function matches(item, index, query) {
+      const filterOk = activeFilter === "全部" || item.kind === activeFilter;
+      const text = `${index + 1} ${item.group} ${item.title} ${item.kind} ${item.note}`.toLowerCase();
+      const searchOk = !query || text.includes(query.toLowerCase());
+      return filterOk && searchOk;
+    }
+
+    function renderList() {
+      const query = searchInput.value.trim();
+      visibleIndexes = FLOW.map((item, index) => ({ item, index }))
+        .filter(({ item, index }) => matches(item, index, query))
+        .map(({ index }) => index);
+
+      flowList.innerHTML = "";
+      emptyState.classList.toggle("visible", visibleIndexes.length === 0);
+
+      const grouped = new Map();
+      visibleIndexes.forEach((index) => {
+        const item = FLOW[index];
+        if (!grouped.has(item.group)) grouped.set(item.group, []);
+        grouped.get(item.group).push(index);
+      });
+
+      grouped.forEach((indexes, group) => {
+        const groupBlock = document.createElement("section");
+        groupBlock.className = "flow-group";
+        const title = document.createElement("div");
+        title.className = "group-title";
+        title.innerHTML = `<span>${group}</span><span class="group-count">${indexes.length}</span>`;
+        groupBlock.append(title);
+
+        indexes.forEach((index) => {
+          const item = FLOW[index];
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `nav-button${index === activeIndex ? " active" : ""}`;
+          button.innerHTML = `
+            <span class="step-number">${index + 1}</span>
+            <span>
+              <span class="step-title">${item.title}</span>
+              <span class="step-meta">
+                <span class="tag">${item.kind}</span>
+                <span class="tag">${item.group.split(" ")[0]}</span>
+              </span>
+            </span>
+          `;
+          button.addEventListener("click", () => setActive(index, true));
+          groupBlock.append(button);
+        });
+
+        flowList.append(groupBlock);
+      });
+    }
+
+    function actionKey(item) {
+      return `${item.group}::${item.title}`;
+    }
+
+    function actionsFor(item) {
+      return ACTIONS_BY_TITLE[actionKey(item)] || ACTIONS_BY_TITLE[item.title] || [];
+    }
+
+    function findTargetIndex(action) {
+      if (!action.target) return -1;
+      if (action.targetGroup) {
+        return FLOW.findIndex((item) => item.title === action.target && item.group === action.targetGroup);
+      }
+      return FLOW.findIndex((item) => item.title === action.target);
+    }
+
+    function renderActions(item) {
+      const actions = actionsFor(item);
+      actionButtons.innerHTML = "";
+
+      if (!actions.length) {
+        actionSummary.textContent = item.kind === "静态稿"
+          ? "静态参考稿不绑定后端接口。"
+          : "此页暂无独立后端动作，按顺序使用上一页/下一页检查。";
+        const passive = document.createElement("button");
+        passive.type = "button";
+        passive.className = "action-card";
+        passive.disabled = true;
+        passive.innerHTML = `
+          <span class="action-label">无独立跳转动作</span>
+          <span class="action-meta">${item.kind} / ${item.group}</span>
+        `;
+        actionButtons.append(passive);
+        return;
+      }
+
+      actionSummary.textContent = `${actions.length} 个交互动作，来源于 Phase 8.5 前端 action/API 对照。`;
+      actions.forEach((action) => {
+        const targetIndex = findTargetIndex(action);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "action-card";
+        button.disabled = targetIndex < 0;
+        button.innerHTML = `
+          <span class="action-label">${action.label}</span>
+          <span class="action-meta">${action.action || "local"} / ${action.api || "no api"}</span>
+          <span class="action-meta">目标：${action.target || "当前页"}${targetIndex < 0 ? "（未找到）" : ""}</span>
+        `;
+        if (targetIndex >= 0) {
+          button.addEventListener("click", () => setActive(targetIndex, true));
+        }
+        actionButtons.append(button);
+      });
+    }
+
+    function setActive(index, pushHash = false) {
+      if (index < 0 || index >= FLOW.length) return;
+      activeIndex = index;
+      const item = FLOW[activeIndex];
+      const previous = FLOW[activeIndex - 1];
+      const next = FLOW[activeIndex + 1];
+
+      frame.classList.add("loading");
+      frame.src = item.path;
+      currentGroup.textContent = item.group;
+      currentTitle.textContent = item.title;
+      currentNote.textContent = item.note;
+      currentTags.innerHTML = `
+        <span class="tag">${activeIndex + 1} / ${FLOW.length}</span>
+        <span class="tag">${item.kind}</span>
+        <span class="tag">${item.group}</span>
+      `;
+      connectionText.innerHTML = `
+        <span>上一页：<strong>${previous ? previous.title : "无"}</strong></span>
+        <span>-></span>
+        <span>当前：<strong>${item.title}</strong></span>
+        <span>-></span>
+        <span>下一页：<strong>${next ? next.title : "无"}</strong></span>
+      `;
+      progressFill.style.width = `${((activeIndex + 1) / FLOW.length) * 100}%`;
+      prevButton.disabled = activeIndex === 0;
+      nextButton.disabled = activeIndex === FLOW.length - 1;
+      prevButton.textContent = previous ? `上一页：${previous.title}` : "上一页";
+      nextButton.textContent = next ? `下一页：${next.title}` : "下一页";
+      openButton.dataset.path = item.path;
+      renderActions(item);
+
+      if (pushHash) {
+        history.replaceState(null, "", `#step-${activeIndex + 1}`);
+      }
+      renderList();
+      requestAnimationFrame(() => {
+        const activeButton = flowList.querySelector(".nav-button.active");
+        activeButton?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    }
+
+    function moveBy(offset) {
+      const currentPosition = visibleIndexes.indexOf(activeIndex);
+      if (currentPosition >= 0) {
+        const target = visibleIndexes[currentPosition + offset];
+        if (target !== undefined) {
+          setActive(target, true);
+          return;
+        }
+      }
+      setActive(activeIndex + offset, true);
+    }
+
+    frame.addEventListener("load", () => frame.classList.remove("loading"));
+    prevButton.addEventListener("click", () => moveBy(-1));
+    nextButton.addEventListener("click", () => moveBy(1));
+    openButton.addEventListener("click", () => window.open(openButton.dataset.path, "_blank"));
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter;
+        filterButtons.forEach((item) => item.classList.toggle("active", item === button));
+        renderList();
+        if (!visibleIndexes.includes(activeIndex) && visibleIndexes.length > 0) {
+          setActive(visibleIndexes[0], true);
+        }
+      });
+    });
+
+    searchInput.addEventListener("input", () => {
+      renderList();
+      if (!visibleIndexes.includes(activeIndex) && visibleIndexes.length > 0) {
+        setActive(visibleIndexes[0], true);
+      }
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.target === searchInput) return;
+      if (event.key === "ArrowRight") moveBy(1);
+      if (event.key === "ArrowLeft") moveBy(-1);
+    });
+
+    const hashMatch = window.location.hash.match(/step-(\d+)/);
+    const defaultIndex = Math.max(0, FLOW.findIndex((item) => item.title === "主页 / 开始创作弹出层"));
+    const initialIndex = hashMatch ? Math.max(0, Math.min(FLOW.length - 1, Number(hashMatch[1]) - 1)) : defaultIndex;
+    renderList();
+    setActive(initialIndex);
+  </script>
+</body>
+</html>

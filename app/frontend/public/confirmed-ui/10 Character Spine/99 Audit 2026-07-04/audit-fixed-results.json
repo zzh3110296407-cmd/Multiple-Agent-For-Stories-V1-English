@@ -1,0 +1,248 @@
+[
+  {
+    "name": "01-entry",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  },
+  {
+    "name": "02-generating",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  },
+  {
+    "name": "03-draft-review",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [
+        {
+          "text": "与主角\n                        信任 / 隐瞒 / 欠债\n                      \n                ",
+          "w": 0,
+          "h": 0
+        },
+        {
+          "text": "与港口守卫\n                        疏离 / 旧案 / 监视\n                      \n              ",
+          "w": 0,
+          "h": 0
+        },
+        {
+          "text": "与钟楼\n                        绑定 / 象征 / 禁忌\n                      \n                ",
+          "w": 0,
+          "h": 0
+        },
+        {
+          "text": "提交修订",
+          "w": 0,
+          "h": 0
+        }
+      ],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  },
+  {
+    "name": "04-conflict",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  },
+  {
+    "name": "05-missing-info",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  },
+  {
+    "name": "06-revision",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": [
+          {
+            "text": "请把洛间的记忆能力修订为有明确触发条件和代价，不要让能力可以解决所有冲突。",
+            "sw": 210,
+            "cw": 210,
+            "sh": 134,
+            "ch": 124
+          }
+        ]
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  },
+  {
+    "name": "07-confirmation",
+    "errors": [],
+    "metrics": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalOverflow": false,
+      "clipping": [],
+      "unlabeled": [],
+      "tiny": [],
+      "forbiddenTerms": []
+    },
+    "vp_1366x768": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 1366,
+        "clientWidth": 1366,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    },
+    "vp_768x1024": {
+      "errors": [],
+      "metrics": {
+        "scrollWidth": 768,
+        "clientWidth": 768,
+        "horizontalOverflow": false,
+        "clipping": []
+      }
+    }
+  }
+]
