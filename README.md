@@ -13,9 +13,7 @@ The open-source package contains the current runnable product surface:
 - Story setup, world canvas, character spine, chapter planning, scene writing, quality/continuity gates, final output, and plugin-output entry points.
 - Current runtime constraints for prompt-first setup, character visibility, world-rule timing, chapter archival, and next-chapter progression.
 - Story Analyzer module for long-form story analysis and framework extraction.
-- PostgreSQL schema prototypes, storage contracts, and database migration foundations.
-
-This directory is generated from the development workspace. For long-term fixes, update the source project and regenerate this package instead of manually patching generated files.
+- PostgreSQL schema, migrations, and database validation material.
 
 ## What The System Does
 
@@ -35,9 +33,7 @@ The product is designed for writers, script creators, interactive narrative desi
 - `app/backend` - FastAPI backend, services, models, storage adapters, and API routers.
 - `app/frontend` - React/Vite product UI and workbench pages.
 - `app/Story Analyzer` - external story analysis module used for long-form analysis and framework extraction.
-- `database/sql-prototype` - PostgreSQL schema and migration prototype material.
-- `database/contracts` - storage/API contract documentation.
-- `database/storage_foundation` - database foundation notes and migration support files.
+- `database/sql-prototype` - PostgreSQL schema, migrations, and validation SQL.
 
 ## Requirements
 
@@ -155,6 +151,10 @@ PostgreSQL is included as an optional service. To switch to PostgreSQL primary m
 MULTIPLE_AGENT_STORIES_STORAGE_MODE=postgres_primary
 MULTIPLE_AGENT_STORIES_DATABASE_URL=postgresql://mas:mas_dev_password@postgres:5432/mas
 ```
+
+Before switching, apply every migration in `database/sql-prototype/migrations`
+in filename order. See that directory's `README.md` for commands and validation
+notes. The default `json_primary` mode does not require database migrations.
 
 Runtime data is stored in Docker volumes:
 
