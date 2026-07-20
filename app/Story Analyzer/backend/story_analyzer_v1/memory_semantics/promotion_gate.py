@@ -168,26 +168,14 @@ def _looks_like_abstract_theme_thread(content: str) -> bool:
 
 def _semantic_key(content: str) -> str:
     text = str(content or "").lower()
-    if "nibelungen plan" in text or "尼伯龙根计划" in text:
-        return "nibelungen_plan"
-    if ("胚胎" in text or "embryo" in text) and (
-        "领域" in text or "电子" in text or "干扰" in text or "domain" in text
-    ):
-        return "dragon_embryo_domain"
-    if "猛鬼众" in text and ("蛇岐八家" in text or "影子" in text or "同胞" in text):
-        return "organization_shadow_identity"
-    if "白王" in text and ("契约" in text or "蛇岐八家" in text or "污染" in text):
-        return "white_king_bloodline_origin"
-    if ("活灵" in text or "暴怒" in text) and ("剑" in text or "武器" in text):
-        return "living_weapon_rule"
-    if ("风间琉璃" in text or "源稚生" in text) and ("血统" in text or "药物" in text or "纯度" in text):
-        return "individual_bloodline_risk"
-    if "dragon king" in text or "fenrisulfr" in text or "龙王" in text or "芬里厄" in text:
-        return "dragon_king_identity"
     if "plan" in text or "计划" in text:
         return "long_horizon_plan"
+    if ("weapon" in text or "artifact" in text or "武器" in text) and (
+        "rule" in text or "规则" in text or "危险" in text
+    ):
+        return "dangerous_artifact_rule"
     if "bloodline" in text or "血统" in text:
-        return "bloodline_risk"
+        return "inherited_power_risk"
     if "identity" in text or "身份" in text:
         return "identity_mystery"
     if "patron" in text or "hidden" in text or "神秘" in text:
@@ -256,15 +244,9 @@ def score_promotion_eligibility(item: dict, tracked_contents: list[str]) -> dict
             score += 0.1
             reason_codes.append("world_rule_with_possible_payoff")
         if _semantic_key(content) in {
-            "bloodline_risk",
-            "dragon_embryo_domain",
-            "organization_shadow_identity",
-            "white_king_bloodline_origin",
-            "living_weapon_rule",
-            "individual_bloodline_risk",
+            "inherited_power_risk",
+            "dangerous_artifact_rule",
             "long_horizon_plan",
-            "nibelungen_plan",
-            "dragon_king_identity",
             "identity_mystery",
             "hidden_patron",
         }:

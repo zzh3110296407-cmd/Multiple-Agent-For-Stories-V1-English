@@ -43,7 +43,7 @@ ENTITY_TYPE_SUFFIXES: tuple[tuple[str, str], ...] = (
     ("术", "ability_or_power"),
     ("阵", "ability_or_power"),
     ("法", "ability_or_power"),
-    ("言灵", "ability_or_power"),
+    ("特殊能力", "ability_or_power"),
     ("神", "mythic_figure"),
     ("王", "mythic_figure"),
     ("族", "species_or_race"),

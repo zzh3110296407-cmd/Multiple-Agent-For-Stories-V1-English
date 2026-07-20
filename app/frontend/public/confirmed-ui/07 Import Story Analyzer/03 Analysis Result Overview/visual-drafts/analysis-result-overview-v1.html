@@ -1056,10 +1056,8 @@
     });
 
     document.getElementById("openReportButton").addEventListener("click", () => {
-      showToast("正在打开报告 Viewer");
-      window.setTimeout(() => {
-        window.location.href = "../../../06 Framework Composition/04 Report Viewer/visual-drafts/report-viewer-v1.html";
-      }, 450);
+      renderTab("report");
+      showToast("已打开报告详情");
     });
 
     candidateButton.addEventListener("click", () => {

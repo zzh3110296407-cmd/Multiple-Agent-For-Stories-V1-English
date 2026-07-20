@@ -473,7 +473,7 @@ _FORESHADOWING_MEMORY_LANES = {
 
 _FORESHADOWING_QUOTE_SIGNAL_TERMS = (
     "show me",
-    "临时言灵",
+    "临时能力",
     "口号",
     "台词",
     "slogan",
@@ -481,18 +481,18 @@ _FORESHADOWING_QUOTE_SIGNAL_TERMS = (
 )
 
 _FORESHADOWING_WORLD_FACT_TERMS = (
-    "学院的存在",
-    "卡塞尔学院",
-    "卡塞尔",
+    "组织的存在",
+    "秘密组织",
+    "秘密学院",
     "世界观",
     "规则",
-    "血统级别",
-    "预科生",
-    "龙族遗迹",
-    "炼金术",
-    "言灵",
-    "龙骨",
-    "龙王骨骸",
+    "能力等级",
+    "候选成员",
+    "古代遗迹",
+    "特殊技术",
+    "能力体系",
+    "关键遗骸",
+    "统治者遗骸",
 )
 
 _FORESHADOWING_CHARACTER_STATE_TERMS = (
@@ -883,16 +883,11 @@ def _normalize_foreshadowing_status(status: str) -> str:
 
 
 _LONG_HORIZON_REVEAL_TERMS = (
-    "odin",
-    "nibelungen",
-    "nibelung",
     "bloodline",
     "father",
     "parents",
     "parentage",
     "identity mystery",
-    "\u5965\u4e01",
-    "\u5c3c\u4f2f\u9f99\u6839",
     "\u8840\u7edf",
     "\u7236\u4eb2",
     "\u7236\u6bcd",
@@ -2023,13 +2018,11 @@ _THREAD_WORLD_RULE_TERMS = (
     "system",
     "academy",
     "bloodline",
-    "nibelungen",
     "law",
     "\u89c4\u5219",
     "\u4e16\u754c\u89c2",
     "\u5b66\u9662",
     "\u8840\u7edf",
-    "\u5c3c\u4f2f\u9f99\u6839",
 )
 
 _THREAD_MYSTERY_TERMS = (
@@ -2037,9 +2030,7 @@ _THREAD_MYSTERY_TERMS = (
     "unknown",
     "identity",
     "secret",
-    "odin",
     "\u8c1c",
-    "\u5965\u4e01",
     "\u771f\u76f8",
     "\u672a\u77e5",
     "\u795e\u79d8",
@@ -2379,28 +2370,18 @@ def _compile_foreshadowing_candidate_promotions(registry: dict) -> list[dict]:
 
 def _foreshadowing_promotion_group_key(content: str) -> str:
     text = str(content or "").lower()
-    if "尼伯龙根计划" in text or "nibelungen plan" in text:
-        return "nibelungen_plan"
-    if ("胚胎" in text or "embryo" in text) and (
-        "领域" in text or "电子" in text or "干扰" in text or "domain" in text
+    if "计划" in text or "plan" in text:
+        return "long_horizon_plan"
+    if ("武器" in text or "weapon" in text or "artifact" in text) and (
+        "规则" in text or "rule" in text or "危险" in text
     ):
-        return "dragon_embryo_domain"
-    if "猛鬼众" in text and ("蛇岐八家" in text or "影子" in text or "同胞" in text):
-        return "organization_shadow_identity"
-    if "白王" in text and ("契约" in text or "蛇岐八家" in text or "污染" in text):
-        return "white_king_bloodline_origin"
-    if ("活灵" in text or "暴怒" in text) and ("剑" in text or "武器" in text):
-        return "living_weapon_rule"
-    if ("风间琉璃" in text or "源稚生" in text) and ("血统" in text or "药物" in text or "纯度" in text):
-        return "individual_bloodline_risk"
+        return "dangerous_artifact_rule"
     if "爆血" in text or "血统" in text or "bloodline" in text:
-        return "bloodline_risk"
-    if "尼伯龙根" in text or "nibelungen" in text or "nibelung" in text:
-        return "nibelungen_space"
-    if "芬里厄" in text or "耶梦加得" in text or "龙王" in text or "dragon king" in text:
-        return "dragon_king_identity"
-    if "奥丁" in text or "odin" in text:
-        return "odin_mystery"
+        return "inherited_power_risk"
+    if "隐藏空间" in text or "hidden dimension" in text or "hidden realm" in text:
+        return "hidden_space"
+    if "身份" in text or "identity" in text:
+        return "identity_mystery"
     if "校董会" in text or "家族" in text or "board" in text or "family" in text:
         return "institutional_power"
     key = _canonical_foreshadowing_key(content)
@@ -2409,16 +2390,11 @@ def _foreshadowing_promotion_group_key(content: str) -> str:
 
 def _foreshadowing_promotion_group_label(group_key: str) -> str:
     return {
-        "nibelungen_plan": "Nibelungen plan / bloodline program",
-        "dragon_embryo_domain": "Dragon embryo domain / interference rule",
-        "organization_shadow_identity": "Shadow organization identity",
-        "white_king_bloodline_origin": "White king contract / bloodline origin",
-        "living_weapon_rule": "Living weapon rule",
-        "individual_bloodline_risk": "Individual bloodline escalation",
-        "bloodline_risk": "Bloodline risk / unstable power",
-        "nibelungen_space": "Nibelungen space / hidden dimension",
-        "dragon_king_identity": "Dragon king identity / ancient being",
-        "odin_mystery": "Odin mystery / mythic threat",
+        "long_horizon_plan": "Long-horizon plan",
+        "dangerous_artifact_rule": "Dangerous artifact rule",
+        "inherited_power_risk": "Inherited power risk",
+        "hidden_space": "Hidden space or realm",
+        "identity_mystery": "Identity mystery",
         "institutional_power": "Institutional or family power conflict",
     }.get(group_key, group_key)
 
@@ -2530,40 +2506,15 @@ def _compile_narrative_thread_registry(
     return apply_promotion_gate(registry)
 
 
-_SOURCE_TERM_SEEDS = (
-    "show me the flowers",
-    "show me the money",
-    "卡塞尔学院",
-    "卡塞尔",
-    "龙族",
-    "青铜城",
-    "龙王",
-    "路鸣泽",
-    "康斯坦丁",
-    "black sheep wall",
-    "EVA",
-    "白帝城",
-    "七宗罪",
-    "诺顿",
-    "老唐",
-    "奥丁",
-    "尼伯龙根计划",
-    "尼伯龙根",
-    "耶梦加得",
-    "大地与山之王",
-    "黑王",
-    "白王",
-)
+_SOURCE_TERM_SEEDS: tuple[str, ...] = ()
 
 _SOURCE_TERM_OBJECT_TERMS = (
-    "七宗罪",
-    "贤者之石",
-    "龙骨",
+    "关键武器",
+    "特殊材料",
+    "关键遗骸",
 )
 
-_SOURCE_TERM_SLOGAN_PREFIXES = (
-    "show me ",
-)
+_SOURCE_TERM_SLOGAN_PREFIXES: tuple[str, ...] = ()
 
 _SOURCE_TERM_SUFFIXES = (
     "学院",
@@ -2936,7 +2887,6 @@ def _dominant_stage_for_group(group: list[dict], group_index: int, total_groups:
         "觉醒",
         "复活",
         "契约",
-        "七宗罪",
         "决战",
         "牺牲",
         "climax",

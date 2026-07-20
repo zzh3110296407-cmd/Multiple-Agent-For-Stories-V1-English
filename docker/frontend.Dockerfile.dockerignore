@@ -1,0 +1,7 @@
+**
+!app/
+!app/frontend/
+!app/frontend/**
+!docker/
+!docker/frontend.Dockerfile
+!docker/nginx.conf

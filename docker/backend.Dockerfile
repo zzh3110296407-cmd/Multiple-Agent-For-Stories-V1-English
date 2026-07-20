@@ -9,7 +9,9 @@ WORKDIR /workspace
 COPY app/backend/requirements.txt /tmp/backend-requirements.txt
 RUN pip install --no-cache-dir -r /tmp/backend-requirements.txt
 
-COPY app /workspace/app
+COPY app/__init__.py /workspace/app/__init__.py
+COPY app/backend /workspace/app/backend
+COPY ["app/Story Analyzer", "/workspace/app/Story Analyzer"]
 RUN mkdir -p /workspace/app/data/local_project
 
 EXPOSE 8000

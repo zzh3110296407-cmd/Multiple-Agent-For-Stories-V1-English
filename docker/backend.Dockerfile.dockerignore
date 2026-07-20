@@ -1,0 +1,9 @@
+**
+!app/
+!app/__init__.py
+!app/backend/
+!app/backend/**
+!app/Story Analyzer/
+!app/Story Analyzer/**
+!docker/
+!docker/backend.Dockerfile

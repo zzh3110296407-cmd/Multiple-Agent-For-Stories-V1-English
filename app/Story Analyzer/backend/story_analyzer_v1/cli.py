@@ -41,7 +41,6 @@ from .pipeline.orchestrator import continue_run, prepare_run
 from .pipeline.resume import plan_downstream_rebuild, resume_from_invalidation
 from .quality.metrics_report import build_quality_metrics_report
 from .quality.quality_gate import run_quality_gate
-from .regression.longzu_regression import run_longzu_regression
 from .repair.targeted_repair import repair_chapter
 from .semantic_provider.batch_runner import build_semantic_chapter_inputs
 from .semantic_provider.providers import SemanticProviderError, build_semantic_provider
@@ -970,18 +969,6 @@ def _build_cross_work_synthesis(args: argparse.Namespace) -> int:
     return 0 if report["status"] == "ready" else 1
 
 
-def _run_longzu_regression(args: argparse.Namespace) -> int:
-    try:
-        report = run_longzu_regression(args.source_run, args.out)
-    except (OSError, ValidationError, ValueError) as exc:
-        print(f"longzu regression failed: {exc}", file=sys.stderr)
-        return 1
-    print(f"longzu regression status: {report['status']}")
-    print(f"report: {Path(args.out) / 'longzu_regression_report.json'}")
-    print(f"handoff package: {report['handoff']['package_dir']}")
-    return 0 if report["status"] == "passed" else 1
-
-
 def _record_state_step(args: argparse.Namespace) -> int:
     try:
         scope = _parse_scope_items(args.scope)
@@ -1311,14 +1298,6 @@ def build_parser() -> argparse.ArgumentParser:
     cross_work.add_argument("manifest", help="Cross-work input manifest JSON")
     cross_work.add_argument("--out", required=True, help="Output directory for synthesis report")
     cross_work.set_defaults(func=_build_cross_work_synthesis)
-
-    longzu_regression = subparsers.add_parser(
-        "run-longzu-regression",
-        help="Run the M8 Longzu regression and generator handoff smoke check",
-    )
-    longzu_regression.add_argument("--source-run", required=True, help="Legacy Longzu web run directory")
-    longzu_regression.add_argument("--out", required=True, help="Regression output directory")
-    longzu_regression.set_defaults(func=_run_longzu_regression)
 
     record_state = subparsers.add_parser("record-state-step", help="Record or update one pipeline state step")
     record_state.add_argument("run_dir", help="Run output directory")
