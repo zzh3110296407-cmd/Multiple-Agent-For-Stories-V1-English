@@ -140,7 +140,7 @@ The Docker image names do not include the language directory name. The published
 zihangzhong/multiple-agent-for-stories-v1:backend-latest
 zihangzhong/multiple-agent-for-stories-v1:frontend-latest
 zihangzhong/multiple-agent-for-stories-v1:backend-1.0.0
-zihangzhong/multiple-agent-for-stories-v1:frontend-1.0.0
+zihangzhong/multiple-agent-for-stories-v1:frontend-1.0.1
 ```
 
 For local builds, `docker compose` uses:
