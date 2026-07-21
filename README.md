@@ -50,35 +50,57 @@ Optional local development:
 
 ## Docker Deployment
 
-From the repository root:
+### 1. Start Docker
+
+Open Docker Desktop, wait until it reports `Engine running`, and use Linux containers. Verify the engine from PowerShell:
 
 ```powershell
-cd "<your clone path>"
+docker info
+```
+
+Continue only after the command displays Docker Server information. If it reports `dockerDesktopLinuxEngine`, `daemon is not running`, or `failed to connect to the docker API`, start or restart Docker Desktop first.
+
+### 2. Clone And Start
+
+PowerShell:
+
+```powershell
+git clone --depth 1 https://github.com/zzh3110296407-cmd/Multiple-Agent-For-Stories-V1-English.git
+cd Multiple-Agent-For-Stories-V1-English
 Copy-Item .env.example .env
-docker compose up --build
+docker compose up --build -d
+docker compose ps
 ```
 
 Or from `cmd.exe`:
 
 ```bat
-cd /d "<your clone path>"
+git clone --depth 1 https://github.com/zzh3110296407-cmd/Multiple-Agent-For-Stories-V1-English.git
+cd Multiple-Agent-For-Stories-V1-English
 copy .env.example .env
-docker compose up --build
+docker compose up --build -d
+docker compose ps
 ```
 
 On Linux or macOS:
 
 ```bash
-cd "<your clone path>"
+git clone --depth 1 https://github.com/zzh3110296407-cmd/Multiple-Agent-For-Stories-V1-English.git
+cd Multiple-Agent-For-Stories-V1-English
 cp .env.example .env
-docker compose up --build
+docker compose up --build -d
+docker compose ps
 ```
+
+The first build downloads base images and Python/Node dependencies and can take several minutes. When it finishes, `docker compose ps` should show `frontend` and `backend` as `Up` and `postgres` as `healthy`.
 
 Then open:
 
 - Frontend: <http://localhost:3000>
 - Backend health through frontend proxy: <http://localhost:3000/health>
 - Backend health directly: <http://localhost:8000/health>
+
+Run `docker compose down` to stop the services. This command does not delete project data stored in Docker volumes.
 
 Docker binds both services to local `127.0.0.1` by default, so they are not directly exposed to the LAN or public Internet. Set `MAS_FRONTEND_PORT` and `MAS_BACKEND_PORT` in `.env` to change the local ports. For remote deployment, place an authenticated HTTPS reverse proxy in front of the application and never publish backend port `8000` directly.
 
@@ -211,7 +233,10 @@ Open <http://127.0.0.1:5173>.
 
 ## Troubleshooting
 
+- Cannot connect to the Docker API: open Docker Desktop, wait for `Engine running`, and verify `docker info` before running the deployment commands.
+- First build takes a long time: use `docker compose logs -f` to inspect progress and keep Docker Desktop running.
 - Backend not connected: check `docker compose ps`, `.env`, and <http://localhost:8000/health>.
+- Blank page or API 404 responses: run `git pull`, then rebuild with `docker compose up --build -d` so the frontend uses the latest image.
 - Model calls fail: verify the model key, base URL, model name, and network access.
 - Port conflict: stop the process using ports `3000` or `8000`, or edit `docker-compose.yml`.
 - Reset local Docker data: remove the Docker volumes only if you intentionally want to delete local story projects.
